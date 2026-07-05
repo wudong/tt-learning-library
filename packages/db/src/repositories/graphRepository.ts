@@ -42,7 +42,7 @@ export class GraphRepository {
     if ((SYMMETRIC_EDGE_TYPES as readonly string[]).includes(input.edgeType) && sourceId > targetId) [sourceId, targetId] = [targetId, sourceId]
     const now = nowIso()
     const row = { id: createId('edge'), user_id: input.userId, source_node_id: sourceId, target_node_id: targetId, edge_type: input.edgeType, label: input.label ?? null, weight: null, position: input.position ?? null, metadata_json: input.metadata === undefined ? null : JSON.stringify({ value: input.metadata }), created_at: now, updated_at: now, deleted_at: null }
-    await this.db.insertInto('graph_edges').values(row).onConflict((oc) => oc.columns(['user_id','source_node_id','target_node_id','edge_type']).doNothing()).execute()
+    await this.db.insertInto('graph_edges').values(row).onConflict((oc) => oc.columns(['user_id','source_node_id','target_node_id','edge_type']).where('deleted_at','is',null).doNothing()).execute()
     return row
   }
 
