@@ -1,7 +1,7 @@
 # TT Learning Library — Deployment
 
 > Created: 2026-07-05  
-> Updated: 2026-07-05 (Aiven provisioned, Render pending)
+> Updated: 2026-07-05 (✅ Deployed — Aiven + Render live)
 
 This document describes how to deploy the TT Learning Library on Render
 (frontend + backend) with an Aiven PostgreSQL database.
@@ -51,111 +51,49 @@ Render Web Service (tt-learning-api)
 | Branch | `main` |
 | Status | ✅ Pushed |
 
-## Render Setup (TODO — requires manual creation via dashboard or CLI)
+### Render API Service
 
-### API Service
-
-Create a **Web Service** on Render:
-
-| Setting | Value |
+| Field | Value |
 |---|---|
-| Name | `tt-learning-api` |
-| Repository | `https://github.com/wudong/tt-learning-library` |
-| Branch | `main` |
-| Root directory | `.` |
-| Runtime | Node |
-| Region | Frankfurt |
-| Plan | Free |
-| Build command | `bun install && bun run --cwd packages/shared build && bun run --cwd packages/db build && bun run --cwd apps/api build` |
-| Start command | `bun run --cwd apps/api dev` |
+| Service ID | `srv-d95clokvikkc73djd0tg` |
+| URL | `https://tt-learning-api.onrender.com` |
+| Dashboard | https://dashboard.render.com/web/srv-d95clokvikkc73djd0tg |
+| Status | ✅ Live |
 
-Environment variables:
+### Render Static Site
 
-```text
-NODE_VERSION=20
-DATABASE_URL=<see-1password>
-WEB_ORIGIN=*
-HOSTED_AUTH_REQUIRED=false
-NODE_TLS_REJECT_UNAUTHORIZED=0
-```
-
-After creation, note the `.onrender.com` URL (e.g., `tt-learning-api-XXXX.onrender.com`).
-
-Verify:
-```bash
-curl https://tt-learning-api-XXXX.onrender.com/api/health
-curl https://tt-learning-api-XXXX.onrender.com/api/ready
-```
-
-### Static Site
-
-Create a **Static Site** on Render:
-
-| Setting | Value |
+| Field | Value |
 |---|---|
-| Name | `tt-learning` |
-| Repository | `https://github.com/wudong/tt-learning-library` |
-| Branch | `main` |
-| Root directory | `.` |
-| Build command | `bun install && bun run --cwd packages/shared build && bun run --cwd apps/web build` |
-| Publish path | `apps/web/dist` |
-
-Environment variables:
-
-```text
-NODE_VERSION=20
-VITE_API_URL=/api
-```
+| Service ID | `srv-d95clt4vikkc73djd4ag` |
+| URL | `https://tt-learning.onrender.com` |
+| Dashboard | https://dashboard.render.com/static/srv-d95clt4vikkc73djd4ag |
+| Status | ✅ Live |
 
 Rewrite routes:
+- `/api/*` → `https://tt-learning-api.onrender.com/api/*` (route: `rdr-d95clvnaqgkc73evluf0`)
+- `/*` → `/index.html` (route: `rdr-d95clvgjs32c73fo3k50`)
 
-| Source | Destination | Type |
-|---|---|---|
-| `/api/*` | `https://tt-learning-api-XXXX.onrender.com/api/*` | Rewrite |
-| `/*` | `/index.html` | Rewrite |
+## Verification Results (2026-07-05)
 
-**Important:** Replace `XXXX` with the actual API service hostname slug.
+| Endpoint | Result |
+|---|---|
+| `GET /api/health` | `{"ok":true}` ✅ |
+| `GET /api/ready` | `{"ready":true,"database":true}` ✅ |
+| `GET /health.json` | `{"status":"ok"}` ✅ |
+| `GET /api/health` (via proxy) | `{"ok":true}` ✅ |
+| `POST /api/feedback` | `{"success":true}` ✅ |
 
-Verify:
-```bash
-curl https://tt-learning-XXXX.onrender.com/health.json
-curl https://tt-learning-XXXX.onrender.com/api/health
-```
-
-### Custom Domain (optional)
-
-Register a custom domain on the Render static service. For Cloudflare DNS,
-point the hostname to the DNS target Render provides.
-
-### Keep-Awake Ping
+## Keep-Awake Ping
 
 Use cron-job.org:
 
 ```text
 Dashboard: https://console.cron-job.org/dashboard
 Job name: tt-learning-api-health
-URL: https://tt-learning-XXXX.onrender.com/api/health  (or custom domain)
+URL: https://tt-learning-api.onrender.com/api/health
 Method: GET
 Schedule: every 10 minutes
 Expected HTTP status: 200
-```
-
-## Post-Deploy Verification
-
-```bash
-# Health
-curl -fsS https://YOUR_DOMAIN/health.json
-curl -fsS https://YOUR_DOMAIN/api/health
-curl -fsS https://YOUR_DOMAIN/api/ready
-
-# Feedback
-curl -fsS -X POST https://YOUR_DOMAIN/api/feedback \
-  -H 'Content-Type: application/json' \
-  -d '{"message_type":"general","message":"Deploy test"}'
-
-# API functionality
-curl -fsS https://YOUR_DOMAIN/api/inbox
-curl -fsS https://YOUR_DOMAIN/api/search?q=serve
 ```
 
 ## Local Development
