@@ -31,8 +31,8 @@ Render Web Service (tt-learning-api)
 | Field | Value |
 |---|---|
 | Project | `tt-learn` |
-| Account | `wudongliu+tt-learning@gmail.com` |
-| Password | `Yuepan200*TTlearn!` |
+| Account | (see GCP Secret Manager: `tt-learning-library-aiven-account-email`) |
+| Password | (see GCP Secret Manager: `tt-learning-library-aiven-account-password`) |
 | Service | `tt-learning-db` |
 | Plan | `free-1-1gb` (1 CPU, 1 GB RAM, 1 GB disk) |
 | Cloud | `do-fra` (DigitalOcean Frankfurt) |
@@ -114,7 +114,8 @@ automatically switches to `PostgresDialect` (connection pooling, SSL).
 
 ```bash
 # Login
-AIVEN_PASSWORD="Yuepan200*TTlearn!" avn user login wudongliu+tt-learning@gmail.com
+AIVEN_PASSWORD="$(gcloud secrets versions access latest --secret=tt-learning-library-aiven-account-password)" \
+avn user login "$(gcloud secrets versions access latest --secret=tt-learning-library-aiven-account-email)"
 
 # List services
 avn service list --project tt-learn
