@@ -17,8 +17,11 @@ import { shareTargetRoutes } from './routes/shareTarget'
 import { feedbackRoutes } from './routes/feedback'
 
 export async function createApp() {
+  const databaseUrl = process.env.DATABASE_URL
+  const usingPostgres = !!databaseUrl && /^postgres(ql)?:\/\//i.test(databaseUrl)
   const path = process.env.DATABASE_PATH ?? './.data/app.db'
-  mkdirSync(dirname(path), { recursive: true })
+  // SQLite needs the file directory; Postgres does not.
+  if (!usingPostgres) mkdirSync(dirname(path), { recursive: true })
   const { db } = createDb({ databasePath: path })
   await migrateToLatest(db)
   const app = new Hono()
