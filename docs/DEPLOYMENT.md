@@ -1,7 +1,7 @@
 # TT Learning Library — Deployment
 
 > Created: 2026-07-05  
-> Updated: 2026-07-05 (✅ Deployed — Aiven + Render live)  
+> Updated: 2026-07-05 (✅ Deployed — Aiven + Render live; ✅ Migrations applied to Aiven; ✅ Live API verified against Aiven Postgres)  
 > **Credentials vault**: `/Users/wudong/repo/gcloud/vault/tt-learning-library/secrets.md`  
 > **GCP Secret Manager**: `gcloud secrets versions access latest --secret="tt-learning-library-full-config" | jq`
 
@@ -97,6 +97,20 @@ Method: GET
 Schedule: every 10 minutes
 Expected HTTP status: 200
 ```
+
+## Database setup notes (2026-07-05)
+
+- The Aiven `ttlearn` app user initially lacked `CREATE` on the `public` schema (the
+  database is owned by `avnadmin`). Without it, `migrateToLatest` crashed on
+  startup, which is why earlier Render deploys had status `update_failed` and the
+  service kept serving an old SQLite-based deploy.
+- Fix: as `avnadmin`, ran `GRANT CREATE, USAGE ON SCHEMA public TO ttlearn` (see
+  the credentials vault for the `avnadmin` password), then applied migrations
+  directly against Aiven with `DATABASE_URL=... bun run db:migrate`. All 18 tables
+  and 2 migrations are now present in `tt_learning`.
+- Verified end-to-end: a `POST /api/feedback` through the live Render API
+  produced a row readable directly from Aiven, confirming the live API is
+  connected to Aiven Postgres (not the SQLite fallback).
 
 ## Local Development
 
