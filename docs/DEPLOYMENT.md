@@ -1,7 +1,8 @@
 # TT Learning Library — Deployment
 
 > Created: 2026-07-05  
-> Updated: 2026-07-05 (✅ Deployed — Aiven + Render live)
+> Updated: 2026-07-05 (✅ Deployed — Aiven + Render live)  
+> **Credentials vault**: `/Users/wudong/repo/gcloud/vault/tt-learning-library/secrets.md`
 
 This document describes how to deploy the TT Learning Library on Render
 (frontend + backend) with an Aiven PostgreSQL database.
