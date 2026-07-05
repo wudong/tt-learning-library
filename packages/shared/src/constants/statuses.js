@@ -1,0 +1,11 @@
+export const VIDEO_PROGRESS = ['saved', 'watching', 'watched'];
+export const VIDEO_LEARNING_STATES = ['none', 'practicing', 'revisit', 'understood'];
+export const VIDEO_LEGACY_STATUS = ['saved', 'watching', 'watched', 'practicing', 'revisit', 'understood'];
+export const SKILL_STATUSES = ['not_started', 'learning', 'practicing', 'improving', 'comfortable'];
+export const DIFFICULTIES = ['unspecified', 'beginner', 'intermediate', 'advanced'];
+export const DRILL_STATUSES = ['planned', 'practicing', 'done', 'archived'];
+export const NOTE_TYPES = ['plain', 'timestamp', 'question', 'takeaway', 'reminder'];
+export const INBOX_STATUSES = ['new', 'saved', 'organized', 'archived'];
+export const VISIBILITIES = ['private', 'unlisted', 'public'];
+export const SOURCE_PLATFORMS = ['youtube', 'facebook', 'other'];
+//# sourceMappingURL=statuses.js.map

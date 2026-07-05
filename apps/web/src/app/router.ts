@@ -1,0 +1,2 @@
+import { useEffect, useState } from 'react'
+export function useRoute() { const [path, setPath] = useState(location.pathname + location.search); useEffect(()=>{ const on=()=>setPath(location.pathname + location.search); addEventListener('popstate', on); return()=>removeEventListener('popstate', on)},[]); const navigate=(to:string)=>{ history.pushState(null,'',to); dispatchEvent(new PopStateEvent('popstate')) }; return { path, navigate } }

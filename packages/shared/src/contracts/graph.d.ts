@@ -1,0 +1,96 @@
+import { z } from 'zod';
+export declare const NodeTypeSchema: z.ZodEnum<{
+    video: "video";
+    skill: "skill";
+    topic: "topic";
+    note: "note";
+    drill: "drill";
+    mistake: "mistake";
+    learning_path: "learning_path";
+    collection: "collection";
+    tag: "tag";
+    creator: "creator";
+    source: "source";
+}>;
+export declare const EdgeTypeSchema: z.ZodEnum<{
+    belongs_to: "belongs_to";
+    contains: "contains";
+    explains: "explains";
+    demonstrates: "demonstrates";
+    practices: "practices";
+    drill_for: "drill_for";
+    related_to: "related_to";
+    requires: "requires";
+    prerequisite_of: "prerequisite_of";
+    common_mistake_for: "common_mistake_for";
+    enables: "enables";
+    mentions: "mentions";
+    contrasts_with: "contrasts_with";
+    saved_from: "saved_from";
+    created_by: "created_by";
+    tagged_with: "tagged_with";
+    copied_from: "copied_from";
+    forked_from: "forked_from";
+}>;
+export declare const VisibilitySchema: z.ZodEnum<{
+    private: "private";
+    unlisted: "unlisted";
+    public: "public";
+}>;
+export declare const GraphNodeDtoSchema: z.ZodObject<{
+    id: z.ZodString;
+    nodeType: z.ZodEnum<{
+        video: "video";
+        skill: "skill";
+        topic: "topic";
+        note: "note";
+        drill: "drill";
+        mistake: "mistake";
+        learning_path: "learning_path";
+        collection: "collection";
+        tag: "tag";
+        creator: "creator";
+        source: "source";
+    }>;
+    title: z.ZodString;
+    summary: z.ZodNullable<z.ZodString>;
+    visibility: z.ZodEnum<{
+        private: "private";
+        unlisted: "unlisted";
+        public: "public";
+    }>;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+}, z.core.$strip>;
+export type GraphNodeDto = z.infer<typeof GraphNodeDtoSchema>;
+export declare const GraphEdgeDtoSchema: z.ZodObject<{
+    id: z.ZodString;
+    sourceNodeId: z.ZodString;
+    targetNodeId: z.ZodString;
+    edgeType: z.ZodEnum<{
+        belongs_to: "belongs_to";
+        contains: "contains";
+        explains: "explains";
+        demonstrates: "demonstrates";
+        practices: "practices";
+        drill_for: "drill_for";
+        related_to: "related_to";
+        requires: "requires";
+        prerequisite_of: "prerequisite_of";
+        common_mistake_for: "common_mistake_for";
+        enables: "enables";
+        mentions: "mentions";
+        contrasts_with: "contrasts_with";
+        saved_from: "saved_from";
+        created_by: "created_by";
+        tagged_with: "tagged_with";
+        copied_from: "copied_from";
+        forked_from: "forked_from";
+    }>;
+    label: z.ZodNullable<z.ZodString>;
+    weight: z.ZodNullable<z.ZodNumber>;
+    position: z.ZodNullable<z.ZodNumber>;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+}, z.core.$strip>;
+export type GraphEdgeDto = z.infer<typeof GraphEdgeDtoSchema>;

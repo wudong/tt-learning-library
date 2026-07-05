@@ -1,0 +1,12 @@
+export declare const VIDEO_PROGRESS: readonly ["saved", "watching", "watched"];
+export type VideoProgress = typeof VIDEO_PROGRESS[number];
+export declare const VIDEO_LEARNING_STATES: readonly ["none", "practicing", "revisit", "understood"];
+export type VideoLearningState = typeof VIDEO_LEARNING_STATES[number];
+export declare const VIDEO_LEGACY_STATUS: readonly ["saved", "watching", "watched", "practicing", "revisit", "understood"];
+export declare const SKILL_STATUSES: readonly ["not_started", "learning", "practicing", "improving", "comfortable"];
+export declare const DIFFICULTIES: readonly ["unspecified", "beginner", "intermediate", "advanced"];
+export declare const DRILL_STATUSES: readonly ["planned", "practicing", "done", "archived"];
+export declare const NOTE_TYPES: readonly ["plain", "timestamp", "question", "takeaway", "reminder"];
+export declare const INBOX_STATUSES: readonly ["new", "saved", "organized", "archived"];
+export declare const VISIBILITIES: readonly ["private", "unlisted", "public"];
+export declare const SOURCE_PLATFORMS: readonly ["youtube", "facebook", "other"];

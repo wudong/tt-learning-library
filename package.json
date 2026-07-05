@@ -1,0 +1,52 @@
+{
+  "name": "tt-learning-library",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --parallel dev:web dev:api",
+    "dev:web": "bun run --cwd apps/web dev",
+    "dev:api": "bun run --cwd apps/api dev",
+    "build": "bun run --cwd packages/shared build && bun run --cwd packages/db build && bun run --cwd apps/api build && bun run --cwd apps/web build",
+    "typecheck": "bun run --cwd packages/shared typecheck && bun run --cwd packages/db typecheck && bun run --cwd apps/api typecheck && bun run --cwd apps/web typecheck",
+    "lint": "bun run --cwd packages/shared lint && bun run --cwd packages/db lint && bun run --cwd apps/api lint && bun run --cwd apps/web lint",
+    "test": "bun test",
+    "test:integration": "bun test tests/integration",
+    "test:e2e": "bun test tests/e2e",
+    "test:pwa": "bun run --cwd apps/web build && bun apps/web/scripts/check-pwa.ts",
+    "db:migrate": "bun packages/db/src/migrations/run.ts",
+    "db:seed": "bun packages/db/src/migrations/seed.ts",
+    "db:status": "bun packages/db/src/migrations/status.ts",
+    "quality": "bun run typecheck && bun run lint && bun test && bun run db:migrate && bun run build"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "@hono/zod-validator": "^0.7.5",
+    "@tanstack/react-query": "^5.90.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "date-fns": "^4.1.0",
+    "hono": "^4.12.0",
+    "kysely": "^0.29.2",
+    "lucide-react": "^0.468.0",
+    "pg": "^8.22.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-hook-form": "^7.67.0",
+    "sonner": "^2.0.7",
+    "tailwindcss": "^4.1.17",
+    "vite": "^7.2.7",
+    "vite-plugin-pwa": "^1.2.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.3",
+    "@types/node": "^22.16.0",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.3"
+  }
+}

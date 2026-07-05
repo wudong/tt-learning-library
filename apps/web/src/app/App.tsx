@@ -1,0 +1,11 @@
+import { Layout } from '../components/Layout'
+import { useRoute } from './router'
+import { Home } from '../features/Home'
+import { AddVideo } from '../features/videos/AddVideo'
+import { InboxList } from '../features/inbox/InboxList'
+import { OrganizeInbox } from '../features/inbox/OrganizeInbox'
+import { Library } from '../features/library/Library'
+import { VideoDetail } from '../features/videos/VideoDetail'
+import { SearchPage } from '../features/search/SearchPage'
+import { Settings } from '../features/Settings'
+export function App() { const { path, navigate } = useRoute(); const base = path.split('?')[0]; let page: React.ReactNode; if (base === '/') page=<Home navigate={navigate}/>; else if (base === '/videos/new') page=<AddVideo navigate={navigate}/>; else if (base === '/inbox') page=<InboxList navigate={navigate}/>; else if (base.startsWith('/quick-save/')) page=<OrganizeInbox quick id={base.split('/')[2]} navigate={navigate}/>; else if (base.startsWith('/inbox/')) page=<OrganizeInbox id={base.split('/')[2]} navigate={navigate}/>; else if (base === '/library') page=<Library navigate={navigate}/>; else if (base.startsWith('/videos/')) page=<VideoDetail id={base.split('/')[2]}/>; else if (base === '/search') page=<SearchPage navigate={navigate}/>; else page=<Settings/>; return <Layout path={base} navigate={navigate}>{page}</Layout> }

@@ -1,0 +1,12 @@
+export const VIDEO_PROGRESS = ['saved','watching','watched'] as const
+export type VideoProgress = typeof VIDEO_PROGRESS[number]
+export const VIDEO_LEARNING_STATES = ['none','practicing','revisit','understood'] as const
+export type VideoLearningState = typeof VIDEO_LEARNING_STATES[number]
+export const VIDEO_LEGACY_STATUS = ['saved','watching','watched','practicing','revisit','understood'] as const
+export const SKILL_STATUSES = ['not_started','learning','practicing','improving','comfortable'] as const
+export const DIFFICULTIES = ['unspecified','beginner','intermediate','advanced'] as const
+export const DRILL_STATUSES = ['planned','practicing','done','archived'] as const
+export const NOTE_TYPES = ['plain','timestamp','question','takeaway','reminder'] as const
+export const INBOX_STATUSES = ['new','saved','organized','archived'] as const
+export const VISIBILITIES = ['private','unlisted','public'] as const
+export const SOURCE_PLATFORMS = ['youtube','facebook','other'] as const

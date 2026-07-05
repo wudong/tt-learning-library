@@ -1,0 +1,7 @@
+import type { Row } from '@ttll/db'
+export function presentInbox(row: Row<'inbox_items'>) {
+  return { id: row.id, sourceUrl: row.source_url, canonicalUrl: row.canonical_url, sharedTitle: row.shared_title, sharedText: row.shared_text, sourcePlatform: row.source_platform, status: row.status, convertedNodeId: row.converted_node_id, createdAt: row.created_at, updatedAt: row.updated_at }
+}
+export function presentNode(row: Row<'graph_nodes'>) { return { id: row.id, nodeType: row.node_type, title: row.title, summary: row.summary, visibility: row.visibility, createdAt: row.created_at, updatedAt: row.updated_at } }
+export function presentEdge(row: Row<'graph_edges'>) { return { id: row.id, sourceNodeId: row.source_node_id, targetNodeId: row.target_node_id, edgeType: row.edge_type, label: row.label, weight: row.weight, position: row.position, createdAt: row.created_at, updatedAt: row.updated_at } }
+export function presentVideo(row: Row<'videos'>) { return { id: row.id, nodeId: row.node_id, sourceUrl: row.source_url, canonicalUrl: row.canonical_url, sourcePlatform: row.source_platform, externalId: row.external_id, title: row.title, description: row.description, thumbnailUrl: row.thumbnail_url, creatorName: row.creator_name, durationSeconds: row.duration_seconds, progress: row.progress, learningState: row.learning_state, importance: row.importance, createdAt: row.created_at, updatedAt: row.updated_at } }
