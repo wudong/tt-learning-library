@@ -10,6 +10,23 @@ export interface FeedbackPayload {
   message: string
   page_path?: string | null
   page_title?: string | null
+  metadata?: Record<string, unknown> | null
+  /** Honeypot — must be empty for real users. */
+  website?: string | null
+}
+
+/** Client context sent as metadata for richer triage. */
+function captureMetadata(): Record<string, unknown> {
+  if (typeof window === 'undefined') return {}
+  const m: Record<string, unknown> = {
+    url: window.location.href,
+    locale: navigator.language,
+    screenSize: `${window.innerWidth}x${window.innerHeight}`,
+    userAgent: navigator.userAgent,
+  }
+  const version = import.meta.env.VITE_APP_VERSION
+  if (version) m.appVersion = version
+  return m
 }
 
 export function useSubmitFeedback() {
@@ -36,6 +53,8 @@ export function useSubmitFeedback() {
           message,
           page_path: payload.page_path?.trim() || null,
           page_title: payload.page_title?.trim() || null,
+          metadata: payload.metadata ?? captureMetadata(),
+          website: payload.website ?? '',
         }),
       })
       if (!res.ok) {
@@ -45,7 +64,8 @@ export function useSubmitFeedback() {
       setSubmitSuccess(true)
       return true
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Unable to send feedback.')
+      const msg = err instanceof Error ? err.message : 'Unable to send feedback.'
+      setSubmitError(msg.includes('Too many') ? 'You are sending feedback too fast — try again in a minute.' : msg)
       return false
     } finally {
       setIsSubmitting(false)

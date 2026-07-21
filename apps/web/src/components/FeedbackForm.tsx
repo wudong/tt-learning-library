@@ -54,6 +54,7 @@ export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormPro
       email: (data.get('email') as string) || null,
       message_type: type,
       message: (data.get('message') as string) || '',
+      website: (data.get('website') as string) || null,
       ...getPageContext(),
     })
   }
@@ -62,6 +63,8 @@ export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormPro
 
   return (
     <form className={`feedback-form feedback-form--${variant}`} onSubmit={handleSubmit}>
+      {/* honeypot: real users never fill this; the feedback service discards filled values */}
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
       <input type="hidden" name="page_path" value={ctx.page_path} />
       <input type="hidden" name="page_title" value={ctx.page_title ?? ''} />
 

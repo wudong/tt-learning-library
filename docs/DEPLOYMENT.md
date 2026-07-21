@@ -73,6 +73,7 @@ Render Web Service (tt-learning-api)
 
 Rewrite routes:
 - `/api/*` → `https://tt-learning-api.onrender.com/api/*` (route: `rdr-d95clvnaqgkc73evluf0`)
+- `/share-target` → `https://tt-learning-api.onrender.com/share-target` (must precede the SPA fallback and preserve POST bodies)
 - `/*` → `/index.html` (route: `rdr-d95clvgjs32c73fo3k50`)
 
 ## Verification Results (2026-07-05)
@@ -120,9 +121,10 @@ bun run db:migrate
 bun run dev          # API on :3003, Web on :5174
 ```
 
-The local dev uses SQLite (`bun:sqlite`) via `DATABASE_PATH=./.data/app.db`.
-When `DATABASE_URL` is set and starts with `postgres://`, the app
-automatically switches to `PostgresDialect` (connection pooling, SSL).
+The local dev uses PostgreSQL via docker-compose (`bun run db:up`, host port 5433,
+database `tt_learning`, owner `ttlearn`). `DATABASE_URL` must be a
+`postgres://` / `postgresql://` connection string; `sslmode=require` is
+honored for hosted (Aiven) connections. SQLite support has been deprecated.
 
 ## Aiven CLI / API Access
 

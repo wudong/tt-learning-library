@@ -12,7 +12,7 @@ Central rule:
 
 > First-class learning objects are graph nodes. Meaningful cross-object relationships are typed graph edges. Domain tables store object-specific fields.
 
-The MVP uses SQLite through Kysely. PostgreSQL is the future target.
+The app uses PostgreSQL through Kysely (`pg` driver, `PostgresDialect`). SQLite support has been deprecated.
 
 ## 2. Database Conventions
 
@@ -49,7 +49,7 @@ Requirements:
 - database independent;
 - generated in application code;
 - collision resistant;
-- never rely on SQLite `rowid` or autoincrement.
+- never rely on hidden rowids or autoincrement.
 
 ### 2.2 Timestamps
 
@@ -714,6 +714,8 @@ canonical_url       text null
 shared_title        text null
 shared_text         text null
 source_platform     text null
+thumbnail_url       text null
+creator_name        text null
 raw_payload_json    text null
 status              text not null default 'new'
 converted_node_id   text null references graph_nodes(id)
@@ -869,7 +871,6 @@ tags.name
 
 Future:
 
-- SQLite FTS;
 - PostgreSQL full-text search;
 - embeddings/vector search after core validation.
 
@@ -914,7 +915,7 @@ Playing Against Long Pimples
 
 - explicit Kysely migrations;
 - schema types generated/maintained from the actual migration contract;
-- no SQLite autoincrement assumptions;
+- no autoincrement assumptions;
 - no unwrapped JSON dependence;
 - migration from empty DB tested;
 - previous-release upgrade tested;

@@ -4,7 +4,7 @@ Mobile-first graph-backed PWA for capturing table-tennis tutorial videos, organi
 
 ## Status
 
-This repository implements the reviewed architecture foundation and the central capture/inbox/video vertical slice from `docs/TASKS.md`. It is structured for Bun, React, Hono, Kysely, SQLite, and shared Zod contracts.
+This repository implements the reviewed architecture foundation and the central capture/inbox/video vertical slice from `docs/TASKS.md`. It is structured for Bun, React, Hono, Kysely, PostgreSQL, and shared Zod contracts.
 
 ## Run
 

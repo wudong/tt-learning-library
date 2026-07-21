@@ -20,7 +20,14 @@
     "db:migrate": "bun packages/db/src/migrations/run.ts",
     "db:seed": "bun packages/db/src/migrations/seed.ts",
     "db:status": "bun packages/db/src/migrations/status.ts",
-    "quality": "bun run typecheck && bun run lint && bun test && bun run db:migrate && bun run build"
+    "quality": "bun run typecheck && bun run lint && bun test && bun run db:migrate && bun run build",
+    "workflow": "bash scripts/workflow.sh",
+    "workflow:typecheck": "tsc -p scripts/workflow/tsconfig.workflow.json",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "workflow:sync": "bash scripts/workflow.sh sync",
+    "workflow:work": "bash scripts/workflow.sh work"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",

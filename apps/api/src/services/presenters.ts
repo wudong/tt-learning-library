@@ -1,6 +1,6 @@
 import type { Row } from '@ttll/db'
 export function presentInbox(row: Row<'inbox_items'>) {
-  return { id: row.id, sourceUrl: row.source_url, canonicalUrl: row.canonical_url, sharedTitle: row.shared_title, sharedText: row.shared_text, sourcePlatform: row.source_platform, status: row.status, convertedNodeId: row.converted_node_id, createdAt: row.created_at, updatedAt: row.updated_at }
+  return { id: row.id, sourceUrl: row.source_url, canonicalUrl: row.canonical_url, sharedTitle: row.shared_title, sharedText: row.shared_text, sourcePlatform: row.source_platform, thumbnailUrl: row.thumbnail_url, creatorName: row.creator_name, status: row.status, convertedNodeId: row.converted_node_id, createdAt: row.created_at, updatedAt: row.updated_at }
 }
 export function presentNode(row: Row<'graph_nodes'>) { return { id: row.id, nodeType: row.node_type, title: row.title, summary: row.summary, visibility: row.visibility, createdAt: row.created_at, updatedAt: row.updated_at } }
 export function presentEdge(row: Row<'graph_edges'>) { return { id: row.id, sourceNodeId: row.source_node_id, targetNodeId: row.target_node_id, edgeType: row.edge_type, label: row.label, weight: row.weight, position: row.position, createdAt: row.created_at, updatedAt: row.updated_at } }

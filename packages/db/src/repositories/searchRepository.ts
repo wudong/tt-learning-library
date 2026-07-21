@@ -5,9 +5,7 @@ import type { Database } from '../schema/database'
 export class SearchRepository {
   constructor(private readonly db: Kysely<Database>) {}
   async search(userId: string, q: string, options: { type?: string; limit: number; offset: number }) {
-    // Case-insensitive matching that works on both SQLite and PostgreSQL.
-    // SQLite's LIKE is case-insensitive by default; PostgreSQL's LIKE is
-    // case-sensitive, so we normalize both sides with lower().
+    // Case-insensitive matching on PostgreSQL via lower() + LIKE.
     const pattern = `%${q.toLowerCase()}%`
     const results: Array<{ id: string; nodeId: string; type: string; title: string; summary: string | null; href: string; context: string | null }> = []
     if (!options.type || options.type === 'video') {

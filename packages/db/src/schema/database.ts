@@ -14,9 +14,9 @@ export interface LearningPathsTable { id: string; node_id: string; user_id: stri
 export interface LearningPathItemsTable { id: string; path_id: string; user_id: string; item_node_id: string; position: number; completed_at: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface CollectionsTable { id: string; node_id: string; user_id: string; title: string; description: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface CollectionItemsTable { id: string; collection_id: string; user_id: string; item_node_id: string; position: number; created_at: string; updated_at: string; deleted_at: string | null }
-export interface InboxItemsTable { id: string; user_id: string; source_url: string | null; canonical_url: string | null; shared_title: string | null; shared_text: string | null; source_platform: string; raw_payload_json: string | null; status: string; converted_node_id: string | null; created_at: string; updated_at: string; deleted_at: string | null }
+export interface InboxItemsTable { id: string; user_id: string; source_url: string | null; canonical_url: string | null; shared_title: string | null; shared_text: string | null; source_platform: string; thumbnail_url: string | null; creator_name: string | null; raw_payload_json: string | null; status: string; converted_node_id: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface ShareLinksTable { id: string; user_id: string; target_node_id: string; token_hash: string; token_prefix: string; visibility: string; expires_at: string | null; revoked_at: string | null; created_at: string; updated_at: string; deleted_at: string | null }
-export interface FeedbackTable { id: string; name: string | null; email: string | null; message_type: string; message: string; page_path: string | null; page_title: string | null; created_at: string }
+export interface FeedbackTable { id: string; name: string | null; email: string | null; message_type: string; message: string; page_path: string | null; page_title: string | null; created_at: string; github_issue_number: number | null; issue_synced_at: string | null }
 export interface MigrationsTable { id: string; name: string; applied_at: string }
 
 export interface Database {

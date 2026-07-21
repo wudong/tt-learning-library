@@ -9,6 +9,8 @@ export const InboxItemDtoSchema = z.object({
     sharedTitle: z.string().nullable(),
     sharedText: z.string().nullable(),
     sourcePlatform: z.enum(SOURCE_PLATFORMS),
+    thumbnailUrl: z.string().url().nullable(),
+    creatorName: z.string().nullable(),
     status: z.enum(INBOX_STATUSES),
     convertedNodeId: z.string().nullable(),
     createdAt: isoDateString,

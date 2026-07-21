@@ -10,10 +10,15 @@ export class VideoRepository {
     if (identity.canonicalUrl) return this.db.selectFrom('videos').selectAll().where('user_id','=',userId).where('canonical_url','=',identity.canonicalUrl).where('deleted_at','is',null).executeTakeFirst()
     return undefined
   }
-  async create(input: { userId: string; nodeId: string; sourceUrl: string; canonicalUrl: string | null; sourcePlatform: string; externalId: string | null; title?: string | null; progress?: string; learningState?: string; rawMetadata?: unknown }) {
+  async create(input: { userId: string; nodeId: string; sourceUrl: string; canonicalUrl: string | null; sourcePlatform: string; externalId: string | null; title?: string | null; thumbnailUrl?: string | null; creatorName?: string | null; progress?: string; learningState?: string; rawMetadata?: unknown }) {
     const now = nowIso()
-    const row = { id: createId('video'), node_id: input.nodeId, user_id: input.userId, source_url: input.sourceUrl, canonical_url: input.canonicalUrl, source_platform: input.sourcePlatform, external_id: input.externalId, title: input.title ?? null, description: null, thumbnail_url: null, creator_name: null, duration_seconds: null, progress: input.progress ?? 'saved', learning_state: input.learningState ?? 'none', importance: null, raw_metadata_json: input.rawMetadata ? JSON.stringify({ value: input.rawMetadata }) : null, created_at: now, updated_at: now, deleted_at: null }
+    const row = { id: createId('video'), node_id: input.nodeId, user_id: input.userId, source_url: input.sourceUrl, canonical_url: input.canonicalUrl, source_platform: input.sourcePlatform, external_id: input.externalId, title: input.title ?? null, description: null, thumbnail_url: input.thumbnailUrl ?? null, creator_name: input.creatorName ?? null, duration_seconds: null, progress: input.progress ?? 'saved', learning_state: input.learningState ?? 'none', importance: null, raw_metadata_json: input.rawMetadata ? JSON.stringify({ value: input.rawMetadata }) : null, created_at: now, updated_at: now, deleted_at: null }
     await this.db.insertInto('videos').values(row).execute()
+    return row
+  }
+  async patchMetadata(userId: string, id: string, patch: { title?: string | null; thumbnail_url?: string | null; creator_name?: string | null }) {
+    const row = await this.db.updateTable('videos').set({ ...patch, updated_at: nowIso() }).where('user_id', '=', userId).where('id', '=', id).where('deleted_at', 'is', null).returningAll().executeTakeFirst()
+    if (!row) throw new Error('NOT_FOUND')
     return row
   }
   async list(userId: string, options: { q?: string; limit: number; offset: number; progress?: string; learningState?: string; sourcePlatform?: string }) {

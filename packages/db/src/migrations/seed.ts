@@ -1,14 +1,10 @@
-import { mkdirSync } from 'node:fs'
-import { dirname } from 'node:path'
 import { createDb } from '../database/createDb'
 import { migrateToLatest } from './migrator'
 import { GraphRepository } from '../repositories/graphRepository'
 import { TopicSkillRepository } from '../repositories/topicSkillRepository'
 import { nowIso } from '../utils/time'
 
-const path = process.env.DATABASE_PATH ?? './.data/app.db'
-mkdirSync(dirname(path), { recursive: true })
-const { db } = createDb({ databasePath: path })
+const { db } = await createDb()
 await migrateToLatest(db)
 const userId = process.env.DEV_USER_ID ?? 'user_local'
 const now = nowIso()

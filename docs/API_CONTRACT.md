@@ -259,6 +259,8 @@ Rules:
 - raw payload is size limited;
 - URL is validated when present;
 - URL canonicalization is best effort;
+- recognized YouTube captures are enriched after the Inbox row is durably created;
+- an incoming title wins over provider metadata;
 - capture succeeds even when metadata extraction fails.
 
 Response `201`:
@@ -272,6 +274,8 @@ Response `201`:
     "sharedTitle": "Reverse Pendulum Serve",
     "sharedText": "Useful video",
     "sourcePlatform": "youtube",
+    "thumbnailUrl": "https://i.ytimg.com/vi/example/hqdefault.jpg",
+    "creatorName": "Table Tennis Coach",
     "status": "new",
     "convertedNodeId": null,
     "createdAt": "2026-07-04T00:00:00.000Z",

@@ -90,14 +90,13 @@ installable PWA
 Bun + TypeScript
 Hono
 Kysely
-bun:sqlite adapter
-SQLite
-future PostgreSQL
+pg driver (PostgresDialect)
+PostgreSQL
 ```
 
 Important driver rule:
 
-> Kysely's built-in `SqliteDialect` uses a small structural adapter around `bun:sqlite` for this MVP. Keep the adapter isolated in `packages/db`.
+> Kysely's `PostgresDialect` uses the `pg` driver with a connection pool. Keep driver and pool configuration isolated in `packages/db`; do not leak `pg` APIs into repositories or services. `DATABASE_URL` is required.
 
 Exact versions are pinned by `bun.lock`. Upgrade only after typecheck, tests, build, and critical E2E flows pass.
 
@@ -142,13 +141,14 @@ Mandatory transactional operations include:
 
 ### 5.3 Database Access
 
-- Text IDs, not SQLite autoincrement IDs.
+- PostgreSQL only (SQLite deprecated).
+- Text IDs, not autoincrement IDs.
 - UTC ISO 8601 timestamps.
-- Foreign keys enabled.
-- WAL mode for hosted SQLite where applicable.
+- Foreign keys enforced (PostgreSQL default).
+- `DATABASE_URL` required (`postgres://` / `postgresql://`); `sslmode=require` honored.
 - Explicit migrations.
 - Default repository reads exclude `deleted_at IS NOT NULL`.
-- Avoid SQLite-only semantics in application logic.
+- Avoid database-specific application semantics without an abstraction and test.
 - Keep JSON minimal and wrapped.
 
 ### 5.4 Data Authority

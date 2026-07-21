@@ -19,7 +19,7 @@ Strategy:
 4. Private by default.
 5. Transactional node/domain writes.
 6. Kysely repository boundary.
-7. SQLite now, PostgreSQL-aware.
+7. PostgreSQL now (SQLite deprecated).
 8. Small runnable milestones.
 9. No unresolved driver/schema/API ambiguity.
 10. Security and restore testing are release work, not post-release work.
@@ -48,7 +48,7 @@ Freeze one coherent implementation contract.
 - basic explicit unlisted sharing is consistently MVP;
 - graph model is consistent;
 - `node_tags` is not expected by any implementation task;
-- Kysely SQLite driver decision is explicit;
+- Kysely PostgreSQL driver decision is explicit;
 - hosted auth/private rules are consistent;
 - repository ownership is unambiguous.
 
@@ -92,7 +92,9 @@ Plus:
 - exact versions recorded in `bun.lock`;
 - no unsupported package baseline silently substituted.
 
-## 5. Milestone 2 — SQLite/Kysely Foundation
+## 5. Milestone 2 — PostgreSQL/Kysely Foundation
+
+> Note: SQLite support has been deprecated. This milestone is now PostgreSQL-only via the `pg` driver and Kysely `PostgresDialect`. Local development uses the docker-compose Postgres instance (`bun run db:up`).
 
 ### Goal
 
@@ -100,24 +102,23 @@ Prove the database stack before domain implementation.
 
 ### Deliverables
 
-- Bun-native `bun:sqlite` driver with a local structural adapter;
-- Kysely built-in `SqliteDialect`;
+- `pg` driver with `PostgresDialect` and a connection pool;
+- Kysely built-in `PostgresDialect`;
 - database factory;
-- test database factory;
+- test database factory (resets a `tt_test` schema);
 - migration runner;
 - migration status command;
 - ID helpers;
 - UTC timestamp helpers;
-- foreign key/WAL/busy timeout setup.
+- connection pool / sslmode setup (no PRAGMA/WAL).
 
 ### Acceptance Criteria
 
 - Bun runtime smoke test passes;
-- `bun run db:migrate` creates DB;
-- foreign keys on;
-- WAL verified where file-backed;
-- temporary DB tests work;
-- Bun adapter is isolated in `packages/db` and passes the Kysely SQLite statement contract.
+- `bun run db:up` then `bun run db:migrate` creates DB;
+- foreign keys on (PostgreSQL default);
+- `tt_test` schema reset tests work;
+- driver/pool configuration isolated in `packages/db`.
 
 ## 6. Milestone 3 — Identity, Graph Schema, and Invariants
 

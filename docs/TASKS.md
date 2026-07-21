@@ -33,7 +33,7 @@ Suggested next task
 - Private is default.
 - Do not store raw share tokens.
 - Do not use `node_tags`; use `tagged_with` graph edges.
-- Keep the `bun:sqlite` compatibility adapter isolated in `packages/db`.
+- Keep `pg`/`PostgresDialect` driver and pool configuration isolated in `packages/db`. SQLite is deprecated.
 - Update contracts when implementation changes them.
 - Never claim a test passed unless run.
 
@@ -133,24 +133,25 @@ Acceptance:
 
 ## 5. Database and Graph
 
-### [ ] T006 — Add Kysely SQLite Foundation
+### [x] T006 — Add Kysely PostgreSQL Foundation
 
 Deliverables:
 
-- `bun:sqlite` with a local compatibility adapter;
-- Kysely `SqliteDialect`;
-- DB factory;
-- test DB factory;
-- pragma setup;
+- `pg` driver with Kysely `PostgresDialect` and a connection pool;
+- DB factory (requires `DATABASE_URL`);
+- test DB factory (resets a `tt_test` schema);
+- docker-compose Postgres for local dev (`bun run db:up`);
 - migration runner;
 - DB status command.
 
 Acceptance:
 
 - Bun runtime smoke test;
-- migration command works;
-- foreign keys on;
-- WAL verified where applicable.
+- `bun run db:up` + `bun run db:migrate` works;
+- foreign keys on (PostgreSQL default);
+- `tt_test` schema reset tests pass.
+
+SQLite support has been deprecated.
 
 ### [ ] T007 — Add Identity and Graph Migration
 
@@ -378,6 +379,22 @@ Acceptance:
 - one confirmation valid save;
 - no-URL correction;
 - manual fallback.
+
+### [x] T020A — Add Keyless YouTube Metadata Enrichment
+
+Deliverables:
+
+- fixed-host YouTube oEmbed client with bounded response and timeout;
+- durable Inbox-first title, creator, and thumbnail enrichment;
+- metadata transfer to Video and missing-field duplicate backfill;
+- Inbox, Library, and Video thumbnail rendering.
+
+Acceptance:
+
+- native and manual YouTube captures show metadata when available;
+- provider failure does not block capture;
+- user titles are not overwritten;
+- untrusted thumbnail URLs are rejected.
 
 ## 8. Central Vertical Slice
 
@@ -757,7 +774,7 @@ Deliverables:
 
 Deliverables:
 
-- SQLite-safe backup;
+- PostgreSQL backup (`pg_dump` / managed snapshots);
 - retention;
 - restore script/runbook.
 

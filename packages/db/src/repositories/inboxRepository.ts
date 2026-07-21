@@ -5,9 +5,9 @@ import { nowIso } from '../utils/time'
 
 export class InboxRepository {
   constructor(private readonly db: Kysely<Database>) {}
-  async create(input: { userId: string; sourceUrl?: string | null; canonicalUrl?: string | null; sharedTitle?: string | null; sharedText?: string | null; sourcePlatform?: string; rawPayload?: unknown }) {
+  async create(input: { userId: string; sourceUrl?: string | null; canonicalUrl?: string | null; sharedTitle?: string | null; sharedText?: string | null; sourcePlatform?: string; thumbnailUrl?: string | null; creatorName?: string | null; rawPayload?: unknown }) {
     const now = nowIso()
-    const row = { id: createId('inbox'), user_id: input.userId, source_url: input.sourceUrl ?? null, canonical_url: input.canonicalUrl ?? null, shared_title: input.sharedTitle ?? null, shared_text: input.sharedText ?? null, source_platform: input.sourcePlatform ?? 'other', raw_payload_json: input.rawPayload ? JSON.stringify(input.rawPayload).slice(0, 12000) : null, status: 'new', converted_node_id: null, created_at: now, updated_at: now, deleted_at: null }
+    const row = { id: createId('inbox'), user_id: input.userId, source_url: input.sourceUrl ?? null, canonical_url: input.canonicalUrl ?? null, shared_title: input.sharedTitle ?? null, shared_text: input.sharedText ?? null, source_platform: input.sourcePlatform ?? 'other', thumbnail_url: input.thumbnailUrl ?? null, creator_name: input.creatorName ?? null, raw_payload_json: input.rawPayload ? JSON.stringify(input.rawPayload).slice(0, 12000) : null, status: 'new', converted_node_id: null, created_at: now, updated_at: now, deleted_at: null }
     await this.db.insertInto('inbox_items').values(row).execute()
     return row
   }
@@ -21,10 +21,14 @@ export class InboxRepository {
   async get(userId: string, id: string) {
     return this.db.selectFrom('inbox_items').selectAll().where('user_id','=',userId).where('id','=',id).where('deleted_at','is',null).executeTakeFirst()
   }
-  async patch(userId: string, id: string, patch: { source_url?: string | null; canonical_url?: string | null; shared_title?: string | null; shared_text?: string | null; status?: string }) {
+  async patch(userId: string, id: string, patch: { source_url?: string | null; canonical_url?: string | null; shared_title?: string | null; shared_text?: string | null; thumbnail_url?: string | null; creator_name?: string | null; status?: string }) {
     const row = await this.db.updateTable('inbox_items').set({ ...patch, updated_at: nowIso() }).where('user_id','=',userId).where('id','=',id).where('deleted_at','is',null).returningAll().executeTakeFirst()
     if (!row) throw new Error('NOT_FOUND')
     return row
+  }
+  async countRecent(userId: string, since: string) {
+    const row = await this.db.selectFrom('inbox_items').select((eb) => eb.fn.countAll().as('count')).where('user_id', '=', userId).where('created_at', '>=', since).executeTakeFirst()
+    return Number(row?.count ?? 0)
   }
   async markConverted(userId: string, id: string, convertedNodeId: string) {
     const row = await this.db.updateTable('inbox_items')

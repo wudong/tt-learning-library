@@ -27,7 +27,7 @@ The following are non-negotiable for MVP:
 1. **Graph-backed from the first migration.**
    - First-class knowledge objects have a `graph_nodes` row and a domain row where domain-specific fields exist.
    - Meaningful cross-object relationships use typed `graph_edges`.
-   - A graph database is not required; SQLite stores the graph.
+   - A graph database is not required; PostgreSQL stores the graph.
 
 2. **Capture first, organize later.**
    - Native PWA share capture and manual URL paste are first-class flows.
@@ -43,9 +43,9 @@ The following are non-negotiable for MVP:
    - Core capture, Inbox, library, notes, skills, search, and sharing flows must work on a phone.
    - The implementation must respect the product mobile interaction contract: narrow reflow, safe-area insets, software keyboards, touch hit areas, orientation, and non-obscured sticky actions.
 
-5. **SQLite now, PostgreSQL later.**
-   - Kysely and repository boundaries reduce migration cost.
-   - They do not make SQLite and PostgreSQL behavior identical; portability is tested explicitly.
+5. **PostgreSQL is the database.**
+   - SQLite support has been deprecated; the app uses PostgreSQL only (local via docker-compose, hosted via Aiven/Render).
+   - Migrations and repositories are PostgreSQL-targeted; no SQLite-only semantics remain.
 
 6. **No hidden dual sources of truth.**
    - `DATA_MODEL.md` defines which field/table is authoritative when a relationship is mirrored for graph traversal.
@@ -89,7 +89,7 @@ rectangle "packages/db" {
   [Migrations]
 }
 
-database "SQLite MVP" {
+database "PostgreSQL" {
   [graph_nodes]
   [graph_edges]
   [domain tables]
@@ -111,7 +111,7 @@ External --> [Share Target Route]
 [Domain Services] --> [Metadata Service]
 [Domain Services] --> [Repositories]
 [Repositories] --> [Kysely]
-[Kysely] --> "SQLite MVP"
+[Kysely] --> "PostgreSQL"
 [Service Worker] --> [Routes / Screens]
 @enduml
 ```
@@ -133,44 +133,39 @@ The baseline below was reviewed on 2026-07-04. `bun.lock` is the reproducible so
 | Validation/contracts | Zod | v4 |
 | API framework | Hono | 4.12.27 or newer reviewed security-patched release in same line |
 | Query builder | Kysely | 0.29.2 |
-| SQLite driver | `bun:sqlite` | bundled with Bun 1.3.14 |
+| PostgreSQL driver | `pg` | Node `pg` Pool, SSL via `sslmode=require` |
 | PWA integration | `vite-plugin-pwa` | 1.3.0 |
 | Icons | `lucide-react` | exact patch pinned |
 | Dates | `date-fns` | exact patch pinned |
 
-### 4.1 SQLite Driver Decision
+### 4.1 PostgreSQL Driver Decision
 
-For MVP, use:
+The app uses PostgreSQL only, via the `pg` driver and Kysely's `PostgresDialect` with a connection pool:
 
 ```text
 Bun runtime
   -> Kysely
-  -> Kysely built-in SqliteDialect
-  -> local bun:sqlite structural adapter
-  -> bun:sqlite
-  -> SQLite file
+  -> Kysely built-in PostgresDialect
+  -> pg Pool
+  -> PostgreSQL
 ```
 
-Kysely's built-in `SqliteDialect` expects the synchronous statement shape popularized by `better-sqlite3`. Bun's native SQLite statements provide equivalent operations with a slightly different shape. Keep that compatibility mapping in a small adapter in `packages/db`; do not leak Bun driver APIs into repositories or services.
+`DATABASE_URL` must be a `postgres://` / `postgresql://` connection string. `sslmode=require` is honored for hosted (Aiven) connections. Keep driver and pool configuration isolated in `packages/db`; do not leak `pg` APIs into repositories or services.
+
+Local development uses the docker-compose Postgres instance (`bun run db:up`, host port 5433, database `tt_learning`, owner `ttlearn`). Tests reset a `tt_test` schema inside that database for isolation.
 
 Example:
 
 ```ts
-import { Database as BunSqliteDatabase } from 'bun:sqlite'
-import { Kysely, SqliteDialect } from 'kysely'
+import { Kysely, PostgresDialect } from 'kysely'
+import { Pool } from 'pg'
 import type { Database } from './schema'
 
-const sqlite = new BunSqliteDatabase(process.env.DATABASE_PATH ?? './data/app.db')
-sqlite.run('PRAGMA foreign_keys = ON')
-sqlite.run('PRAGMA journal_mode = WAL')
-sqlite.run('PRAGMA busy_timeout = 5000')
-
-export const db = new Kysely<Database>({
-  dialect: new SqliteDialect({ database: new BunSqliteAdapter(sqlite) }),
-})
+const pool = new Pool({ connectionString: process.env.DATABASE_URL!, max: 5 })
+export const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) })
 ```
 
-A runtime smoke test must prove this adapter under the pinned Bun version before Milestone 2 is accepted.
+A runtime smoke test must prove connectivity and migration from empty under the pinned versions before the DB milestone is accepted.
 
 ## 5. Repository Structure
 
@@ -378,7 +373,7 @@ actor User
 participant "External App" as External
 participant "Hono POST /share-target" as Target
 participant "Inbox API" as API
-database "SQLite" as DB
+database "PostgreSQL" as DB
 participant "Quick Save UI" as UI
 
 User -> External: Share tutorial
@@ -575,7 +570,7 @@ Mirrors are updated in the same transaction.
 
 - Text IDs with stable prefixes.
 - Recommended generator: UUIDv7 encoded as text with a readable type prefix.
-- UTC ISO 8601 strings in SQLite.
+- UTC ISO 8601 strings stored as text in PostgreSQL.
 - PostgreSQL migration target: `timestamptz`.
 - Never mix epoch milliseconds and ISO strings in new tables.
 
@@ -653,6 +648,9 @@ do not create another Video
 
 Additional rules:
 
+- YouTube capture metadata uses the fixed `https://www.youtube.com/oembed` endpoint; callers cannot control the remote host.
+- Fetches occur after durable Inbox creation, use a short timeout and bounded response, reject redirects, and validate returned thumbnail hosts.
+- Keyless enrichment populates title, creator, and thumbnail only; metadata failure never prevents capture or conversion.
 - Inbox conversion retry with `converted_node_id` is idempotent and is not treated as a user-visible new duplicate;
 - a raw Inbox capture may remain only when it contains useful unsaved context and the user explicitly chooses to keep it;
 - MVP does not block fuzzy or semantic near-duplicates;
@@ -703,7 +701,7 @@ MVP implementation:
 - Escape wildcard characters.
 - Cap pagination limits.
 
-Later implementations may use SQLite FTS, PostgreSQL full-text search, or vectors without changing route handlers.
+Later implementations may use PostgreSQL full-text search or vectors without changing route handlers.
 
 ## 13. Authentication and Deployment Modes
 
@@ -856,17 +854,11 @@ Hono must remain on a reviewed security-patched release.
 
 ## 17. Database Operations
 
-### 17.1 SQLite Settings
+### 17.1 PostgreSQL Settings
 
-At startup:
+Connections use a `pg` connection pool with `sslmode=require` honored for hosted (Aiven) connections. Foreign keys are enforced by PostgreSQL by default (no PRAGMA needed). Pool size is capped (default 5). `DATABASE_URL` is required and must be a `postgres://` / `postgresql://` connection string.
 
-```text
-PRAGMA foreign_keys = ON
-PRAGMA journal_mode = WAL
-PRAGMA busy_timeout = 5000
-```
-
-Do not assume high-write-concurrency behavior that SQLite does not provide.
+Local development uses the docker-compose Postgres instance (`bun run db:up`).
 
 ### 17.2 Migrations
 
@@ -892,7 +884,7 @@ nightly database backup
 monthly restore test during beta
 ```
 
-A WAL-mode backup must be SQLite-safe. Do not naïvely copy only the main database file while writes continue.
+Back up PostgreSQL with `pg_dump` or managed-service snapshots (and point-in-time recovery where available). Do not assume file-copy backups are safe under load.
 
 User export is not a substitute for server backup.
 
@@ -907,7 +899,7 @@ Required:
 - migration version at startup;
 - startup environment validation;
 - graceful shutdown;
-- disk-space monitoring where SQLite is hosted;
+- disk-space monitoring where PostgreSQL is hosted;
 - error reporting with redaction.
 
 Do not log full share payloads, note bodies, auth cookies, or share tokens.
@@ -927,7 +919,7 @@ Do not log full share payloads, note bodies, auth cookies, or share tokens.
 
 ### 19.2 Repository Tests
 
-Run against temporary SQLite databases:
+Run against the `tt_test` schema (reset per test) in the docker-compose PostgreSQL instance:
 
 - migrations;
 - foreign keys;
@@ -992,22 +984,19 @@ safe-area inset simulation or real-device coverage
 
 For each release candidate, record exact OS version, browser version, install mode, and device/viewport for the tested combinations. Native receive-share capability is verified, not inferred.
 
-## 20. PostgreSQL Migration Strategy
+## 20. Database Notes
 
-Kysely reduces query-layer migration cost; it does not make the databases identical.
+The application is PostgreSQL-only. SQLite support has been deprecated. Keep migrations and repositories PostgreSQL-targeted and avoid dialect-specific behavior that would block future hosted-Postgres upgrades.
 
-Plan for:
+Review when changing schema:
 
-- `TEXT` time -> `timestamptz`;
-- SQLite integer booleans -> PostgreSQL booleans;
-- SQLite pragmas removed;
-- indexes reviewed;
-- case-insensitive search behavior reviewed;
-- JSON fields reviewed;
-- unique constraints and partial indexes reviewed;
-- repository portability suite run against both dialects before cutover.
+- `TEXT` time values (kept as ISO 8601 strings) vs `timestamptz`;
+- indexes and partial unique indexes;
+- case-insensitive search behavior (`lower() like`);
+- JSON fields (`*_json` columns stored as text);
+- unique constraints.
 
-Do not introduce SQLite-only application semantics without an abstraction and test.
+Do not introduce database-specific application semantics without an abstraction and test.
 
 ## 21. Implementation Order
 
@@ -1017,7 +1006,7 @@ Architecture-critical order:
 
 ```text
 1. Scaffold and shared contracts
-2. Kysely + SQLite driver smoke test
+2. Kysely + PostgreSQL driver smoke test
 3. graph_nodes + graph_edges
 4. domain tables and source-of-truth invariants
 5. URL parsing and Inbox
