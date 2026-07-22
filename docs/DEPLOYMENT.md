@@ -1,12 +1,12 @@
 # TT Learning Library — Deployment
 
 > Created: 2026-07-05  
-> Updated: 2026-07-05 (✅ Deployed — Aiven + Render live; ✅ Migrations applied to Aiven; ✅ Live API verified against Aiven Postgres)  
+> Updated: 2026-07-22 (Supabase database/auth migration prepared and verified; Render cutover pending deployment)
 > **Credentials vault**: `/Users/wudong/repo/gcloud/vault/tt-learning-library/secrets.md`  
 > **GCP Secret Manager**: `gcloud secrets versions access latest --secret="tt-learning-library-full-config" | jq`
 
 This document describes how to deploy the TT Learning Library on Render
-(frontend + backend) with an Aiven PostgreSQL database.
+(frontend + backend) with Supabase PostgreSQL and Supabase Auth.
 
 ## Target Deployment Architecture
 
@@ -16,34 +16,29 @@ Render Static Site (tt-learning)
   └── custom domain via Cloudflare
 
 Render Web Service (tt-learning-api)
-  └── Aiven PostgreSQL (tt-learning-db)
+  └── Supabase PostgreSQL + Auth (tt-learning)
 ```
 
 - **Frontend**: Render Static Site, `tt-learning`
 - **Backend API**: Render Web Service, `tt-learning-api`
-- **Database**: Aiven PostgreSQL, project `tt-learn`
+- **Database/Auth**: Supabase project `tt-learning` (`jrabgxumevaduailkvhj`)
 - **Keep-awake**: cron-job.org ping every 10 minutes
 
 ## Service Inventory
 
-### Aiven PostgreSQL
+### Supabase PostgreSQL and Auth
 
 | Field | Value |
 |---|---|
-| Project | `tt-learn` |
-| Account | (see GCP Secret Manager: `tt-learning-library-aiven-account-email`) |
-| Password | (see GCP Secret Manager: `tt-learning-library-aiven-account-password`) |
-| Service | `tt-learning-db` |
-| Plan | `free-1-1gb` (1 CPU, 1 GB RAM, 1 GB disk) |
-| Cloud | `do-fra` (DigitalOcean Frankfurt) |
-| PG Version | 17.10 |
-| Host | `tt-learning-db-tt-learn.h.aivencloud.com` |
-| Port | `10990` |
-| Database | `tt_learning` |
-| User | `ttlearn` |
-| Password | (see 1Password / Aiven console) |
-| DATABASE_URL | (see 1Password / Aiven console) |
-| Status | ✅ RUNNING, verified via psql |
+| Project | `tt-learning` |
+| Project ref | `jrabgxumevaduailkvhj` |
+| Region | `eu-west-1` |
+| PG Version | 17.6 |
+| Runtime connection | Supavisor session pooler, port 5432 |
+| Migration connection | direct host, port 5432 |
+| Credentials | GCP Secret Manager, `tt-learning-library-supabase-*` |
+| Auth | passwordless email through Supabase Auth |
+| Status | ✅ ACTIVE_HEALTHY; schema/data migrated and count-verified |
 
 ### GitHub Repository
 
@@ -99,7 +94,22 @@ Schedule: every 10 minutes
 Expected HTTP status: 200
 ```
 
-## Database setup notes (2026-07-05)
+## Database migration notes (2026-07-22)
+
+- A full custom-format backup of the Aiven `public` schema was created before
+  target writes. Aiven remains the rollback source until the Supabase cutover is
+  accepted.
+- All application migrations were applied to Supabase, followed by a data-only
+  restore excluding migration bookkeeping.
+- Source and target counts matched across all 17 application tables: 1 user,
+  12 graph nodes, 2 graph edges, 4 videos, 6 topics, 2 notes, 5 Inbox items,
+  4 feedback rows, and zero rows in the remaining tables.
+- Row-level security is enabled on all 17 private/application tables with no
+  browser Data API policies. Private data remains accessible only through Hono.
+- The existing `user_local` rows transfer transactionally on first login only
+  when the verified Supabase email matches `LEGACY_OWNER_EMAIL`.
+
+## Historical Aiven setup notes (2026-07-05)
 
 - The Aiven `ttlearn` app user initially lacked `CREATE` on the `public` schema (the
   database is owned by `avnadmin`). Without it, `migrateToLatest` crashed on

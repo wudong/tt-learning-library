@@ -718,7 +718,7 @@ Acceptance:
 
 ## 13. Hosted Security
 
-### [ ] T043 — Implement Authentication
+### [x] T043 — Implement Authentication
 
 Deliverables:
 
@@ -726,11 +726,15 @@ Deliverables:
 - current-user context;
 - local dev principal only in local mode.
 
+Implemented with Supabase passwordless email Auth. Hono validates Supabase access
+tokens server-side, provisions the owned `users` record, and maintains a secure
+same-origin cookie for installed-PWA share-target submissions.
+
 Acceptance:
 
 - unauthenticated private request fails.
 
-### [ ] T044 — Enforce Owner Isolation
+### [x] T044 — Enforce Owner Isolation
 
 Deliverables:
 

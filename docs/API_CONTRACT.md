@@ -72,6 +72,14 @@ Authentication is required for private endpoints.
 
 Private requests operate as the current authenticated user. Clients do not choose `userId` in write payloads.
 
+Hosted authentication uses Supabase Auth. Private JSON requests send
+`Authorization: Bearer <Supabase access token>`. The API validates the token
+with Supabase, provisions/updates the matching local `users` row, and derives
+`userId` only from the verified Supabase subject. `x-user-id` is never an
+authentication mechanism. `POST /api/auth/session` synchronizes the verified
+session into a secure same-origin cookie for native share-target handling;
+`POST /api/auth/logout` clears that cookie.
+
 Unauthenticated private request:
 
 ```http

@@ -7,6 +7,7 @@ import type { Database } from '../schema/database'
 export interface PgPoolOptions {
   connectionString: string
   max?: number
+  ca?: string
   /** libpq startup options, e.g. `-c search_path=tt_test,public`. */
   options?: string
 }
@@ -15,13 +16,19 @@ export function createPgPool(opts: PgPoolOptions): Pool {
   const url = new URL(opts.connectionString)
   // Parse sslmode from query string
   const sslmode = url.searchParams.get('sslmode')
+  const ca = opts.ca ?? process.env.DATABASE_CA_CERT?.replace(/\\n/g, '\n')
   const ssl =
-    sslmode === 'require'
-      ? { rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0' }
+    sslmode === 'require' || sslmode === 'verify-full'
+      ? { rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0', ...(ca ? { ca } : {}) }
       : false
 
+  // node-postgres lets sslmode from the connection string replace the explicit
+  // SSL object, which would discard our provider CA. Remove only that parsed
+  // option after deriving the TLS policy above.
+  if (sslmode) url.searchParams.delete('sslmode')
+
   return new Pool({
-    connectionString: opts.connectionString,
+    connectionString: url.toString(),
     max: opts.max ?? 5,
     ssl: ssl || undefined,
     options: opts.options,
@@ -41,6 +48,8 @@ export interface DbOptions {
   connectionString?: string
   /** Max pool connections. */
   max?: number
+  /** PEM certificate authority used to verify hosted PostgreSQL. */
+  ca?: string
   /** libpq startup options, e.g. `-c search_path=tt_test,public`. */
   options?: string
 }
@@ -63,6 +72,7 @@ export async function createDb(options: DbOptions = {}): Promise<DbContext> {
   const pgPool = createPgPool({
     connectionString,
     max: options.max,
+    ca: options.ca,
     options: options.options,
   })
   const db = new Kysely<Database>({

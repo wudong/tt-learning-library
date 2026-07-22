@@ -44,7 +44,7 @@ The following are non-negotiable for MVP:
    - The implementation must respect the product mobile interaction contract: narrow reflow, safe-area insets, software keyboards, touch hit areas, orientation, and non-obscured sticky actions.
 
 5. **PostgreSQL is the database.**
-   - SQLite support has been deprecated; the app uses PostgreSQL only (local via docker-compose, hosted via Aiven/Render).
+   - SQLite support has been deprecated; the app uses PostgreSQL only (local via docker-compose, hosted via Supabase with the API/web on Render).
    - Migrations and repositories are PostgreSQL-targeted; no SQLite-only semantics remain.
 
 6. **No hidden dual sources of truth.**
@@ -150,7 +150,7 @@ Bun runtime
   -> PostgreSQL
 ```
 
-`DATABASE_URL` must be a `postgres://` / `postgresql://` connection string. `sslmode=require` is honored for hosted (Aiven) connections. Keep driver and pool configuration isolated in `packages/db`; do not leak `pg` APIs into repositories or services.
+`DATABASE_URL` must be a `postgres://` / `postgresql://` connection string. Hosted connections use TLS with the provider CA supplied through `DATABASE_CA_CERT`. Keep driver and pool configuration isolated in `packages/db`; do not leak `pg` APIs into repositories or services.
 
 Local development uses the docker-compose Postgres instance (`bun run db:up`, host port 5433, database `tt_learning`, owner `ttlearn`). Tests reset a `tt_test` schema inside that database for isolation.
 
@@ -726,6 +726,15 @@ Required for an internet-accessible deployment:
 
 Recommended first hosted architecture: same-origin PWA + API with secure, `HttpOnly`, `SameSite` cookies and an appropriate CSRF strategy for state-changing requests.
 
+The selected hosted provider is Supabase Auth. The browser uses the publishable
+key for passwordless email login and sends the short-lived user access token to
+the same-origin Hono API. Hono validates the token with the Supabase Auth user
+endpoint, derives ownership exclusively from the verified subject, and never
+trusts caller-supplied user IDs. A secure `HttpOnly`, `SameSite=Lax` session
+cookie supports native PWA share-target POST requests; ordinary JSON API calls
+also send the bearer token. Unauthenticated share payloads are retained for at
+most ten minutes in a signed, bounded, `HttpOnly` continuation cookie.
+
 Session UX contract:
 
 - protected API responses use a stable authentication error code;
@@ -858,7 +867,7 @@ Hono must remain on a reviewed security-patched release.
 
 ### 17.1 PostgreSQL Settings
 
-Connections use a `pg` connection pool with `sslmode=require` honored for hosted (Aiven) connections. Foreign keys are enforced by PostgreSQL by default (no PRAGMA needed). Pool size is capped (default 5). `DATABASE_URL` is required and must be a `postgres://` / `postgresql://` connection string.
+Connections use a `pg` connection pool with TLS enabled for hosted connections. `DATABASE_CA_CERT` supplies the provider CA PEM so certificate and hostname verification remain enabled for Supabase. Foreign keys are enforced by PostgreSQL by default (no PRAGMA needed). Pool size is capped (default 5). `DATABASE_URL` is required and must be a `postgres://` / `postgresql://` connection string.
 
 Local development uses the docker-compose Postgres instance (`bun run db:up`).
 
