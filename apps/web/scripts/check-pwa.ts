@@ -24,6 +24,7 @@ const appBundle = (await Promise.all(
 check(manifest.id === '/', 'manifest id must be stable')
 check(manifest.start_url === '/', 'manifest start_url must be same-origin root')
 check(manifest.scope === '/', 'manifest scope must include every app route')
+check(manifest.launch_handler?.client_mode === 'navigate-existing', 'manifest must reuse the installed app window when supported')
 check(manifest.display === 'standalone', 'manifest must use standalone display mode')
 check(manifest.name && manifest.short_name, 'manifest requires full and short names')
 check(manifest.theme_color && manifest.background_color, 'manifest requires theme colors')

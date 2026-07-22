@@ -32,7 +32,7 @@ export function Login() {
         <div><span className="eyebrow">Private learning library</span><h1>Sign in to TT Learn</h1></div>
         {shared && <p className="notice">Your shared video is waiting. Sign in to save it privately.</p>}
         {sent ? (
-          <div className="notice success"><strong>Check your email</strong><br />Use the secure link to finish signing in.</div>
+          <div className="notice success"><strong>Check your email</strong><br />Use the secure link, then return to TT Learn to continue.</div>
         ) : (
           <form className="stack" onSubmit={submit}>
             <label>Email address<input className="input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.currentTarget.value)} /></label>

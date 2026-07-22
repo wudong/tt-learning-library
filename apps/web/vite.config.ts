@@ -30,6 +30,7 @@ export default defineConfig({
       description: 'Turn table tennis tutorials into a practical learning and practice library.',
       start_url: '/',
       scope: '/',
+      launch_handler: { client_mode: 'navigate-existing' },
       display: 'standalone',
       orientation: 'any',
       background_color: '#f7f8f3',

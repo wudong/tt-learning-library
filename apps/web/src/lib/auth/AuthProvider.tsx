@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return
     const client = supabase
     let active = true
-    const initialize = async () => {
+    const refreshSession = async () => {
       const { data } = await client.auth.getSession()
       if (!active) return
       setUser(data.session?.user ?? null)
@@ -44,7 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       if (active) setLoading(false)
     }
-    void initialize()
+    const refreshAfterReturn = () => {
+      if (document.visibilityState === 'visible') void refreshSession()
+    }
+    void refreshSession()
+    document.addEventListener('visibilitychange', refreshAfterReturn)
+    window.addEventListener('focus', refreshAfterReturn)
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
       if (!active) return
       setUser(session?.user ?? null)
@@ -59,6 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     return () => {
       active = false
+      document.removeEventListener('visibilitychange', refreshAfterReturn)
+      window.removeEventListener('focus', refreshAfterReturn)
       listener.subscription.unsubscribe()
     }
   }, [])
