@@ -1,7 +1,7 @@
 # TT Learning Library — Deployment
 
 > Created: 2026-07-05  
-> Updated: 2026-07-22 (Supabase database/auth migration prepared and verified; Render cutover pending deployment)
+> Updated: 2026-07-22 (Supabase database/auth migration completed and verified on Render)
 > **Credentials vault**: `/Users/wudong/repo/gcloud/vault/tt-learning-library/secrets.md`  
 > **GCP Secret Manager**: `gcloud secrets versions access latest --secret="tt-learning-library-full-config" | jq`
 
