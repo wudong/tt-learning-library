@@ -311,14 +311,14 @@ export async function apiRequest<T>(
 
 ### 6.4 PWA Update UX
 
-Because the app contains forms, use a **prompted service-worker update** rather than forcing an automatic reload that can discard in-progress edits.
+Use a **prompted service-worker update** so the user chooses when the app reloads.
 
 Rules:
 
-- `Update now` is disabled or guarded when a meaningful unsaved draft would be lost;
+- `Update now` activates the worker immediately and may discard in-progress form edits;
 - `Later` keeps the current session usable;
 - update availability is announced without blocking capture;
-- activating a new worker must not silently clear in-progress client draft state.
+- the update prompt makes the reload action explicit.
 
 ### 6.5 Mobile UI Implementation Constraints
 
@@ -979,7 +979,7 @@ video -> timestamp note -> timestamp open
 skill -> linked video/drill/mistake
 search -> filter -> open result -> Back restores context
 create share link -> public view -> revoke -> unavailable
-PWA update available -> Later preserves edit
+PWA update available -> Later defers reload
 ```
 
 Run the critical suite against a recorded phone matrix that includes:

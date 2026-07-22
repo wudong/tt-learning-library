@@ -785,15 +785,13 @@ Dismissed
 2. Non-blocking prompt shows:
    - Update now;
    - Later.
-3. If meaningful unsaved work exists:
-   - Update now is guarded;
-   - app does not force reload.
+3. Update now activates the new version and reloads the app; in-progress form edits may be lost.
 4. Later keeps current session usable.
 5. New update prompt may return at a reasonable later point.
 
 Acceptance criteria:
 
-- no forced loss of in-progress form state;
+- update occurs only after the user chooses Update now;
 - update notification is accessible;
 - capture is not blocked by update prompt.
 

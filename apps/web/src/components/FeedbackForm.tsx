@@ -1,7 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Bug, Lightbulb, MessageSquare, Database, CheckCircle, Loader2 } from 'lucide-react'
 import { useSubmitFeedback, type FeedbackType } from '../lib/api/feedback'
-import { usePwaUpdateGuard } from '../lib/pwa/PwaProvider'
 
 interface FeedbackFormProps {
   variant?: 'quick' | 'full'
@@ -25,9 +24,6 @@ function getPageContext() {
 export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormProps) {
   const { isSubmitting, submitError, submitSuccess, submit, reset } = useSubmitFeedback()
   const [type, setType] = useState<FeedbackType>('general')
-  const [hasEdits, setHasEdits] = useState(false)
-  usePwaUpdateGuard(hasEdits)
-  useEffect(() => { if (submitSuccess) setHasEdits(false) }, [submitSuccess])
 
   if (submitSuccess) {
     return (
@@ -66,7 +62,7 @@ export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormPro
   const ctx = getPageContext()
 
   return (
-    <form className={`feedback-form feedback-form--${variant}`} onSubmit={handleSubmit} onInput={() => setHasEdits(true)}>
+    <form className={`feedback-form feedback-form--${variant}`} onSubmit={handleSubmit}>
       {/* honeypot: real users never fill this; the feedback service discards filled values */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
       <input type="hidden" name="page_path" value={ctx.page_path} />
@@ -82,7 +78,7 @@ export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormPro
               className={`feedback-type-btn ${type === value ? 'active' : ''}`}
               role="radio"
               aria-checked={type === value}
-              onClick={() => { setType(value); setHasEdits(true) }}
+              onClick={() => setType(value)}
             >
               <Icon size={16} />
               <span>{label}</span>

@@ -873,7 +873,7 @@ Release only when:
 - explicit unlisted sharing and revocation work only for the shareability matrix;
 - owner isolation tests pass for hosted mode;
 - public projection privacy tests pass;
-- prompted PWA update cannot force-discard in-progress edits;
+- prompted PWA update clearly warns that `Update now` reloads the app and may discard in-progress edits;
 - mobile critical-path E2E passes;
 - backup and restore process has been exercised;
 - no unresolved P0 architecture/security defects remain.

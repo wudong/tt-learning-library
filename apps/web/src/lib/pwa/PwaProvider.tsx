@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { registerSW } from 'virtual:pwa-register'
 
 interface BeforeInstallPromptEvent extends Event {
@@ -19,10 +19,8 @@ interface PwaContextValue {
   isOnline: boolean
   serviceWorkerState: ServiceWorkerState
   updateAvailable: boolean
-  hasUnsavedChanges: boolean
   install: () => Promise<void>
   applyUpdate: () => Promise<void>
-  setUnsavedSource: (source: symbol, isDirty: boolean) => void
 }
 
 const PwaContext = createContext<PwaContextValue | null>(null)
@@ -41,8 +39,6 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
   )
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [updateServiceWorker, setUpdateServiceWorker] = useState<((reloadPage?: boolean) => Promise<void>) | null>(null)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const unsavedSourcesRef = useRef(new Set<symbol>())
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null)
   const lastUpdateCheckRef = useRef(0)
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
@@ -120,12 +116,6 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     await updateServiceWorker(true)
   }
 
-  const setUnsavedSource = useCallback((source: symbol, isDirty: boolean) => {
-    if (isDirty) unsavedSourcesRef.current.add(source)
-    else unsavedSourcesRef.current.delete(source)
-    setHasUnsavedChanges(unsavedSourcesRef.current.size > 0)
-  }, [])
-
   return (
     <PwaContext.Provider value={{
       canInstall: Boolean(installPrompt),
@@ -134,10 +124,8 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
       isOnline,
       serviceWorkerState,
       updateAvailable,
-      hasUnsavedChanges,
       install,
       applyUpdate,
-      setUnsavedSource,
     }}>
       {children}
     </PwaContext.Provider>
@@ -148,14 +136,4 @@ export function usePwa() {
   const value = useContext(PwaContext)
   if (!value) throw new Error('usePwa must be used inside PwaProvider')
   return value
-}
-
-export function usePwaUpdateGuard(isDirty: boolean) {
-  const { setUnsavedSource } = usePwa()
-  const sourceRef = useRef(Symbol('unsaved-form'))
-  useLayoutEffect(() => {
-    const source = sourceRef.current
-    setUnsavedSource(source, isDirty)
-    return () => setUnsavedSource(source, false)
-  }, [isDirty, setUnsavedSource])
 }
