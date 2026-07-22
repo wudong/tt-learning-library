@@ -735,6 +735,12 @@ cookie supports native PWA share-target POST requests; ordinary JSON API calls
 also send the bearer token. Unauthenticated share payloads are retained for at
 most ten minutes in a signed, bounded, `HttpOnly` continuation cookie.
 
+On Android, an email-link callback opened outside standalone display offers an
+explicit same-origin link back to the installed PWA. The callback preserves the
+Supabase auth response only in the URL fragment, so credentials are not sent in
+HTTP requests, proxy logs, or referrer headers. The installed PWA remains
+responsible for validating and persisting the Supabase session.
+
 Session UX contract:
 
 - protected API responses use a stable authentication error code;

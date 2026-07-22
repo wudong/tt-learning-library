@@ -6,6 +6,7 @@ import { App } from './app/App'
 import { PwaProvider } from './lib/pwa/PwaProvider'
 import { AuthProvider } from './lib/auth/AuthProvider'
 import { AppUpdatePrompt } from './components/AppUpdatePrompt'
+import { AndroidPwaHandoff } from './components/AndroidPwaHandoff'
 import './styles.css'
 const client = new QueryClient()
 createRoot(document.getElementById('root')!).render(
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <PwaProvider>
           <App />
+          <AndroidPwaHandoff />
           <AppUpdatePrompt />
           <Toaster position="top-center" />
         </PwaProvider>

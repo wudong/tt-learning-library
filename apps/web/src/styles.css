@@ -40,6 +40,29 @@ p { max-width: 70ch; line-height: 1.55; }
 .notice.success { border: 1px solid var(--accent); }
 .form-error { margin: 0; color: var(--danger); font-size: 0.86rem; }
 
+.android-handoff-page {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  place-items: center;
+  background: var(--canvas);
+}
+.android-handoff-card {
+  display: grid;
+  gap: 20px;
+  width: min(100%, 440px);
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.android-handoff-card h1, .android-handoff-card p { margin-bottom: 0; }
+.android-handoff-open { text-decoration: none; }
+
 .app-shell { min-height: 100dvh; }
 .app-stage { min-height: 100dvh; }
 .desktop-sidebar { display: none; }

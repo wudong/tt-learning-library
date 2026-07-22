@@ -719,6 +719,7 @@ Protect private data without losing safe user context.
    - show Sign In.
 5. User signs in.
 6. On success:
+   - on Android, when the email link finishes in a browser, offer `Open installed app` using a same-origin callback whose auth values remain in the URL fragment;
    - return to intended safe destination;
    - show the unsaved action as ready to retry.
 7. Retry automatically only when the operation is provably idempotent and the UI explicitly says it is resuming.
