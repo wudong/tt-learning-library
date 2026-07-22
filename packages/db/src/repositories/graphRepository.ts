@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely'
-import { EDGE_TYPES, NODE_TYPES, SYMMETRIC_EDGE_TYPES, type EdgeType, type NodeType } from '@ttll/shared'
+import { EDGE_TYPES, NODE_TYPES, SYMMETRIC_EDGE_TYPES, isAllowedRelationship, type EdgeType, type NodeType } from '@ttll/shared'
 import type { Database, Row } from '../schema/database'
 import { createId } from '../utils/id'
 import { nowIso } from '../utils/time'
@@ -32,51 +32,55 @@ export class GraphRepository {
   }
 
   async createEdge(input: { userId: string; sourceNodeId: string; targetNodeId: string; edgeType: EdgeType; label?: string | null; position?: number | null; metadata?: unknown }) {
-    if (!EDGE_TYPES.includes(input.edgeType)) throw new Error(`Invalid edge type: ${input.edgeType}`)
-    if (input.sourceNodeId === input.targetNodeId) throw new Error('Self edges are not allowed')
+    if (!EDGE_TYPES.includes(input.edgeType)) throw new Error(`VALIDATION_ERROR: Invalid edge type: ${input.edgeType}`)
+    if (input.sourceNodeId === input.targetNodeId) throw new Error('VALIDATION_ERROR: Self edges are not allowed')
     const [source, target] = await Promise.all([this.getNode(input.userId, input.sourceNodeId), this.getNode(input.userId, input.targetNodeId)])
-    if (!source || !target) throw new Error('Cross-owner or missing node')
-    validateEdgePair(source.node_type, target.node_type, input.edgeType)
+    if (!source || !target) throw new Error('NOT_FOUND: Graph node not found')
+    if (!isAllowedRelationship(source.node_type as NodeType, target.node_type as NodeType, input.edgeType)) {
+      throw new Error(`VALIDATION_ERROR: Invalid ${input.edgeType} edge from ${source.node_type} to ${target.node_type}`)
+    }
     let sourceId = input.sourceNodeId
     let targetId = input.targetNodeId
     if ((SYMMETRIC_EDGE_TYPES as readonly string[]).includes(input.edgeType) && sourceId > targetId) [sourceId, targetId] = [targetId, sourceId]
     const now = nowIso()
     const row = { id: createId('edge'), user_id: input.userId, source_node_id: sourceId, target_node_id: targetId, edge_type: input.edgeType, label: input.label ?? null, weight: null, position: input.position ?? null, metadata_json: input.metadata === undefined ? null : JSON.stringify({ value: input.metadata }), created_at: now, updated_at: now, deleted_at: null }
-    await this.db.insertInto('graph_edges').values(row).onConflict((oc) => oc.columns(['user_id','source_node_id','target_node_id','edge_type']).where('deleted_at','is',null).doNothing()).execute()
-    return row
+    const inserted = await this.db.insertInto('graph_edges').values(row).onConflict((oc) => oc.columns(['user_id','source_node_id','target_node_id','edge_type']).where('deleted_at','is',null).doNothing()).returningAll().executeTakeFirst()
+    if (inserted) return inserted
+    const existing = await this.db.selectFrom('graph_edges').selectAll()
+      .where('user_id', '=', input.userId).where('source_node_id', '=', sourceId).where('target_node_id', '=', targetId)
+      .where('edge_type', '=', input.edgeType).where('deleted_at', 'is', null).executeTakeFirst()
+    if (!existing) throw new Error('CONFLICT: Relationship could not be created')
+    return existing
   }
 
   async related(userId: string, nodeId: string, edgeTypes?: EdgeType[]) {
-    let q = this.db.selectFrom('graph_edges as e')
-      .innerJoin('graph_nodes as n', (join) => join.onRef('n.id','=','e.target_node_id'))
-      .select(['n.id','n.user_id','n.node_type','n.title','n.summary','n.visibility','n.created_at','n.updated_at','n.deleted_at'])
-      .where('e.user_id','=',userId).where('e.source_node_id','=',nodeId).where('e.deleted_at','is',null).where('n.deleted_at','is',null)
-    if (edgeTypes?.length) q = q.where('e.edge_type','in',edgeTypes)
-    return q.orderBy('e.position asc').orderBy('n.updated_at desc').execute()
+    const relationships = await this.relationships(userId, nodeId, edgeTypes)
+    const unique = new Map<string, Row<'graph_nodes'>>()
+    for (const relationship of relationships) unique.set(relationship.node.id, relationship.node)
+    return [...unique.values()].sort((a, b) => b.updated_at.localeCompare(a.updated_at) || a.id.localeCompare(b.id))
   }
-}
 
-function validateEdgePair(sourceType: string, targetType: string, edgeType: string) {
-  const allowed: Record<string, Array<[string,string]>> = {
-    belongs_to: [['skill','topic'], ['topic','topic']],
-    explains: [['video','skill'], ['note','skill']],
-    demonstrates: [['video','skill']],
-    practices: [['drill','skill'], ['video','skill']],
-    drill_for: [['drill','skill'], ['drill','video']],
-    tagged_with: [['video','tag'], ['skill','tag'], ['note','tag'], ['drill','tag'], ['mistake','tag'], ['learning_path','tag']],
-    contains: [['learning_path','video'], ['learning_path','skill'], ['learning_path','drill'], ['learning_path','note'], ['collection','video'], ['collection','skill'], ['collection','drill']],
-    mentions: [['note','video'], ['note','skill'], ['note','topic'], ['note','drill'], ['note','mistake']],
-    related_to: [['video','video'], ['skill','skill'], ['topic','topic'], ['drill','drill']],
-    contrasts_with: [['skill','skill'], ['video','video']],
-    requires: [['skill','skill']],
-    prerequisite_of: [['skill','skill']],
-    common_mistake_for: [['mistake','skill']],
-    saved_from: [['video','source']],
-    created_by: [['video','creator']],
-    enables: [['skill','skill'], ['drill','skill']],
-    copied_from: [['video','video'], ['skill','skill'], ['drill','drill']],
-    forked_from: [['video','video'], ['skill','skill'], ['drill','drill']]
+  async relationships(userId: string, nodeId: string, edgeTypes?: EdgeType[]) {
+    let outgoingQuery = this.db.selectFrom('graph_edges as e')
+      .innerJoin('graph_nodes as n', (join) => join.onRef('n.id','=','e.target_node_id'))
+      .selectAll('e').select(['n.id as node_id','n.user_id as node_user_id','n.node_type','n.title','n.summary','n.visibility','n.created_at as node_created_at','n.updated_at as node_updated_at','n.deleted_at as node_deleted_at'])
+      .where('e.user_id','=',userId).where('e.source_node_id','=',nodeId).where('e.deleted_at','is',null).where('n.user_id','=',userId).where('n.deleted_at','is',null)
+    let incomingQuery = this.db.selectFrom('graph_edges as e')
+      .innerJoin('graph_nodes as n', (join) => join.onRef('n.id','=','e.source_node_id'))
+      .selectAll('e').select(['n.id as node_id','n.user_id as node_user_id','n.node_type','n.title','n.summary','n.visibility','n.created_at as node_created_at','n.updated_at as node_updated_at','n.deleted_at as node_deleted_at'])
+      .where('e.user_id','=',userId).where('e.target_node_id','=',nodeId).where('e.deleted_at','is',null).where('n.user_id','=',userId).where('n.deleted_at','is',null)
+    if (edgeTypes?.length) {
+      outgoingQuery = outgoingQuery.where('e.edge_type','in',edgeTypes)
+      incomingQuery = incomingQuery.where('e.edge_type','in',edgeTypes)
+    }
+    const [outgoing, incoming] = await Promise.all([outgoingQuery.execute(), incomingQuery.execute()])
+    const mapRow = (row: typeof outgoing[number], direction: 'outgoing'|'incoming') => ({
+      direction,
+      edge: { id: row.id, user_id: row.user_id, source_node_id: row.source_node_id, target_node_id: row.target_node_id, edge_type: row.edge_type, label: row.label, weight: row.weight, position: row.position, metadata_json: row.metadata_json, created_at: row.created_at, updated_at: row.updated_at, deleted_at: row.deleted_at } satisfies Row<'graph_edges'>,
+      node: { id: row.node_id, user_id: row.node_user_id, node_type: row.node_type, title: row.title, summary: row.summary, visibility: row.visibility, created_at: row.node_created_at, updated_at: row.node_updated_at, deleted_at: row.node_deleted_at } satisfies Row<'graph_nodes'>
+    })
+    return [...outgoing.map((row) => mapRow(row, 'outgoing')), ...incoming.map((row) => mapRow(row, 'incoming'))]
+      .sort((a, b) => b.edge.created_at.localeCompare(a.edge.created_at) || a.edge.id.localeCompare(b.edge.id))
   }
-  const pairs = allowed[edgeType] ?? []
-  if (!pairs.some(([s,t]) => s === sourceType && t === targetType)) throw new Error(`Invalid ${edgeType} edge from ${sourceType} to ${targetType}`)
+
 }

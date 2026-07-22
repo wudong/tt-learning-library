@@ -159,6 +159,7 @@ p { max-width: 70ch; line-height: 1.55; }
 .side-nav-item.active { color: var(--accent-strong); background: var(--accent-soft); }
 .install-nav-item { color: var(--accent-strong); }
 .drawer-status { display: flex; align-items: center; gap: 9px; margin: 28px 10px 0; color: var(--ink-soft); font-size: 0.78rem; font-weight: 700; }
+.sidebar-build { margin: 12px 10px 0; color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.68rem; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.12 70); }
 .status-dot.ready { background: var(--accent); }
 
@@ -173,6 +174,8 @@ p { max-width: 70ch; line-height: 1.55; }
 .video-thumbnail { aspect-ratio: 16 / 9; margin: -5px -5px 15px; overflow: hidden; border-radius: 13px; background: var(--panel); }
 .video-thumbnail img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .video-thumbnail.compact { max-width: 320px; }
+.video-embed { aspect-ratio: 16 / 9; margin: -5px -5px 15px; overflow: hidden; border-radius: 13px; background: #000; }
+.video-embed iframe { display: block; width: 100%; height: 100%; border: 0; }
 .muted { color: var(--ink-soft); font-size: 0.88rem; }
 .stack { display: grid; gap: 14px; }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -213,6 +216,11 @@ small { color: var(--ink-soft); font-weight: 500; }
 
 .settings-section { padding: 20px 0 27px; border-bottom: 1px solid var(--line); }
 .settings-section:last-child { border-bottom: 0; }
+.build-details { display: grid; gap: 10px; margin: 0; }
+.build-details div { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+.build-details dt { color: var(--ink-soft); font-size: 0.8rem; font-weight: 750; }
+.build-details dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.build-details code { font-size: 0.78rem; }
 .section-heading { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: start; margin-bottom: 16px; }
 .section-heading h2 { margin: 1px 0 4px; }
 .section-heading p { margin: 0; color: var(--ink-soft); font-size: 0.86rem; }

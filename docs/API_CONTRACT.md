@@ -445,7 +445,7 @@ Updatable domain fields:
 }
 ```
 
-Relationship edits use explicit graph/link operations or a dedicated replace-relations command; do not overload a simple metadata PATCH with hidden edge replacement.
+Relationship changes are owned by typed domain workflows such as Inbox conversion, Skill creation, Note creation, and Drill creation. MVP does not expose a generic graph-edge editing API. Metadata PATCH operations must not hide relationship replacement.
 
 ### DELETE `/api/videos/:id`
 

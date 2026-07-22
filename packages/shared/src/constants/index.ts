@@ -1,3 +1,4 @@
 export * from './nodeTypes'
 export * from './edgeTypes'
 export * from './statuses'
+export * from './ontology'

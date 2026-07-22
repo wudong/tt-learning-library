@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { usePwa } from '../lib/pwa/PwaProvider'
 import { FeedbackSheet } from './FeedbackSheet'
+import { BuildIdentity } from './BuildIdentity'
 
 const primaryItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -126,6 +127,7 @@ export function Layout({
           <BookOpen size={18} aria-hidden="true" />
           <span>Private by default<br /><small>Your practice library stays yours.</small></span>
         </div>
+        <BuildIdentity compact />
       </aside>
 
       <div className="app-stage">
@@ -184,6 +186,7 @@ export function Layout({
               <span className={`status-dot ${isInstalled ? 'ready' : ''}`} />
               {isInstalled ? 'Installed app' : canInstall ? 'Ready to install' : 'Running in browser'}
             </div>
+            <BuildIdentity compact />
           </aside>
         </div>
       )}

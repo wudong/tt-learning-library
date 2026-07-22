@@ -396,6 +396,23 @@ Acceptance:
 - user titles are not overwritten;
 - untrusted thumbnail URLs are rejected.
 
+### [x] T020B — Harden the Graph Backbone
+
+Deliverables:
+
+- incoming and outgoing relationship traversal;
+- centralized table-tennis node/relationship ontology;
+- transactional Topic, Skill, Note, and Drill aggregate service;
+- required Note-to-parent semantic edge;
+- duplicate edge retries return the persisted edge identity.
+
+Acceptance:
+
+- cross-owner relationships are rejected;
+- invalid Note relationships roll back node and domain rows;
+- domain workflows reject invalid ontology pairs;
+- no generic graph relationship editing endpoint is exposed.
+
 ## 8. Central Vertical Slice
 
 ### [ ] T021 — Implement Video Aggregate Service

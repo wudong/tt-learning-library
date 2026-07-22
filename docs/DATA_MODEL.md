@@ -102,6 +102,8 @@ These rules prevent dual-source drift.
 
 3. **Semantic relationships**
    - `graph_edges` is authoritative for semantic cross-object relationships.
+   - Private traversal considers both incoming and outgoing active edges.
+   - Domain workflows are owner-scoped; permitted node-type pairs are enforced by the shared ontology.
 
 4. **Ordered/stateful membership**
    - A specialized membership table is authoritative when order, completion, or membership-specific state is required.
@@ -781,7 +783,7 @@ index (token_prefix)
 
 ## 9. Graph Relationship Validation
 
-Shared validation must define allowed node-type pairs.
+Shared validation in `packages/shared/src/constants/ontology.ts` defines the complete MVP vocabulary and allowed node-type pairs. Domain workflows create these relationships; there is no generic user-facing edge editor.
 
 Examples:
 
@@ -795,13 +797,16 @@ drill       --drill_for-->           video
 mistake     --common_mistake_for-->  skill
 skill       --requires-->            skill
 skill       --prerequisite_of-->     skill
-node        --related_to-->          node
-note        --mentions-->            node
-node        --tagged_with-->          tag
+video       --related_to-->          video
+skill       --related_to-->          skill
+topic       --related_to-->          topic
+drill       --related_to-->          drill
+note        --mentions-->            video | skill | topic | drill | mistake
+video | skill | note | drill | mistake | learning_path --tagged_with--> tag
 video       --created_by-->          creator
 video       --saved_from-->           source
-learning_path --contains-->           node
-collection  --contains-->            node
+learning_path --contains-->           video | skill | drill | note
+collection  --contains-->            video | skill | drill | note
 ```
 
 Reject invalid combinations before insert.
