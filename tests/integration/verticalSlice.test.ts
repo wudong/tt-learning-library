@@ -3,6 +3,8 @@ import { createMigratedTestDb } from '../../packages/db/src'
 import { InboxCaptureService } from '../../apps/api/src/services/inboxCaptureService'
 import { VideoAggregateService } from '../../apps/api/src/services/videoAggregateService'
 import type { VideoMetadataProvider } from '../../apps/api/src/services/youtubeMetadataService'
+import { GraphRepository } from '../../packages/db/src'
+import { LibraryAggregateService } from '../../apps/api/src/services/libraryAggregateService'
 
 test('manual capture converts to graph-backed video idempotently', async () => {
   const { db } = await createMigratedTestDb()
@@ -57,5 +59,51 @@ test('duplicate conversion backfills missing metadata without overwriting title'
   expect(converted.video.title).toBe('My chosen title')
   expect(converted.video.creator_name).toBe('TT Coach')
   expect(converted.video.thumbnail_url).toContain('i.ytimg.com')
+  await db.destroy()
+})
+
+test('graph traversal includes incoming and outgoing relationships and excludes deleted nodes', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  await db.insertInto('users').values([
+    { id: 'user_graph', email: null, display_name: 'Graph', created_at: now, updated_at: now, deleted_at: null },
+    { id: 'user_other', email: null, display_name: 'Other', created_at: now, updated_at: now, deleted_at: null }
+  ]).execute()
+  const graph = new GraphRepository(db)
+  const video = await graph.createNode({ userId: 'user_graph', nodeType: 'video', title: 'Serve video' })
+  const skill = await graph.createNode({ userId: 'user_graph', nodeType: 'skill', title: 'Backspin serve' })
+  const other = await graph.createNode({ userId: 'user_other', nodeType: 'skill', title: 'Private skill' })
+  const edge = await graph.createEdge({ userId: 'user_graph', sourceNodeId: video.id, targetNodeId: skill.id, edgeType: 'explains' })
+  const duplicate = await graph.createEdge({ userId: 'user_graph', sourceNodeId: video.id, targetNodeId: skill.id, edgeType: 'explains' })
+  expect(duplicate.id).toBe(edge.id)
+  expect((await graph.relationships('user_graph', video.id))[0]?.direction).toBe('outgoing')
+  expect((await graph.relationships('user_graph', skill.id))[0]?.direction).toBe('incoming')
+  expect((await graph.related('user_graph', skill.id))[0]?.id).toBe(video.id)
+  await expect(graph.createEdge({ userId: 'user_graph', sourceNodeId: video.id, targetNodeId: other.id, edgeType: 'explains' })).rejects.toThrow('NOT_FOUND')
+  await graph.softDeleteNode('user_graph', video.id)
+  expect(await graph.relationships('user_graph', skill.id)).toEqual([])
+  await db.destroy()
+})
+
+test('note graph/domain/edge creation is atomic and rolls back invalid relationships', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  await db.insertInto('users').values({ id: 'user_atomic', email: null, display_name: 'Atomic', created_at: now, updated_at: now, deleted_at: null }).execute()
+  const graph = new GraphRepository(db)
+  const video = await graph.createNode({ userId: 'user_atomic', nodeType: 'video', title: 'Serve video' })
+  const tag = await graph.createNode({ userId: 'user_atomic', nodeType: 'tag', title: 'Serve' })
+  const service = new LibraryAggregateService(db)
+  const note = await service.createNote('user_atomic', { parentNodeId: video.id, body: 'Contact the ball lower', noteType: 'plain' })
+  const noteNode = await graph.getNode('user_atomic', note.node_id)
+  const relationships = await graph.relationships('user_atomic', note.node_id)
+  expect(noteNode?.node_type).toBe('note')
+  expect(relationships[0]?.edge.edge_type).toBe('mentions')
+  expect(relationships[0]?.node.id).toBe(video.id)
+  const beforeNotes = Number((await db.selectFrom('notes').select((eb) => eb.fn.countAll().as('count')).executeTakeFirst())?.count ?? 0)
+  await expect(service.createNote('user_atomic', { parentNodeId: tag.id, body: 'Invalid parent', noteType: 'plain' })).rejects.toThrow('Notes cannot attach to tag')
+  const afterNotes = Number((await db.selectFrom('notes').select((eb) => eb.fn.countAll().as('count')).executeTakeFirst())?.count ?? 0)
+  const invalidNode = await db.selectFrom('graph_nodes').select('id').where('user_id', '=', 'user_atomic').where('title', '=', 'Invalid parent').executeTakeFirst()
+  expect(afterNotes).toBe(beforeNotes)
+  expect(invalidNode).toBeUndefined()
   await db.destroy()
 })

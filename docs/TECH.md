@@ -558,6 +558,8 @@ graph_edges:
   authoritative for semantic cross-object relationships,
   except where DATA_MODEL.md explicitly defines an ordered/stateful
   membership table as authoritative.
+  Allowed pairs come from the centralized table-tennis ontology;
+  arbitrary user-authored edge types and node pairs are unsupported.
 
 Specialized membership tables:
   authoritative where relationship state/order cannot be represented

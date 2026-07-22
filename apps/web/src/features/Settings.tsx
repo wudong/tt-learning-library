@@ -1,6 +1,7 @@
 import { Check, Download, RefreshCw, Share2, ShieldCheck, Wifi, WifiOff, MessageSquare } from 'lucide-react'
 import { usePwa } from '../lib/pwa/PwaProvider'
 import { FeedbackForm } from '../components/FeedbackForm'
+import { BuildIdentity } from '../components/BuildIdentity'
 
 export function Settings() {
   const {
@@ -80,6 +81,14 @@ export function Settings() {
           <ShieldCheck size={22} />
           <p><strong>Private by default.</strong> Shared links are read-only, revocable, and never expose unrelated learning data.</p>
         </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="version-title">
+        <div className="section-heading">
+          <div className="section-icon"><RefreshCw size={20} /></div>
+          <div><h2 id="version-title">App version</h2><p>Identifies the exact source revision and deployment build time.</p></div>
+        </div>
+        <BuildIdentity />
       </section>
     </section>
   )
