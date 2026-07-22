@@ -17,6 +17,9 @@ check(existsSync(join(dist, 'offline.html')), 'offline fallback was not copied')
 const manifest = await Bun.file(manifestPath).json()
 const serviceWorker = await Bun.file(serviceWorkerPath).text()
 const index = await Bun.file(indexPath).text()
+const appBundle = (await Promise.all(
+  Array.from(new Bun.Glob('assets/index-*.js').scanSync({ cwd: dist })).map((path) => Bun.file(join(dist, path)).text()),
+)).join('\n')
 
 check(manifest.id === '/', 'manifest id must be stable')
 check(manifest.start_url === '/', 'manifest start_url must be same-origin root')
@@ -46,5 +49,8 @@ check(serviceWorker.includes('NetworkOnly,"POST"'), 'share-target POST must be N
 check(index.includes('apple-mobile-web-app-capable'), 'iOS standalone metadata is missing')
 check(index.includes('apple-touch-icon'), 'Apple touch icon is missing')
 check(index.includes('viewport-fit=cover'), 'safe-area viewport support is missing')
+check(appBundle.includes('New version ready'), 'global update prompt is missing from the production bundle')
+check(appBundle.includes('Save or clear your form before updating.'), 'unsaved-form update guard is missing from the production bundle')
+check(appBundle.includes('visibilitychange'), 'foreground update checks are missing from the production bundle')
 
-console.log('PWA checks passed: manifest, icons, install metadata, service worker, caching, share target')
+console.log('PWA checks passed: manifest, icons, install metadata, service worker, caching, share target, update prompt')

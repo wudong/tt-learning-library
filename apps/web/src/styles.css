@@ -169,6 +169,41 @@ p { max-width: 70ch; line-height: 1.55; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.12 70); }
 .status-dot.ready { background: var(--accent); }
 
+.app-update-prompt {
+  position: fixed;
+  right: 12px;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  left: 12px;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: center;
+  padding: 14px;
+  color: var(--surface);
+  background: var(--ink);
+  border: 1px solid oklch(0.42 0.04 160);
+  border-radius: 17px;
+  box-shadow: 0 16px 38px oklch(0.18 0.025 160 / 0.24);
+  animation: update-prompt-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.app-update-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; color: var(--accent-soft); background: oklch(0.34 0.055 160); }
+.app-update-copy { min-width: 0; }
+.app-update-copy strong, .app-update-copy span { display: block; }
+.app-update-copy strong { font-size: 0.96rem; }
+.app-update-copy span { margin-top: 3px; color: oklch(0.86 0.015 145); font-size: 0.78rem; line-height: 1.35; }
+.app-update-actions { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.app-update-now { min-height: 44px; margin: 0; color: var(--ink); background: var(--accent-soft); }
+.app-update-now:hover { background: oklch(0.86 0.08 150); }
+.app-update-later { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 12px; color: oklch(0.86 0.015 145); background: transparent; font-weight: 750; }
+.app-update-later:hover { color: var(--surface); background: oklch(0.34 0.025 160); }
+@keyframes update-prompt-in { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { .app-update-prompt { animation: none; } }
+
+@media (min-width: 720px) {
+  .app-update-prompt { right: 24px; bottom: 24px; left: auto; width: min(440px, calc(100vw - 48px)); }
+}
+
 .card {
   margin: 12px 0;
   padding: 17px;

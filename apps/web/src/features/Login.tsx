@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Mail, Target } from 'lucide-react'
 import { supabase } from '../lib/auth/supabase'
+import { usePwaUpdateGuard } from '../lib/pwa/PwaProvider'
 
 export function Login() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  usePwaUpdateGuard(Boolean(email) && !sent)
   const shared = new URLSearchParams(location.search).get('shared') === '1'
 
   async function submit(event: React.FormEvent) {
