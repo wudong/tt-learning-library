@@ -33,6 +33,12 @@ p { max-width: 70ch; line-height: 1.55; }
 .skip-link { position: fixed; left: 12px; top: -80px; z-index: 100; padding: 12px 16px; background: var(--ink); color: var(--surface); border-radius: 10px; }
 .skip-link:focus { top: 12px; }
 .menu-open { overflow: hidden; }
+.login-page { display: grid; min-height: 100dvh; place-items: center; padding: 24px 16px; }
+.login-card { display: grid; gap: 20px; width: min(100%, 440px); padding: 26px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+.login-card h1, .login-card p { margin-bottom: 0; }
+.notice { padding: 13px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-size: 0.88rem; }
+.notice.success { border: 1px solid var(--accent); }
+.form-error { margin: 0; color: var(--danger); font-size: 0.86rem; }
 
 .app-shell { min-height: 100dvh; }
 .app-stage { min-height: 100dvh; }

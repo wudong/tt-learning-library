@@ -14,6 +14,11 @@ Central rule:
 
 The app uses PostgreSQL through Kysely (`pg` driver, `PostgresDialect`). SQLite support has been deprecated.
 
+Private application tables have PostgreSQL row-level security enabled with no
+direct-client policies. Hosted browser clients authenticate with Supabase but
+do not query the Supabase Data API; all private access remains behind the Hono
+API, which connects as the migration-owned backend role and applies owner scope.
+
 ## 2. Database Conventions
 
 ### 2.1 IDs

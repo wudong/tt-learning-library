@@ -9,11 +9,12 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
+    "@hono/zod-validator": "^0.7.5",
     "@ttll/db": "workspace:*",
     "@ttll/shared": "workspace:*",
     "hono": "^4.12.0",
-    "zod": "^4.2.0",
-    "@hono/zod-validator": "^0.7.5"
+    "jose": "^6.2.4",
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

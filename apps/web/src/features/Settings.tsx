@@ -2,8 +2,10 @@ import { Check, Download, RefreshCw, Share2, ShieldCheck, Wifi, WifiOff, Message
 import { usePwa } from '../lib/pwa/PwaProvider'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { BuildIdentity } from '../components/BuildIdentity'
+import { useAuth } from '../lib/auth/AuthProvider'
 
 export function Settings() {
+  const auth = useAuth()
   const {
     canInstall,
     isInstalled,
@@ -90,6 +92,16 @@ export function Settings() {
         </div>
         <BuildIdentity />
       </section>
+
+      {auth.isConfigured && auth.user && (
+        <section className="settings-section" aria-labelledby="account-title">
+          <div className="section-heading">
+            <div className="section-icon"><ShieldCheck size={20} /></div>
+            <div><h2 id="account-title">Account</h2><p>{auth.user.email}</p></div>
+          </div>
+          <button className="button secondary" onClick={() => void auth.signOut()}>Sign out</button>
+        </section>
+      )}
     </section>
   )
 }

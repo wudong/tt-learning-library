@@ -13,6 +13,7 @@ import { searchRoutes } from './routes/search'
 import { publicShareRoutes, shareRoutes } from './routes/share'
 import { shareTargetRoutes } from './routes/shareTarget'
 import { feedbackRoutes } from './routes/feedback'
+import { authRoutes, publicAuthRoutes } from './routes/auth'
 
 export async function createApp() {
   const { db } = await createDb()
@@ -33,8 +34,9 @@ export async function createApp() {
     }
   })
   app.route('/api/public/share', publicShareRoutes(db))
-  app.use('/api/*', principalMiddleware)
-  app.use('/share-target', principalMiddleware)
+  app.route('/api/auth', publicAuthRoutes())
+  app.use('/api/*', principalMiddleware(db))
+  app.route('/api/auth', authRoutes(db))
   app.route('/api/inbox', inboxRoutes(db))
   app.route('/api/videos', videoRoutes(db))
   app.route('/api/library', libraryRoutes(db))
