@@ -676,6 +676,51 @@ offset=
 
 Soft delete.
 
+## 13.1 Training API
+
+All Training endpoints are authenticated, owner-scoped, private, and return the
+canonical error envelope.
+
+```text
+GET    /api/training/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD
+POST   /api/training/sessions
+GET    /api/training/sessions/:id
+PATCH  /api/training/sessions/:id
+DELETE /api/training/sessions/:id
+POST   /api/training/sessions/:id/copy
+PUT    /api/training/sessions/:id/remaining-blocks
+POST   /api/training/sessions/:id/start
+POST   /api/training/sessions/:id/blocks/:blockId/transition
+POST   /api/training/sessions/:id/complete
+GET    /api/training/practice-options/:skillId
+GET    /api/training/insights?from=YYYY-MM-DD&to=YYYY-MM-DD
+```
+
+Session creation supports `planned`, `quick`, and `manual` entry modes.
+Planned/quick blocks require `skillId` and `plannedDurationSeconds`; manual
+blocks require `skillId` and `actualDurationSeconds`. Optional `drillId` and
+`videoId` must be graph-linked to the selected Skill.
+
+Block transition actions are:
+
+```text
+start
+pause
+resume
+complete
+skip
+add_time
+```
+
+Transitions return the complete current session. They are idempotent for the
+already-achieved state and reject a request that would run two blocks at once.
+Completing a session accepts an optional overall rating, reflection, and one
+optional confidence check-in per distinct practiced Skill.
+
+Calendar range requests are capped at 62 days. Insight ranges are capped at 366
+days. Dates are local `YYYY-MM-DD` values paired with an IANA time-zone name;
+event timestamps are UTC ISO 8601.
+
 ## 14. Mistakes API
 
 ### POST `/api/mistakes`

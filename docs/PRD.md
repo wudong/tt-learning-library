@@ -873,8 +873,7 @@ Release only when:
 
 ### Phase 2 — Better Learning System
 
-- practice sessions;
-- progress history;
+- training plans, practice sessions, and progress history as defined in section 17;
 - richer paths;
 - better metadata;
 - collections of mixed learning objects;
@@ -887,6 +886,50 @@ Release only when:
 - optional summaries with explicit user review.
 
 ### Phase 4 — Community and Collaboration
+
+## 17. Training Planner and Practice Tracking
+
+Training is a private, account-owner-only Phase 2 feature that turns the learning
+library into table-side practice.
+
+### 17.1 Core behavior
+
+- A dated training plan contains an ordered list of skill blocks.
+- Every block requires one curated Skill and a target duration.
+- A block may include one Drill, one Video, and a short focus cue. The Drill and
+  Video must already be graph-linked to the selected Skill.
+- More than one session may exist on the same local calendar date.
+- Users may create a dated plan, quick-start an unplanned session, copy an
+  existing plan to another date, or manually log past training.
+- A live session presents one skill block at a time. The timer can start, pause,
+  resume, finish, or skip. Only one block may run at a time.
+- Reaching the target prompts the user to continue, add time, or finish. The next
+  block never starts automatically.
+- Remaining blocks may be added, reordered, skipped, or have their duration
+  changed while training. Original planned values remain available for plan
+  comparison.
+- Completing a session may include an optional overall 1–5 rating, optional
+  notes, and one optional 1–5 confidence check-in per distinct practiced Skill.
+  Confidence history does not overwrite Skill status or difficulty.
+
+### 17.2 Calendar and insights
+
+- The Training destination opens a mobile month calendar.
+- Each day cell shows planned/completed state and total actual minutes; selecting
+  a date opens its session list and skill details.
+- Week and month insights show training days, actual time, planned-session
+  completion, planned versus actual time, time by Skill, and confidence trends.
+- Plans, actual time, ratings, confidence, and reflections remain private and
+  are not included in public share projections.
+
+### 17.3 PWA timer expectation
+
+- While the active session is visible, the app requests screen wake lock where
+  supported and uses an in-app prompt plus optional sound/vibration.
+- Elapsed time is reconstructed from persisted UTC timestamps after reload.
+- Background and locked-screen alerts are best effort because mobile browsers
+  may suspend installed PWAs. The UI must explain this limitation and must not
+  claim native-alarm reliability.
 
 - public libraries;
 - coach/student workflows;

@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BookOpen,
   Download,
+  Dumbbell,
   Home,
   Inbox,
   Library,
@@ -22,8 +23,8 @@ import { BuildIdentity } from './BuildIdentity'
 const primaryItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
+  { href: '/training', label: 'Training', icon: Dumbbell },
   { href: '/library', label: 'Library', icon: Library },
-  { href: '/search', label: 'Search', icon: Search },
   { href: '/settings', label: 'More', icon: MoreHorizontal },
 ] as const
 
@@ -31,6 +32,9 @@ const pageMeta = (path: string) => {
   if (path === '/') return { title: 'Home', eyebrow: 'Your learning today' }
   if (path === '/inbox') return { title: 'Inbox', eyebrow: 'Captured for later' }
   if (path === '/library') return { title: 'Library', eyebrow: 'Skills, videos and practice' }
+  if (path === '/training') return { title: 'Training', eyebrow: 'Plan, practice, reflect' }
+  if (path === '/training/new') return { title: 'Plan training', eyebrow: 'Build a focused session', back: '/training' }
+  if (path.startsWith('/training/')) return { title: 'Training session', eyebrow: 'One skill at a time', back: '/training' }
   if (path === '/search') return { title: 'Search', eyebrow: 'Find what you learned' }
   if (path === '/settings') return { title: 'More', eyebrow: 'App and privacy' }
   if (path === '/videos/new') return { title: 'Add video', eyebrow: 'Save now, organize later', back: '/' }
@@ -53,6 +57,7 @@ export function Layout({
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const { canInstall, isInstalled, install } = usePwa()
   const meta = pageMeta(path)
+  const isActive = (href: string) => href === '/training' ? path.startsWith('/training') : path === href
 
   useEffect(() => {
     setMenuOpen(false)
@@ -83,8 +88,8 @@ export function Layout({
         {primaryItems.map(({ href, label, icon: Icon }) => (
           <button
             key={href}
-            className={`side-nav-item ${path === href ? 'active' : ''}`}
-            aria-current={path === href ? 'page' : undefined}
+            className={`side-nav-item ${isActive(href) ? 'active' : ''}`}
+            aria-current={isActive(href) ? 'page' : undefined}
             onClick={() => go(href)}
           >
             <Icon size={20} aria-hidden="true" />
@@ -94,6 +99,10 @@ export function Layout({
       </nav>
       <div className="side-nav-label">App</div>
       <nav className="side-nav" aria-label="App navigation">
+        <button className="side-nav-item" onClick={() => go('/search')}>
+          <Search size={20} aria-hidden="true" />
+          <span>Search</span>
+        </button>
         <button className="side-nav-item" onClick={() => { setMenuOpen(false); setFeedbackOpen(true) }}>
           <MessageSquare size={20} aria-hidden="true" />
           <span>Feedback</span>
@@ -154,8 +163,8 @@ export function Layout({
           {primaryItems.map(({ href, label, icon: Icon }) => (
             <button
               key={href}
-              className={`bottom-nav-item ${path === href ? 'active' : ''}`}
-              aria-current={path === href ? 'page' : undefined}
+              className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}
+              aria-current={isActive(href) ? 'page' : undefined}
               onClick={() => go(href)}
             >
               <Icon size={21} aria-hidden="true" />
