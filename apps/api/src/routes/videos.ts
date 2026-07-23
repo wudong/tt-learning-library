@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { CreateVideoRequestSchema, UpdateVideoLearningContextRequestSchema, UpdateVideoRequestSchema, VideoListQuerySchema } from '@ttll/shared'
 import type { Kysely } from 'kysely'
 import type { Database } from '@ttll/db'
-import { GraphRepository, ShareRepository, VideoRepository } from '@ttll/db'
+import { VideoRepository } from '@ttll/db'
 import { getPrincipal } from '../auth/principal'
 import { VideoAggregateService } from '../services/videoAggregateService'
 import { presentEdge, presentNode, presentVideo } from '../services/presenters'
@@ -36,11 +36,8 @@ export function videoRoutes(db: Kysely<Database>) {
     return c.json({ data: presentVideo(row) })
   })
   app.delete('/:id', async (c) => {
-    const userId = getPrincipal(c).userId
-    const video = await new VideoRepository(db).softDelete(userId, c.req.param('id'))
-    await new GraphRepository(db).softDeleteNode(userId, video.node_id)
-    await new ShareRepository(db).revokeForNode(userId, video.node_id)
-    return c.json({ data: { deleted: true } })
+    const result = await new VideoAggregateService(db).deleteVideo(getPrincipal(c).userId, c.req.param('id'))
+    return c.json({ data: result })
   })
   return app
 }

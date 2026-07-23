@@ -1,6 +1,6 @@
 import type { Kysely, Transaction } from 'kysely'
 import type { Database, Row } from '@ttll/db'
-import { GraphRepository, InboxRepository, NoteDrillRepository, TagRepository, TopicSkillRepository, VideoRepository, canonicalizeUrl } from '@ttll/db'
+import { GraphRepository, InboxRepository, NoteDrillRepository, ShareRepository, TagRepository, TopicSkillRepository, VideoRepository, canonicalizeUrl } from '@ttll/db'
 import { TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, type ConvertInboxRequest, type CreateVideoRequest, type UpdateVideoLearningContextRequest } from '@ttll/shared'
 
 type Conn = Kysely<Database> | Transaction<Database>
@@ -87,6 +87,15 @@ export class VideoAggregateService {
         await graph.createEdge({ userId, sourceNodeId: video.node_id, targetNodeId: skillsById.get(link.skillId)!.node_id, edgeType: link.relationship })
       }
       return this.getVideoDetail(userId, videoId, trx)
+    })
+  }
+
+  async deleteVideo(userId: string, videoId: string) {
+    return this.db.transaction().execute(async (trx) => {
+      const video = await new VideoRepository(trx).softDelete(userId, videoId)
+      await new GraphRepository(trx).softDeleteNode(userId, video.node_id)
+      await new ShareRepository(trx).revokeForNode(userId, video.node_id)
+      return { deleted: true as const }
     })
   }
 

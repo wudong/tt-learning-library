@@ -479,6 +479,10 @@ edges. An invalid or cross-owner ID rolls back the entire replacement.
 
 Soft-delete video and graph node atomically, tombstone affected active edges, and revoke active share links for the node.
 
+The Library exposes this operation behind an explicit confirmation. Notes and
+other objects are not hard-deleted; their relationship to the removed video is
+tombstoned with the video node.
+
 Response:
 
 ```json
