@@ -40,7 +40,7 @@ p { max-width: 70ch; line-height: 1.55; }
 .notice.success { border: 1px solid var(--accent); }
 .form-error { margin: 0; color: var(--danger); font-size: 0.86rem; }
 
-.android-handoff-page {
+.auth-handoff-page {
   position: fixed;
   inset: 0;
   z-index: 80;
@@ -50,7 +50,7 @@ p { max-width: 70ch; line-height: 1.55; }
   place-items: center;
   background: var(--canvas);
 }
-.android-handoff-card {
+.auth-handoff-card {
   display: grid;
   gap: 20px;
   width: min(100%, 440px);
@@ -60,8 +60,9 @@ p { max-width: 70ch; line-height: 1.55; }
   background: var(--surface);
   box-shadow: var(--shadow);
 }
-.android-handoff-card h1, .android-handoff-card p { margin-bottom: 0; }
-.android-handoff-open { text-decoration: none; }
+.auth-handoff-card h1, .auth-handoff-card p { margin-bottom: 0; }
+.auth-handoff-open { text-decoration: none; }
+.auth-handoff-input { overflow-wrap: anywhere; resize: vertical; }
 
 .app-shell { min-height: 100dvh; }
 .app-stage { min-height: 100dvh; }

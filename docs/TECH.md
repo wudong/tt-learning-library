@@ -741,6 +741,13 @@ Supabase auth response only in the URL fragment, so credentials are not sent in
 HTTP requests, proxy logs, or referrer headers. The installed PWA remains
 responsible for validating and persisting the Supabase session.
 
+On iOS, where a Home Screen PWA cannot claim the HTTPS callback, the browser
+offers a copy action for the same fragment-only handoff URL. The installed PWA
+accepts a pasted handoff only from its own origin, requires both Supabase
+session tokens, validates them through `setSession`, and clears the clipboard
+on success when browser permissions allow. Raw tokens are never rendered as
+visible text.
+
 Session UX contract:
 
 - protected API responses use a stable authentication error code;

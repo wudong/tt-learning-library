@@ -53,6 +53,7 @@ check(index.includes('viewport-fit=cover'), 'safe-area viewport support is missi
 check(appBundle.includes('New version ready'), 'global update prompt is missing from the production bundle')
 check(appBundle.includes('Update TT Learn to get the latest improvements.'), 'update prompt copy is missing from the production bundle')
 check(appBundle.includes('Open installed app'), 'Android auth-to-PWA handoff is missing from the production bundle')
+check(appBundle.includes('Copy sign-in link'), 'iOS auth-to-PWA handoff is missing from the production bundle')
 check(appBundle.includes('visibilitychange'), 'foreground update checks are missing from the production bundle')
 
 console.log('PWA checks passed: manifest, icons, install metadata, service worker, caching, share target, update prompt')
