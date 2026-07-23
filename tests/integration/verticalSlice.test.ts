@@ -3,7 +3,7 @@ import { createMigratedTestDb } from '../../packages/db/src'
 import { InboxCaptureService } from '../../apps/api/src/services/inboxCaptureService'
 import { VideoAggregateService } from '../../apps/api/src/services/videoAggregateService'
 import type { VideoMetadataProvider } from '../../apps/api/src/services/youtubeMetadataService'
-import { GraphRepository, createId, provisionOntology } from '../../packages/db/src'
+import { GraphRepository, ShareRepository, createId, provisionOntology } from '../../packages/db/src'
 import { LibraryAggregateService } from '../../apps/api/src/services/libraryAggregateService'
 import { TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
 
@@ -192,5 +192,25 @@ test('duplicate video creation preserves requested topic, skill, and tag context
   expect(detail?.topics.map((node) => node.id)).toEqual([topic.node_id])
   expect(detail?.skills.map((node) => node.id)).toEqual([skill.node_id])
   expect(detail?.tags.map((node) => node.id)).toEqual([tagNode.id])
+  await db.destroy()
+})
+
+test('video removal atomically hides the video, graph node, relationships, and share access', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  const userId = 'user_delete_video'
+  await db.insertInto('users').values({ id: userId, email: null, display_name: 'Delete video', created_at: now, updated_at: now, deleted_at: null }).execute()
+  await provisionOntology(db, userId)
+  const topic = await db.selectFrom('topics').selectAll().where('user_id', '=', userId).where('name', '=', 'Serve').executeTakeFirstOrThrow()
+  const service = new VideoAggregateService(db)
+  const created = await service.createVideo(userId, { sourceUrl: 'https://youtu.be/delete-context', topicIds: [topic.id], skillIds: [], tagIds: [], progress: 'saved', learningState: 'none' })
+  const share = await new ShareRepository(db).create({ userId, targetNodeId: created.node.id, tokenHash: 'delete-test-hash', tokenPrefix: 'delete-t' })
+
+  expect(await service.deleteVideo(userId, created.video.id)).toEqual({ deleted: true })
+  expect(await service.getVideoDetail(userId, created.video.id)).toBeUndefined()
+  expect((await db.selectFrom('videos').select('deleted_at').where('id', '=', created.video.id).executeTakeFirstOrThrow()).deleted_at).not.toBeNull()
+  expect((await db.selectFrom('graph_nodes').select('deleted_at').where('id', '=', created.node.id).executeTakeFirstOrThrow()).deleted_at).not.toBeNull()
+  expect((await db.selectFrom('graph_edges').select('deleted_at').where('source_node_id', '=', created.node.id).executeTakeFirstOrThrow()).deleted_at).not.toBeNull()
+  expect((await db.selectFrom('share_links').select('revoked_at').where('id', '=', share.id).executeTakeFirstOrThrow()).revoked_at).not.toBeNull()
   await db.destroy()
 })

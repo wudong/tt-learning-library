@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { BookOpen, Check, ChevronRight, CirclePlus, Layers3, NotebookPen, Play, Search, Target, X } from 'lucide-react'
+import { BookOpen, Check, ChevronRight, CirclePlus, Layers3, NotebookPen, Play, Search, Target, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { useCreateNote, useLibraryOverview, useUpdateVideoLearningContext, useVideo, useVideos } from '../../lib/api/hooks'
+import { useCreateNote, useDeleteVideo, useLibraryOverview, useUpdateVideoLearningContext, useVideo, useVideos } from '../../lib/api/hooks'
 import { VideoThumbnail } from '../../components/VideoThumbnail'
 
 type Tab = 'topics' | 'skills' | 'videos'
@@ -10,6 +10,7 @@ type SkillLink = { skillId: string; relationship: 'explains' | 'demonstrates' }
 export function Library({ navigate }: { navigate:(to:string)=>void }) {
   const overview = useLibraryOverview()
   const videos = useVideos()
+  const deleteVideo = useDeleteVideo()
   const [tab, setTab] = useState<Tab>('topics')
   const [query, setQuery] = useState('')
   const [editingVideoId, setEditingVideoId] = useState('')
@@ -19,6 +20,11 @@ export function Library({ navigate }: { navigate:(to:string)=>void }) {
   const topics = overview.data?.topics.filter((topic) => topic.name.toLocaleLowerCase().includes(normalizedQuery)) ?? []
   const skills = overview.data?.skills.filter((skill) => skill.name.toLocaleLowerCase().includes(normalizedQuery)) ?? []
   const filteredVideos = videos.data?.filter((video) => (video.title || video.sourceUrl).toLocaleLowerCase().includes(normalizedQuery)) ?? []
+  async function removeVideo(id:string, title:string) {
+    if (!window.confirm(`Remove “${title}” from your Library? Its links and active share access will also be removed.`)) return
+    try { await deleteVideo.mutateAsync(id); toast.success('Video removed from Library') }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Could not remove video') }
+  }
 
   return <section className="library-page">
     <header className="library-intro">
@@ -47,7 +53,7 @@ export function Library({ navigate }: { navigate:(to:string)=>void }) {
 
     {tab === 'topics' && overview.data && <TopicSection topics={topics} skills={overview.data.skills} counts={overview.data.topicVideoCounts} onNote={setNoteTarget}/>}
     {tab === 'skills' && overview.data && <SkillSection skills={skills} topics={overview.data.topics} counts={overview.data.skillVideoCounts} onNote={setNoteTarget}/>}
-    {tab === 'videos' && videos.data && <VideoSection videos={filteredVideos} onOrganize={setEditingVideoId} onOpen={(id) => navigate(`/videos/${id}`)} onNote={setNoteTarget}/>}
+    {tab === 'videos' && videos.data && <VideoSection videos={filteredVideos} removingId={deleteVideo.isPending ? deleteVideo.variables : undefined} onOrganize={setEditingVideoId} onOpen={(id) => navigate(`/videos/${id}`)} onNote={setNoteTarget} onRemove={removeVideo}/>}
 
     {editingVideoId && overview.data && <VideoContextEditor videoId={editingVideoId} topics={overview.data.topics} skills={overview.data.skills} onClose={() => setEditingVideoId('')}/>}
     {noteTarget && <NoteComposer target={noteTarget} onClose={() => setNoteTarget(null)}/>}
@@ -90,14 +96,14 @@ function SkillSection({ skills, topics, counts, onNote }: { skills:Array<{id:str
   </div>
 }
 
-function VideoSection({ videos, onOrganize, onOpen, onNote }: { videos:Array<{id:string;nodeId:string;title:string|null;sourceUrl:string;sourcePlatform:string;thumbnailUrl:string|null;progress:string;learningState:string}>; onOrganize:(id:string)=>void; onOpen:(id:string)=>void; onNote:(target:{nodeId:string;title:string;type:'video'})=>void }) {
+function VideoSection({ videos, removingId, onOrganize, onOpen, onNote, onRemove }: { videos:Array<{id:string;nodeId:string;title:string|null;sourceUrl:string;sourcePlatform:string;thumbnailUrl:string|null;progress:string;learningState:string}>; removingId?:string; onOrganize:(id:string)=>void; onOpen:(id:string)=>void; onNote:(target:{nodeId:string;title:string;type:'video'})=>void; onRemove:(id:string,title:string)=>void }) {
   if (!videos.length) return <div className="empty"><BookOpen size={28}/><p>No videos match this search. Add a tutorial to start building your learning map.</p></div>
   return <div className="video-library-list">{videos.map((video) => {
     const title = video.title || video.sourceUrl
     return <article className="video-library-row" key={video.id}>
       <VideoThumbnail src={video.thumbnailUrl} title={title} compact/>
       <div className="video-library-copy"><span className="pill">{video.sourcePlatform}</span><h2>{title}</h2><p>{video.progress} · {video.learningState}</p>
-        <div className="video-row-actions"><button className="button" onClick={() => onOrganize(video.id)}>Organize</button><button className="button secondary" onClick={() => onNote({nodeId:video.nodeId,title,type:'video'})}><NotebookPen size={16}/> Note</button><button className="button secondary" onClick={() => onOpen(video.id)}>Open <ChevronRight size={17}/></button></div>
+        <div className="video-row-actions"><button className="button" onClick={() => onOrganize(video.id)}>Organize</button><button className="button secondary" onClick={() => onNote({nodeId:video.nodeId,title,type:'video'})}><NotebookPen size={16}/> Note</button><button className="button secondary" onClick={() => onOpen(video.id)}>Open <ChevronRight size={17}/></button><button className="button danger" disabled={removingId === video.id} onClick={() => onRemove(video.id,title)}><Trash2 size={16}/>{removingId === video.id ? 'Removing…' : 'Remove'}</button></div>
       </div>
     </article>
   })}</div>
