@@ -1,10 +1,26 @@
 import type { Kysely } from 'kysely'
 import type { Database } from '@ttll/db'
-import { GraphRepository, NoteDrillRepository, TopicSkillRepository } from '@ttll/db'
-import { NOTE_PARENT_NODE_TYPES } from '@ttll/shared'
+import { GraphRepository, NoteDrillRepository, TopicSkillRepository, provisionOntology } from '@ttll/db'
+import { NOTE_PARENT_NODE_TYPES, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
 
 export class LibraryAggregateService {
   constructor(private readonly db: Kysely<Database>) {}
+
+  async getOverview(userId: string) {
+    await provisionOntology(this.db, userId)
+    const repository = new TopicSkillRepository(this.db)
+    const [systemTopics, systemSkills] = await Promise.all([repository.listSystemTopics(userId), repository.listSystemSkills(userId)])
+    const topics = systemTopics.filter((topic) => (TABLE_TENNIS_TOPICS as readonly string[]).includes(topic.name))
+    const skills = systemSkills.filter((skill) => TABLE_TENNIS_SKILLS.some((definition) => definition.name === skill.name))
+    const graph = new GraphRepository(this.db)
+    const [topicNodeCounts, skillNodeCounts] = await Promise.all([
+      graph.countIncomingVideos(userId, topics.map((topic) => topic.node_id), ['belongs_to']),
+      graph.countIncomingVideos(userId, skills.map((skill) => skill.node_id), ['explains', 'demonstrates'])
+    ])
+    const topicCounts = topics.map((topic) => [topic.id, topicNodeCounts.get(topic.node_id) ?? 0] as const)
+    const skillCounts = skills.map((skill) => [skill.id, skillNodeCounts.get(skill.node_id) ?? 0] as const)
+    return { topics, skills, topicVideoCounts: Object.fromEntries(topicCounts), skillVideoCounts: Object.fromEntries(skillCounts) }
+  }
 
   async createTopic(userId: string, input: { name: string; description?: string }) {
     return this.db.transaction().execute(async (trx) => {

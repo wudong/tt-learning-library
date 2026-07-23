@@ -14,7 +14,7 @@ export class InboxRepository {
   async list(userId: string, options: { status?: string; limit: number; offset: number }) {
     let q = this.db.selectFrom('inbox_items').selectAll().where('user_id','=',userId).where('deleted_at','is',null)
     if (options.status) q = q.where('status','=',options.status)
-    const data = await q.orderBy('created_at desc').limit(options.limit).offset(options.offset).execute()
+    const data = await q.orderBy('created_at', 'desc').limit(options.limit).offset(options.offset).execute()
     const total = Number((await this.db.selectFrom('inbox_items').select((eb)=>eb.fn.countAll().as('count')).where('user_id','=',userId).where('deleted_at','is',null).executeTakeFirst())?.count ?? 0)
     return { data, total }
   }

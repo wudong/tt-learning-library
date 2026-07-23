@@ -13,8 +13,18 @@ export class TopicSkillRepository {
     const now = nowIso(); const row = { id: createId('skill'), node_id: input.nodeId, user_id: input.userId, topic_id: input.topicId ?? null, name: input.name, description: null, difficulty: input.difficulty ?? null, status: input.status ?? 'not_started', is_system: input.isSystem ? 1 : 0, created_at: now, updated_at: now, deleted_at: null }
     await this.db.insertInto('skills').values(row).execute(); return row
   }
-  async listTopics(userId: string) { return this.db.selectFrom('topics').selectAll().where('user_id','=',userId).where('deleted_at','is',null).orderBy('sort_order asc').orderBy('name asc').execute() }
-  async listSkills(userId: string) { return this.db.selectFrom('skills').selectAll().where('user_id','=',userId).where('deleted_at','is',null).orderBy('name asc').execute() }
+  async listTopics(userId: string) { return this.db.selectFrom('topics').selectAll().where('user_id','=',userId).where('deleted_at','is',null).orderBy('sort_order', 'asc').orderBy('name', 'asc').execute() }
+  async listSkills(userId: string) { return this.db.selectFrom('skills').selectAll().where('user_id','=',userId).where('deleted_at','is',null).orderBy('name', 'asc').execute() }
+  async listSystemTopics(userId: string) { return this.db.selectFrom('topics').selectAll().where('user_id','=',userId).where('is_system','=',1).where('deleted_at','is',null).orderBy('sort_order', 'asc').orderBy('name', 'asc').execute() }
+  async listSystemSkills(userId: string) { return this.db.selectFrom('skills').selectAll().where('user_id','=',userId).where('is_system','=',1).where('deleted_at','is',null).orderBy('name', 'asc').execute() }
+  async getTopics(userId: string, ids: string[]) {
+    if (!ids.length) return []
+    return this.db.selectFrom('topics').selectAll().where('user_id','=',userId).where('id','in',ids).where('deleted_at','is',null).execute()
+  }
+  async getSkills(userId: string, ids: string[]) {
+    if (!ids.length) return []
+    return this.db.selectFrom('skills').selectAll().where('user_id','=',userId).where('id','in',ids).where('deleted_at','is',null).execute()
+  }
   async getTopic(userId: string, id: string) { return this.db.selectFrom('topics').selectAll().where('user_id','=',userId).where('id','=',id).where('deleted_at','is',null).executeTakeFirst() }
   async getSkill(userId: string, id: string) { return this.db.selectFrom('skills').selectAll().where('user_id','=',userId).where('id','=',id).where('deleted_at','is',null).executeTakeFirst() }
 }

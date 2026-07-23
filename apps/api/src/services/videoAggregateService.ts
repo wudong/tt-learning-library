@@ -1,7 +1,7 @@
 import type { Kysely, Transaction } from 'kysely'
 import type { Database, Row } from '@ttll/db'
-import { GraphRepository, InboxRepository, NoteDrillRepository, VideoRepository, canonicalizeUrl } from '@ttll/db'
-import type { ConvertInboxRequest, CreateVideoRequest, EdgeType } from '@ttll/shared'
+import { GraphRepository, InboxRepository, NoteDrillRepository, TagRepository, TopicSkillRepository, VideoRepository, canonicalizeUrl } from '@ttll/db'
+import { TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, type ConvertInboxRequest, type CreateVideoRequest, type UpdateVideoLearningContextRequest } from '@ttll/shared'
 
 type Conn = Kysely<Database> | Transaction<Database>
 type EnrichedVideoInput = CreateVideoRequest & { thumbnailUrl?: string | null; creatorName?: string | null }
@@ -30,22 +30,88 @@ export class VideoAggregateService {
       if (Object.keys(metadataPatch).length) video = await videos.patchMetadata(userId, duplicate.id, metadataPatch)
       let node = await graph.getNode(userId, duplicate.node_id)
       if (node && input.title && node.title === duplicate.canonical_url) node = await graph.updateNode(userId, node.id, { title: input.title })
-      return { video, node: node!, createdEdges: [], createdNote: null, alreadyConverted: false, alreadyExisting: true }
+      const createdEdges = await this.createRequestedEdges(conn, userId, node!.id, input)
+      return { video, node: node!, createdEdges, createdNote: null, alreadyConverted: false, alreadyExisting: true }
     }
     const graph = new GraphRepository(conn)
     const node = await graph.createNode({ userId, nodeType: 'video', title: input.title ?? identity.canonicalUrl })
     const video = await videos.create({ userId, nodeId: node.id, sourceUrl: identity.sourceUrl, canonicalUrl: identity.canonicalUrl, sourcePlatform: identity.sourcePlatform, externalId: identity.externalId, title: input.title ?? null, thumbnailUrl: input.thumbnailUrl, creatorName: input.creatorName, progress: input.progress, learningState: input.learningState })
-    const createdEdges = []
-    for (const target of input.skillIds) createdEdges.push(await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: target, edgeType: 'explains' }))
-    for (const target of input.topicIds) {
-      try {
-        createdEdges.push(await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: target, edgeType: 'belongs_to' as EdgeType }))
-      } catch {
-        createdEdges.push(await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: target, edgeType: 'related_to' }))
-      }
-    }
-    for (const target of input.tagIds) createdEdges.push(await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: target, edgeType: 'tagged_with' }))
+    const createdEdges = await this.createRequestedEdges(conn, userId, node.id, input)
     return { video, node, createdEdges, createdNote: null, alreadyConverted: false, alreadyExisting: false }
+  }
+
+  private async createRequestedEdges(conn: Conn, userId: string, videoNodeId: string, input: EnrichedVideoInput) {
+    const createdEdges = []
+    const graph = new GraphRepository(conn)
+    const library = new TopicSkillRepository(conn)
+    const skillIds = [...new Set(input.skillIds)]
+    const topicIds = [...new Set(input.topicIds)]
+    const tagIds = [...new Set(input.tagIds)]
+    if (skillIds.length !== input.skillIds.length) throw new Error('VALIDATION_ERROR: Each skill can be linked once')
+    if (topicIds.length !== input.topicIds.length) throw new Error('VALIDATION_ERROR: Each topic can be linked once')
+    if (tagIds.length !== input.tagIds.length) throw new Error('VALIDATION_ERROR: Each tag can be linked once')
+    const [skills, topics, tags] = await Promise.all([
+      library.getSkills(userId, skillIds),
+      library.getTopics(userId, topicIds),
+      new TagRepository(conn).getTags(userId, tagIds)
+    ])
+    if (skills.length !== skillIds.length) throw new Error('NOT_FOUND: Skill not found')
+    if (topics.length !== topicIds.length) throw new Error('NOT_FOUND: Topic not found')
+    if (tags.length !== tagIds.length) throw new Error('NOT_FOUND: Tag not found')
+    if (skills.some((skill) => skill.is_system !== 1 || !TABLE_TENNIS_SKILLS.some((definition) => definition.name === skill.name))) throw new Error('VALIDATION_ERROR: Skill is not part of the curated ontology')
+    if (topics.some((topic) => topic.is_system !== 1 || !(TABLE_TENNIS_TOPICS as readonly string[]).includes(topic.name))) throw new Error('VALIDATION_ERROR: Topic is not part of the curated ontology')
+    for (const target of skills) createdEdges.push(await graph.createEdge({ userId, sourceNodeId: videoNodeId, targetNodeId: target.node_id, edgeType: 'explains' }))
+    for (const target of topics) createdEdges.push(await graph.createEdge({ userId, sourceNodeId: videoNodeId, targetNodeId: target.node_id, edgeType: 'belongs_to' }))
+    for (const target of tags) createdEdges.push(await graph.createEdge({ userId, sourceNodeId: videoNodeId, targetNodeId: target.node_id, edgeType: 'tagged_with' }))
+    return createdEdges
+  }
+
+  async updateLearningContext(userId: string, videoId: string, input: UpdateVideoLearningContextRequest) {
+    return this.db.transaction().execute(async (trx) => {
+      const video = await new VideoRepository(trx).getById(userId, videoId)
+      if (!video) throw new Error('NOT_FOUND: Video not found')
+      const library = new TopicSkillRepository(trx)
+      const topicIds = [...new Set(input.topicIds)]
+      const skillIds = [...new Set(input.skills.map((link) => link.skillId))]
+      if (skillIds.length !== input.skills.length) throw new Error('VALIDATION_ERROR: Each skill can be linked once')
+      const [topics, skills] = await Promise.all([library.getTopics(userId, topicIds), library.getSkills(userId, skillIds)])
+      if (topics.length !== topicIds.length) throw new Error('NOT_FOUND: Topic not found')
+      if (skills.length !== skillIds.length) throw new Error('NOT_FOUND: Skill not found')
+      if (skills.some((skill) => skill.is_system !== 1 || !TABLE_TENNIS_SKILLS.some((definition) => definition.name === skill.name))) throw new Error('VALIDATION_ERROR: Skill is not part of the curated ontology')
+      if (topics.some((topic) => topic.is_system !== 1 || !(TABLE_TENNIS_TOPICS as readonly string[]).includes(topic.name))) throw new Error('VALIDATION_ERROR: Topic is not part of the curated ontology')
+      const graph = new GraphRepository(trx)
+      await graph.softDeleteEdges(userId, video.node_id, ['belongs_to', 'explains', 'demonstrates'])
+      for (const topic of topics) await graph.createEdge({ userId, sourceNodeId: video.node_id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
+      const skillsById = new Map(skills.map((skill) => [skill.id, skill]))
+      for (const link of input.skills) {
+        await graph.createEdge({ userId, sourceNodeId: video.node_id, targetNodeId: skillsById.get(link.skillId)!.node_id, edgeType: link.relationship })
+      }
+      return this.getVideoDetail(userId, videoId, trx)
+    })
+  }
+
+  async getVideoDetail(userId: string, videoId: string, conn: Conn = this.db) {
+    const video = await new VideoRepository(conn).getById(userId, videoId)
+    if (!video) return undefined
+    const graph = new GraphRepository(conn)
+    const node = await graph.getNode(userId, video.node_id)
+    if (!node) return undefined
+    const relationships = await graph.relationships(userId, video.node_id)
+    const nodes = (types: string[], edgeTypes?: string[]) => relationships
+      .filter(({ node: related, edge }) => types.includes(related.node_type) && (!edgeTypes || edgeTypes.includes(edge.edge_type)))
+      .map(({ node: related }) => related)
+    const skillLinks = relationships.filter(({ direction, node: related, edge }) => direction === 'outgoing' && related.node_type === 'skill' && ['explains', 'demonstrates'].includes(edge.edge_type))
+    return {
+      video, node,
+      topics: nodes(['topic'], ['belongs_to']),
+      skills: skillLinks.map(({ node: related }) => related),
+      skillRelationships: Object.fromEntries(skillLinks.map(({ node: related, edge }) => [related.id, edge.edge_type])),
+      tags: nodes(['tag'], ['tagged_with']),
+      notes: nodes(['note'], ['mentions']),
+      drills: nodes(['drill'], ['drill_for']),
+      related: nodes(['video', 'skill', 'topic', 'drill'], ['related_to', 'contrasts_with']),
+      learningPaths: nodes(['learning_path'], ['contains'])
+    }
   }
 
   async convertInboxItemToVideo(userId: string, inboxId: string, input: ConvertInboxRequest) {

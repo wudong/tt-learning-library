@@ -373,9 +373,8 @@ Related Topics
 
 - hierarchy is cycle-safe;
 - skills preferred over generic folders;
-- deleting topic with active children produces a clear conflict flow;
-- seed Topics are protected from hard deletion;
-- user-created Topics are created through explicit Topic management, not inline fast capture.
+- system Topics and Skills are protected from user mutation;
+- users may attach personal Videos, Notes, and Drills to ontology entries.
 
 ## 11. Link Related Items Flow
 
@@ -835,7 +834,7 @@ Acceptance criteria:
 - changing primary Topic cannot create invalid mirror state;
 - deletion does not physically cascade unrelated objects.
 
-## 24. Topic Management Flow
+## 24. Ontology Browsing Flow
 
 ### Product Rule
 
@@ -844,29 +843,17 @@ Topic = broad learning area
 Skill = specific capability to learn or improve
 ```
 
-Seed Topics are protected from hard deletion.
+System Topics and Skills are protected from user mutation.
 
-### Create User Topic
+### Browse and Enrich
 
-1. User opens explicit Topic management.
-2. User enters:
-   - name required;
-   - description optional;
-   - parent Topic optional.
-3. UI helper copy says:
+1. User opens Library.
+2. User browses or searches curated Topics and Skills.
+3. User attaches an existing Video or creates a private Note or Drill.
+4. The ontology entry remains unchanged; only the user's private learning
+   material and relationships are created.
 
-> A Topic is a broad area such as Serve, Footwork, or Tactics.
-
-4. Server validates owner scope and hierarchy cycle safety.
-5. Save.
-
-Fast capture does not create Topics inline.
-
-### Edit/Move
-
-- rename user Topic;
-- edit description;
-- change parent when cycle-safe.
+Fast capture selects existing ontology entries and never creates new ones.
 
 ### Delete
 

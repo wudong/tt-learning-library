@@ -795,6 +795,7 @@ Examples:
 ```text
 video       --explains-->            skill
 video       --demonstrates-->        skill
+video       --belongs_to-->          topic
 skill       --belongs_to-->          topic
 topic       --belongs_to-->          topic
 drill       --practices-->           skill
@@ -888,38 +889,13 @@ Future:
 
 Seed records are idempotent and owned by the seeded user or explicitly represented as system content.
 
-Initial topics:
+The curated Topic and Skill definitions live in
+`packages/shared/src/constants/ontology.ts`. `ONTOLOGY.md` defines their
+coverage matrix, scope boundaries, and governance policy.
 
-```text
-Serve
-Receive
-Spin
-Forehand
-Backhand
-Footwork
-Tactics
-Match Analysis
-Physical Training
-Mental Game
-Equipment
-```
-
-Initial skills may include:
-
-```text
-Backspin Serve
-No-Spin Serve
-Pendulum Serve
-Reverse Pendulum Serve
-Tomahawk Serve
-Short Push Receive
-Banana Flick
-Forehand Loop Against Backspin
-Backhand Loop
-Third-Ball Attack
-Falkenberg Footwork
-Playing Against Long Pimples
-```
+The listed Topics and Skills form the protected MVP ontology. They are
+provisioned idempotently for each owner with `is_system=1`. User-created Topic
+and Skill rows are not supported in the MVP UI or private API.
 
 ## 14. Migration and Portability Rules
 

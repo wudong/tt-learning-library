@@ -83,4 +83,33 @@ export class GraphRepository {
       .sort((a, b) => b.edge.created_at.localeCompare(a.edge.created_at) || a.edge.id.localeCompare(b.edge.id))
   }
 
+  async softDeleteEdges(userId: string, sourceNodeId: string, edgeTypes: EdgeType[]) {
+    const now = nowIso()
+    return this.db.updateTable('graph_edges')
+      .set({ deleted_at: now, updated_at: now })
+      .where('user_id', '=', userId)
+      .where('source_node_id', '=', sourceNodeId)
+      .where('edge_type', 'in', edgeTypes)
+      .where('deleted_at', 'is', null)
+      .execute()
+  }
+
+  async countIncomingVideos(userId: string, targetNodeIds: string[], edgeTypes: EdgeType[]) {
+    if (!targetNodeIds.length) return new Map<string, number>()
+    const rows = await this.db.selectFrom('graph_edges as e')
+      .innerJoin('graph_nodes as source', 'source.id', 'e.source_node_id')
+      .select('e.target_node_id')
+      .select((eb) => eb.fn.countAll<number>().as('count'))
+      .where('e.user_id', '=', userId)
+      .where('e.target_node_id', 'in', targetNodeIds)
+      .where('e.edge_type', 'in', edgeTypes)
+      .where('e.deleted_at', 'is', null)
+      .where('source.user_id', '=', userId)
+      .where('source.node_type', '=', 'video')
+      .where('source.deleted_at', 'is', null)
+      .groupBy('e.target_node_id')
+      .execute()
+    return new Map(rows.map((row) => [row.target_node_id, Number(row.count)]))
+  }
+
 }

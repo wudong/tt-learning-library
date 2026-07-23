@@ -541,12 +541,11 @@ Related Topics
 
 Hierarchy should be understandable without exposing graph terminology.
 
-Creation rules:
+Ontology rules:
 
-- seed Topics are protected from hard deletion;
-- user-created Topics are managed from explicit Topic management;
-- fast capture may create a Skill inline but does not create Topics inline;
-- helper copy distinguishes a broad Topic from a specific Skill.
+- system Topics and Skills are read-only;
+- users attach Videos, Notes, Drills, and personal learning state;
+- fast capture selects existing ontology entries and never creates new ones.
 
 ### 6.11 Note Detail/Edit
 
@@ -900,22 +899,15 @@ Seed taxonomy is a starting point.
 
 Rules:
 
-- users can add Skills;
-- users create Topics only through explicit Topic management;
+- Topics and Skills come from the curated system ontology;
+- users cannot create or edit ontology entries in MVP;
 - seed Topics are protected from hard deletion;
 - primary Topic is visible;
 - additional relationships can grow organically;
 - avoid forcing every Video into a single folder.
 
-Creation helper copy:
-
-```text
-Topic
-A broad area such as Serve, Footwork, or Tactics.
-
-Skill
-A specific ability you want to learn or improve.
-```
+Users extend their private learning context with Videos, Notes, Drills,
+Mistakes, status, and relationships rather than extending the ontology.
 
 Difficulty scale for Skills and Drills:
 

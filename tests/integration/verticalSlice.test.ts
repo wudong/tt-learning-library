@@ -3,8 +3,9 @@ import { createMigratedTestDb } from '../../packages/db/src'
 import { InboxCaptureService } from '../../apps/api/src/services/inboxCaptureService'
 import { VideoAggregateService } from '../../apps/api/src/services/videoAggregateService'
 import type { VideoMetadataProvider } from '../../apps/api/src/services/youtubeMetadataService'
-import { GraphRepository } from '../../packages/db/src'
+import { GraphRepository, createId, provisionOntology } from '../../packages/db/src'
 import { LibraryAggregateService } from '../../apps/api/src/services/libraryAggregateService'
+import { TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
 
 test('manual capture converts to graph-backed video idempotently', async () => {
   const { db } = await createMigratedTestDb()
@@ -105,5 +106,91 @@ test('note graph/domain/edge creation is atomic and rolls back invalid relations
   const invalidNode = await db.selectFrom('graph_nodes').select('id').where('user_id', '=', 'user_atomic').where('title', '=', 'Invalid parent').executeTakeFirst()
   expect(afterNotes).toBe(beforeNotes)
   expect(invalidNode).toBeUndefined()
+  await db.destroy()
+})
+
+test('video learning context resolves owned domain IDs and replaces typed relationships atomically', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  await db.insertInto('users').values([
+    { id: 'user_context', email: null, display_name: 'Context', created_at: now, updated_at: now, deleted_at: null },
+    { id: 'user_context_other', email: null, display_name: 'Other', created_at: now, updated_at: now, deleted_at: null }
+  ]).execute()
+  await Promise.all([provisionOntology(db, 'user_context'), provisionOntology(db, 'user_context_other')])
+  const topic = await db.selectFrom('topics').selectAll().where('user_id', '=', 'user_context').where('name', '=', 'Serve').where('is_system', '=', 1).executeTakeFirstOrThrow()
+  const otherTopic = await db.selectFrom('topics').selectAll().where('user_id', '=', 'user_context_other').where('name', '=', 'Serve').where('is_system', '=', 1).executeTakeFirstOrThrow()
+  const skill = await db.selectFrom('skills').selectAll().where('user_id', '=', 'user_context').where('name', '=', 'Reverse Pendulum Serve').where('is_system', '=', 1).executeTakeFirstOrThrow()
+  const videoService = new VideoAggregateService(db)
+  const created = await videoService.createVideo('user_context', { sourceUrl: 'https://youtu.be/context1', topicIds: [], skillIds: [], tagIds: [], progress: 'saved', learningState: 'none' })
+
+  const detail = await videoService.updateLearningContext('user_context', created.video.id, {
+    topicIds: [topic.id],
+    skills: [{ skillId: skill.id, relationship: 'demonstrates' }]
+  })
+  expect(detail?.topics.map((node) => node.id)).toEqual([topic.node_id])
+  expect(detail?.skills.map((node) => node.id)).toEqual([skill.node_id])
+  expect(detail?.skillRelationships[skill.node_id]).toBe('demonstrates')
+
+  const legacyTopic = await new LibraryAggregateService(db).createTopic('user_context', { name: 'Legacy custom topic' })
+  await expect(videoService.updateLearningContext('user_context', created.video.id, {
+    topicIds: [legacyTopic.id],
+    skills: []
+  })).rejects.toThrow('Topic is not part of the curated ontology')
+  await expect(videoService.updateLearningContext('user_context', created.video.id, {
+    topicIds: [otherTopic.id],
+    skills: []
+  })).rejects.toThrow('Topic not found')
+  const unchanged = await videoService.getVideoDetail('user_context', created.video.id)
+  expect(unchanged?.topics.map((node) => node.id)).toEqual([topic.node_id])
+  expect(unchanged?.skillRelationships[skill.node_id]).toBe('demonstrates')
+  await db.destroy()
+})
+
+test('curated ontology provisioning is complete, protected, and idempotent per owner', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  await db.insertInto('users').values({ id: 'user_ontology', email: null, display_name: 'Ontology', created_at: now, updated_at: now, deleted_at: null }).execute()
+  await Promise.all([provisionOntology(db, 'user_ontology'), provisionOntology(db, 'user_ontology')])
+  const topics = await db.selectFrom('topics').selectAll().where('user_id', '=', 'user_ontology').where('deleted_at', 'is', null).execute()
+  const skills = await db.selectFrom('skills').selectAll().where('user_id', '=', 'user_ontology').where('deleted_at', 'is', null).execute()
+  const edges = await db.selectFrom('graph_edges').selectAll().where('user_id', '=', 'user_ontology').where('edge_type', '=', 'belongs_to').where('deleted_at', 'is', null).execute()
+  expect(topics).toHaveLength(TABLE_TENNIS_TOPICS.length)
+  expect(skills).toHaveLength(TABLE_TENNIS_SKILLS.length)
+  expect(topics.every((topic) => topic.is_system === 1)).toBe(true)
+  expect(skills.every((skill) => skill.is_system === 1)).toBe(true)
+  expect(edges).toHaveLength(TABLE_TENNIS_SKILLS.length)
+
+  const serve = topics.find((topic) => topic.name === 'Serve')!
+  const reversePendulum = skills.find((skill) => skill.name === 'Reverse Pendulum Serve')!
+  const library = new LibraryAggregateService(db)
+  const topicNote = await library.createNote('user_ontology', { parentNodeId: serve.node_id, body: 'Vary placement this month', noteType: 'reminder' })
+  const skillNote = await library.createNote('user_ontology', { parentNodeId: reversePendulum.node_id, body: 'Keep the contact fine', noteType: 'takeaway' })
+  expect(topicNote.parent_node_id).toBe(serve.node_id)
+  expect(skillNote.parent_node_id).toBe(reversePendulum.node_id)
+  await db.destroy()
+})
+
+test('duplicate video creation preserves requested topic, skill, and tag context', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  const userId = 'user_duplicate_context'
+  await db.insertInto('users').values({ id: userId, email: null, display_name: 'Duplicate context', created_at: now, updated_at: now, deleted_at: null }).execute()
+  await provisionOntology(db, userId)
+  const topic = await db.selectFrom('topics').selectAll().where('user_id', '=', userId).where('name', '=', 'Serve').where('is_system', '=', 1).executeTakeFirstOrThrow()
+  const skill = await db.selectFrom('skills').selectAll().where('user_id', '=', userId).where('name', '=', 'Backspin Serve').where('is_system', '=', 1).executeTakeFirstOrThrow()
+  const graph = new GraphRepository(db)
+  const tagNode = await graph.createNode({ userId, nodeType: 'tag', title: 'Match prep' })
+  const tagId = createId('tag')
+  await db.insertInto('tags').values({ id: tagId, node_id: tagNode.id, user_id: userId, name: 'Match prep', color: null, created_at: now, updated_at: now, deleted_at: null }).execute()
+  const videos = new VideoAggregateService(db)
+  const original = await videos.createVideo(userId, { sourceUrl: 'https://youtu.be/duplicate-context', topicIds: [], skillIds: [], tagIds: [], progress: 'saved', learningState: 'none' })
+  const duplicate = await videos.createVideo(userId, { sourceUrl: 'https://www.youtube.com/watch?v=duplicate-context', topicIds: [topic.id], skillIds: [skill.id], tagIds: [tagId], progress: 'saved', learningState: 'none' })
+  expect(duplicate.alreadyExisting).toBe(true)
+  expect(duplicate.video.id).toBe(original.video.id)
+  expect(duplicate.createdEdges.map((edge) => edge.edge_type).sort()).toEqual(['belongs_to', 'explains', 'tagged_with'])
+  const detail = await videos.getVideoDetail(userId, original.video.id)
+  expect(detail?.topics.map((node) => node.id)).toEqual([topic.node_id])
+  expect(detail?.skills.map((node) => node.id)).toEqual([skill.node_id])
+  expect(detail?.tags.map((node) => node.id)).toEqual([tagNode.id])
   await db.destroy()
 })
