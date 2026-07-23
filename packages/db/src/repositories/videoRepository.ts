@@ -27,7 +27,7 @@ export class VideoRepository {
     if (options.progress) q = q.where('progress','=',options.progress)
     if (options.learningState) q = q.where('learning_state','=',options.learningState)
     if (options.sourcePlatform) q = q.where('source_platform','=',options.sourcePlatform)
-    const data = await q.orderBy('updated_at desc').limit(options.limit).offset(options.offset).execute()
+    const data = await q.orderBy('updated_at', 'desc').limit(options.limit).offset(options.offset).execute()
     const total = data.length
     return { data, total }
   }

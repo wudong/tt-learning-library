@@ -24,7 +24,14 @@ export const UpdateVideoRequestSchema = z.object({
 })
 export type UpdateVideoRequest = z.infer<typeof UpdateVideoRequestSchema>
 export const VideoListQuerySchema = PageQuerySchema.extend({ q: z.string().optional(), topicId: idSchema.optional(), skillId: idSchema.optional(), tagId: idSchema.optional(), progress: z.enum(VIDEO_PROGRESS).optional(), learningState: z.enum(VIDEO_LEARNING_STATES).optional(), sourcePlatform: z.enum(SOURCE_PLATFORMS).optional() })
-export const VideoDetailDtoSchema = z.object({ video: VideoDtoSchema, node: GraphNodeDtoSchema, topics: z.array(GraphNodeDtoSchema), skills: z.array(GraphNodeDtoSchema), tags: z.array(GraphNodeDtoSchema), notes: z.array(GraphNodeDtoSchema), drills: z.array(GraphNodeDtoSchema), related: z.array(GraphNodeDtoSchema), learningPaths: z.array(GraphNodeDtoSchema) })
+export const VideoDetailDtoSchema = z.object({
+  video: VideoDtoSchema, node: GraphNodeDtoSchema, topics: z.array(GraphNodeDtoSchema),
+  skills: z.array(GraphNodeDtoSchema),
+  skillRelationships: z.record(idSchema, z.enum(['explains', 'demonstrates'])),
+  tags: z.array(GraphNodeDtoSchema), notes: z.array(GraphNodeDtoSchema),
+  drills: z.array(GraphNodeDtoSchema), related: z.array(GraphNodeDtoSchema),
+  learningPaths: z.array(GraphNodeDtoSchema)
+})
 export const ConvertInboxResponseSchema = dataEnvelope(z.object({ video: VideoDtoSchema, node: GraphNodeDtoSchema, createdEdges: z.array(GraphEdgeDtoSchema), createdNote: GraphNodeDtoSchema.nullable(), alreadyConverted: z.boolean(), alreadyExisting: z.boolean().optional() }))
 export const VideoResponseSchema = dataEnvelope(VideoDetailDtoSchema)
 export const VideoListResponseSchema = listEnvelope(VideoDtoSchema)

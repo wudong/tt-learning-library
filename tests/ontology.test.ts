@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { EDGE_TYPES, NOTE_PARENT_NODE_TYPES, ONTOLOGY_RELATIONSHIPS, TABLE_TENNIS_TOPICS, isAllowedRelationship } from '@ttll/shared'
+import { EDGE_TYPES, NOTE_PARENT_NODE_TYPES, ONTOLOGY_RELATIONSHIPS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, isAllowedRelationship } from '@ttll/shared'
 
 test('ontology defines every edge type', () => {
   expect(Object.keys(ONTOLOGY_RELATIONSHIPS).sort()).toEqual([...EDGE_TYPES].sort())
@@ -8,6 +8,7 @@ test('ontology defines every edge type', () => {
 
 test('ontology uses table-tennis domain semantics', () => {
   expect(isAllowedRelationship('video', 'skill', 'explains')).toBe(true)
+  expect(isAllowedRelationship('video', 'topic', 'belongs_to')).toBe(true)
   expect(isAllowedRelationship('drill', 'skill', 'practices')).toBe(true)
   expect(isAllowedRelationship('video', 'skill', 'practices')).toBe(false)
   expect(isAllowedRelationship('collection', 'note', 'contains')).toBe(true)
@@ -20,5 +21,18 @@ test('ontology uses table-tennis domain semantics', () => {
 })
 
 test('starter taxonomy matches the reviewed product taxonomy', () => {
-  expect(TABLE_TENNIS_TOPICS).toEqual(['Serve', 'Receive', 'Spin', 'Forehand', 'Backhand', 'Footwork', 'Tactics', 'Match Analysis', 'Physical Training', 'Mental Game', 'Equipment'])
+  expect(TABLE_TENNIS_TOPICS).toEqual([
+    'Fundamentals', 'Serve', 'Receive', 'Spin', 'Forehand', 'Backhand', 'Footwork',
+    'Defense', 'Tactics', 'Doubles', 'Training & Drills', 'Match Analysis',
+    'Physical Training', 'Mental Game', 'Equipment', 'Rules & Officiating',
+    'Para Table Tennis', 'Coaching'
+  ])
+  expect(TABLE_TENNIS_SKILLS).toHaveLength(176)
+  expect(TABLE_TENNIS_SKILLS.find((skill) => skill.name === 'Reverse Pendulum Serve')?.topic).toBe('Serve')
+  expect(TABLE_TENNIS_SKILLS.find((skill) => skill.name === 'Banana Flick')?.topic).toBe('Receive')
+  expect(new Set(TABLE_TENNIS_SKILLS.map((skill) => skill.name)).size).toBe(TABLE_TENNIS_SKILLS.length)
+  expect(TABLE_TENNIS_SKILLS.every((skill) => (TABLE_TENNIS_TOPICS as readonly string[]).includes(skill.topic))).toBe(true)
+  for (const topic of TABLE_TENNIS_TOPICS) {
+    expect(TABLE_TENNIS_SKILLS.some((skill) => skill.topic === topic)).toBe(true)
+  }
 })

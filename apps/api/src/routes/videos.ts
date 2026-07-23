@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
-import { CreateVideoRequestSchema, UpdateVideoRequestSchema, VideoListQuerySchema } from '@ttll/shared'
+import { CreateVideoRequestSchema, UpdateVideoLearningContextRequestSchema, UpdateVideoRequestSchema, VideoListQuerySchema } from '@ttll/shared'
 import type { Kysely } from 'kysely'
 import type { Database } from '@ttll/db'
 import { GraphRepository, ShareRepository, VideoRepository } from '@ttll/db'
@@ -21,11 +21,14 @@ export function videoRoutes(db: Kysely<Database>) {
   })
   app.get('/:id', async (c) => {
     const userId = getPrincipal(c).userId
-    const video = await new VideoRepository(db).getById(userId, c.req.param('id'))
-    if (!video) return c.json({ error: { code: 'NOT_FOUND', message: 'Video not found' } }, 404)
-    const graph = new GraphRepository(db)
-    const node = await graph.getNode(userId, video.node_id)
-    return c.json({ data: { video: presentVideo(video), node: presentNode(node!), topics: [], skills: [], tags: [], notes: [], drills: [], related: (await graph.related(userId, video.node_id)).map(presentNode), learningPaths: [] } })
+    const detail = await new VideoAggregateService(db).getVideoDetail(userId, c.req.param('id'))
+    if (!detail) return c.json({ error: { code: 'NOT_FOUND', message: 'Video not found' } }, 404)
+    return c.json({ data: { video: presentVideo(detail.video), node: presentNode(detail.node), topics: detail.topics.map(presentNode), skills: detail.skills.map(presentNode), skillRelationships: detail.skillRelationships, tags: detail.tags.map(presentNode), notes: detail.notes.map(presentNode), drills: detail.drills.map(presentNode), related: detail.related.map(presentNode), learningPaths: detail.learningPaths.map(presentNode) } })
+  })
+  app.put('/:id/learning-context', zValidator('json', UpdateVideoLearningContextRequestSchema), async (c) => {
+    const detail = await new VideoAggregateService(db).updateLearningContext(getPrincipal(c).userId, c.req.param('id'), c.req.valid('json'))
+    if (!detail) throw new Error('NOT_FOUND: Video not found')
+    return c.json({ data: { video: presentVideo(detail.video), node: presentNode(detail.node), topics: detail.topics.map(presentNode), skills: detail.skills.map(presentNode), skillRelationships: detail.skillRelationships, tags: detail.tags.map(presentNode), notes: detail.notes.map(presentNode), drills: detail.drills.map(presentNode), related: detail.related.map(presentNode), learningPaths: detail.learningPaths.map(presentNode) } })
   })
   app.patch('/:id', zValidator('json', UpdateVideoRequestSchema), async (c) => {
     const input = c.req.valid('json')

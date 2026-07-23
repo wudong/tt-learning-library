@@ -455,6 +455,26 @@ Updatable domain fields:
 
 Relationship changes are owned by typed domain workflows such as Inbox conversion, Skill creation, Note creation, and Drill creation. MVP does not expose a generic graph-edge editing API. Metadata PATCH operations must not hide relationship replacement.
 
+### PUT `/api/videos/:id/learning-context`
+
+Replaces the video's owner-scoped Topic and Skill learning context atomically.
+
+```json
+{
+  "topicIds": ["topic_serve"],
+  "skills": [
+    {
+      "skillId": "skill_reverse_pendulum",
+      "relationship": "explains"
+    }
+  ]
+}
+```
+
+`topicIds` and `skillId` values are domain IDs. The service resolves them to
+owned graph nodes before creating `belongs_to`, `explains`, or `demonstrates`
+edges. An invalid or cross-owner ID rolls back the entire replacement.
+
 ### DELETE `/api/videos/:id`
 
 Soft-delete video and graph node atomically, tombstone affected active edges, and revoke active share links for the node.
@@ -481,7 +501,7 @@ Response:
 }
 ```
 
-Creates topic node + topic row atomically. Parent hierarchy mirror edge is maintained.
+Not exposed in MVP. Topics are provisioned from the curated system ontology.
 
 ### GET `/api/topics`
 
@@ -531,7 +551,8 @@ Soft delete. If active child topics exist, return `409 CONFLICT` unless a future
 }
 ```
 
-Creates node + skill row + primary `belongs_to` edge atomically.
+Not exposed in MVP. Skills and their primary Topic relationships are provisioned
+from the curated system ontology.
 
 ### GET `/api/skills`
 

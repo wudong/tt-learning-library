@@ -420,7 +420,7 @@ Meaning:
 - `unspecified` is the default;
 - numeric difficulty ratings are not used in MVP.
 
-### 8.17 Topic and Skill Creation Policy
+### 8.17 Curated Topic and Skill Ontology
 
 ```text
 Topic = broad learning area
@@ -429,11 +429,11 @@ Skill = specific capability to learn or improve
 
 Rules:
 
-- seed Topics are system-provided and cannot be hard-deleted in MVP;
-- users may create Skills;
-- user-created Topics are allowed only from explicit Topic management, not inline during fast capture;
-- each Skill has zero or one primary Topic and may have additional semantic relationships;
-- creation UI includes helper copy that distinguishes broad Topics from specific Skills.
+- Topics and Skills are system-provided and cannot be created, edited, or deleted by users in MVP;
+- the curated ontology is provisioned idempotently for every owner;
+- users enrich the ontology with private Videos, Notes, Drills, Mistakes, learning state, and relationships;
+- each Skill has one curated primary Topic;
+- ontology extension is deferred until a reviewed governance and merge policy exists.
 
 ### 8.18 Junior Account Policy for Hosted MVP
 
@@ -761,25 +761,16 @@ Native Share receiving state after durable Inbox creation:
 - no owner-private navigation;
 - safe related previews only.
 
-## 13. Initial Taxonomy
+## 13. Curated Learning Ontology
 
-Topics:
+The protected ontology covers Fundamentals, Serve, Receive, Spin, Forehand,
+Backhand, Footwork, Defense, Tactics, Doubles, Training & Drills, Match
+Analysis, Physical Training, Mental Game, Equipment, Rules & Officiating, Para
+Table Tennis, and Coaching.
 
-```text
-Serve
-Receive
-Spin
-Forehand
-Backhand
-Footwork
-Tactics
-Match Analysis
-Physical Training
-Mental Game
-Equipment
-```
-
-The taxonomy is a seed, not a rigid ontology. Users can create skills.
+The detailed coverage matrix and governance policy are defined in
+`ONTOLOGY.md`. Users enrich the ontology with private learning material rather
+than creating Topics or Skills.
 
 ## 14. Success Metrics
 
@@ -925,6 +916,6 @@ The following previously ambiguous items are resolved:
 10. Exact duplicate identity follows section 8.14; MVP does not block fuzzy/semantic near-duplicates.
 11. Video consumption progress and video learning state are separate dimensions.
 12. Difficulty uses `unspecified|beginner|intermediate|advanced`.
-13. Seed Topics are protected; user-created Topics use explicit Topic management, while inline fast capture may create Skills but not Topics.
+13. Curated Topics and Skills are protected system ontology entries; users attach private learning material rather than extending the ontology in MVP.
 14. Hosted MVP account ownership is adult; junior use is parent/guardian-managed.
 15. The mobile UI baseline includes narrow reflow, safe areas, software keyboards, explicit touch-target rules, and phone-first action hierarchy.
