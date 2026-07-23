@@ -733,6 +733,38 @@ Protect private data without losing safe user context.
 
 > Your session expired. Sign in to keep working. Your unsaved changes are still here.
 
+## 22. Training Plan and Session Flow
+
+### Plan
+
+1. User opens Training and selects a date in the month calendar.
+2. User chooses Plan session, Quick start, or Log past training.
+3. User adds ordered blocks with Skill, minutes, optional linked Drill/Video,
+   and an optional focus cue.
+4. App saves the private Session node, domain row, blocks, and graph mirrors in
+   one transaction.
+
+### Train
+
+1. User starts a plan or quick session.
+2. The active view shows one Skill, its Drill/focus cue, selected Video, related
+   alternatives, target, and elapsed time.
+3. User starts, pauses, resumes, completes, or skips the block.
+4. At target time the app prompts: Continue to next, Add time, or Finish.
+5. The user may adapt remaining blocks without changing recorded original plan
+   values.
+6. Finish offers optional session rating, reflection, and per-Skill confidence.
+
+### Review
+
+1. Month cells expose planned/completed state and actual minutes without relying
+   on color alone.
+2. Selecting a date shows all sessions for that date.
+3. Insights compare week/month consistency, planned and actual time, Skill time,
+   and confidence trends.
+4. Manual records are visibly labeled and participate in actual-time and
+   confidence summaries without being counted as completed plans.
+
 5. User signs in.
 6. App returns to the same form.
 7. User retries save.

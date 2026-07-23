@@ -197,11 +197,12 @@ export const ONTOLOGY_RELATIONSHIPS = {
   belongs_to: pairs(['video', 'topic'], ['skill', 'topic'], ['topic', 'topic']),
   contains: pairs(
     ['learning_path', 'video'], ['learning_path', 'skill'], ['learning_path', 'drill'], ['learning_path', 'note'],
-    ['collection', 'video'], ['collection', 'skill'], ['collection', 'drill'], ['collection', 'note']
+    ['collection', 'video'], ['collection', 'skill'], ['collection', 'drill'], ['collection', 'note'],
+    ['practice_session', 'drill'], ['practice_session', 'video']
   ),
   explains: pairs(['video', 'skill'], ['note', 'skill']),
   demonstrates: pairs(['video', 'skill']),
-  practices: pairs(['drill', 'skill']),
+  practices: pairs(['drill', 'skill'], ['practice_session', 'skill']),
   drill_for: pairs(['drill', 'skill'], ['drill', 'video']),
   related_to: pairs(...sameTypePairs('video', 'skill', 'topic', 'drill')),
   requires: pairs(['skill', 'skill']),

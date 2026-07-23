@@ -428,6 +428,20 @@ Prepare for production.
 - no unresolved P0 issues;
 - release criteria in `PRD.md` pass.
 
+## 16A. Phase 2A — Training Planner and Tracking
+
+1. Reconcile PRD, data model, API, technical, product-design, and UX contracts.
+2. Promote `practice_session` into the supported graph vocabulary.
+3. Add private Session, ordered Block, and Skill Check-in tables plus migration
+   and owner-scoped repositories.
+4. Implement transactional plan/manual creation, attachment validation, graph
+   mirrors, copy, remaining-block edits, persisted timer transitions, completion,
+   deletion, calendar ranges, and insights.
+5. Add the Training bottom-navigation destination, month calendar, planner,
+   active timer, reflection, manual logging, and insights.
+6. Verify empty migration, rollback, ownership, timer exclusivity, elapsed-time
+   persistence, manual-log accounting, mobile reflow, accessibility, and build.
+
 ## 17. Dependency Upgrade Policy
 
 Before changing reviewed baseline:

@@ -867,3 +867,16 @@ Acceptance:
 - security/privacy tests;
 - build/typecheck/lint/test/E2E;
 - backup restore evidence.
+
+## Phase 2A Training
+
+- [x] Define private graph-backed Practice Session authority.
+- [x] Add ordered training blocks and per-Skill confidence check-ins.
+- [x] Validate optional Drill/Video attachments against Skill graph links.
+- [x] Add dated plans, quick sessions, plan copy, and manual past logs.
+- [x] Persist start/pause/resume/complete/skip/add-time transitions.
+- [x] Enforce one active block and preserve original plan values.
+- [x] Add month calendar, multi-session day agenda, live timer, reflection, and
+  week/month insights.
+- [x] Add graph atomicity, rollback, ownership, timer, manual-log, and insight
+  integration coverage.

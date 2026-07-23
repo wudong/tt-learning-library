@@ -10,6 +10,8 @@ test('ontology uses table-tennis domain semantics', () => {
   expect(isAllowedRelationship('video', 'skill', 'explains')).toBe(true)
   expect(isAllowedRelationship('video', 'topic', 'belongs_to')).toBe(true)
   expect(isAllowedRelationship('drill', 'skill', 'practices')).toBe(true)
+  expect(isAllowedRelationship('practice_session', 'skill', 'practices')).toBe(true)
+  expect(isAllowedRelationship('practice_session', 'video', 'contains')).toBe(true)
   expect(isAllowedRelationship('video', 'skill', 'practices')).toBe(false)
   expect(isAllowedRelationship('collection', 'note', 'contains')).toBe(true)
   expect(isAllowedRelationship('note', 'creator', 'mentions')).toBe(false)

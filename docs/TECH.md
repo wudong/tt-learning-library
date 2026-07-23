@@ -257,6 +257,11 @@ Canonical MVP routes:
 /mistakes/:mistakeId           Mistake detail/edit
 /drills                        Drill list
 /drills/:drillId               Drill detail
+/training                      Training month calendar and selected-day agenda
+/training/new                  Plan or manually log a session
+/training/:sessionId           Session detail
+/training/:sessionId/run       Active table-side session
+/training/insights             Private training insights
 /search                        Global search
 /paths                         Learning paths, late MVP
 /paths/:pathId                 Learning path detail, late MVP
@@ -265,6 +270,12 @@ Canonical MVP routes:
 ```
 
 Collections are post-MVP and therefore have no canonical MVP route.
+
+Training uses TanStack Query for persisted session state and local state only for
+the visible ticking clock. Server-side `timer_started_at` plus accumulated active
+seconds is authoritative, so reloads reconstruct elapsed time. Wake Lock,
+vibration, sound, and notifications are progressive enhancements and never
+replace persisted timer state.
 
 ### 6.2 State Rules
 

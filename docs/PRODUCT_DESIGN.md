@@ -1045,6 +1045,32 @@ MVP does not promise private offline reads because private API JSON is NetworkOn
 
 Do not pretend a mutation was queued unless an offline mutation queue actually exists.
 
+## 14A. Training Experience
+
+Training becomes a primary bottom-navigation destination alongside Home, Inbox,
+and Library. Search remains available from Library and the app menu.
+
+The Training surface uses three task-focused views:
+
+- a month calendar with explicit `Plan`, `Done`, and actual-minute labels;
+- a selected-day agenda supporting multiple sessions;
+- an Insights tab for week/month consistency, plan completion, Skill time, and
+  confidence trend.
+
+The planner uses an ordered list of Skill blocks. Each block exposes target
+minutes first, then optional linked Drill, Video, and focus cue. Manual logs
+replace target minutes with actual minutes and add optional check-ins.
+
+The active session removes calendar and dashboard density. It shows one Skill,
+a large tabular timer, progress to target, primary pause/start controls, the
+Drill/focus cue, and the selected Video. At target time, an inline decision panel
+offers Continue, Add five minutes, or Finish. It must not auto-start the next
+block.
+
+All Training controls meet the 44 CSS px target. Status is expressed with text
+and iconography as well as color. Wake-lock and alert limitations are explained
+without interrupting the active flow.
+
 ## 15. Accessibility
 
 Target:

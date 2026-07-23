@@ -161,11 +161,16 @@ Future:
 ```text
 concept
 tactic
-practice_session
 player
 coach
 club
 comment
+```
+
+Phase 2 Training:
+
+```text
+practice_session
 ```
 
 ### 4.2 Edge Types
@@ -813,9 +818,35 @@ video       --created_by-->          creator
 video       --saved_from-->           source
 learning_path --contains-->           video | skill | drill | note
 collection  --contains-->            video | skill | drill | note
+practice_session --practices-->      skill
+practice_session --contains-->       drill | video
 ```
 
 Reject invalid combinations before insert.
+
+## 9.1 Training Session Authority
+
+`practice_sessions` owns the private session lifecycle, local calendar date,
+entry mode, UTC start/completion timestamps, overall rating, and reflection.
+
+`practice_session_blocks` owns ordered and stateful session membership. It is
+authoritative for the selected Skill, optional linked Drill and Video, original
+and current target duration/position, actual active seconds, timer anchor, block
+status, and focus cue.
+
+`practice_skill_checkins` owns one optional confidence value and note per
+Session/Skill pair.
+
+Graph mirrors are maintained in the same transaction:
+
+```text
+practice_session --practices--> skill
+practice_session --contains-->  drill
+practice_session --contains-->  video
+```
+
+Block rows remain authoritative when the same object is used by more than one
+block. Training sessions are always `private` and are not shareable.
 
 ## 10. Deletion Semantics
 
