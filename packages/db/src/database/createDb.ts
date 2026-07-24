@@ -16,10 +16,10 @@ export function createPgPool(opts: PgPoolOptions): Pool {
   const url = new URL(opts.connectionString)
   // Parse sslmode from query string
   const sslmode = url.searchParams.get('sslmode')
-  const ca = opts.ca ?? process.env.DATABASE_CA_CERT?.replace(/\\n/g, '\n')
+  const ca = opts.ca ?? process.env.DATABASE_CA_CERT?.replace(/\n/g, '\n')
   const ssl =
     sslmode === 'require' || sslmode === 'verify-full'
-      ? { rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0', ...(ca ? { ca } : {}) }
+      ? { rejectUnauthorized: true, ...(ca ? { ca } : {}) }
       : false
 
   // node-postgres lets sslmode from the connection string replace the explicit
