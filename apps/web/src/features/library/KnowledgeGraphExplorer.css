@@ -1,0 +1,69 @@
+.graph-explorer-page { display: grid; gap: 18px; }
+.graph-explorer-hero { display: grid; gap: 16px; }
+.graph-explorer-hero p { margin: 0; color: var(--ink-soft); }
+.graph-view-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.graph-view-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border: 0; border-radius: 10px; color: var(--ink-soft); background: transparent; font-weight: 760; }
+.graph-view-switch button.active { color: var(--accent-strong); background: var(--surface); box-shadow: 0 2px 8px oklch(0.25 0.025 160 / 0.08); }
+.connection-explorer { display: grid; gap: 24px; }
+.connection-center, .connection-node { width: 100%; border: 1px solid var(--line); color: var(--ink); background: var(--surface); text-align: left; }
+.connection-center { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 88px; padding: 15px; border: 2px solid var(--accent); border-radius: 18px; box-shadow: 0 10px 28px oklch(0.25 0.025 160 / 0.09); }
+.connection-center > span:nth-child(2), .connection-node > span:nth-child(2) { min-width: 0; }
+.connection-center small, .connection-center strong, .connection-center em, .connection-node small, .connection-node strong, .connection-node em { display: block; }
+.connection-center small, .connection-node small { margin-bottom: 3px; color: var(--accent-strong); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.connection-center strong, .connection-node strong { overflow: hidden; text-overflow: ellipsis; }
+.connection-center em, .connection-node em { display: -webkit-box; margin-top: 4px; overflow: hidden; color: var(--ink-soft); font-size: 0.78rem; font-style: normal; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.connection-node-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: var(--accent-strong); background: var(--accent-soft); }
+.connection-groups { display: grid; gap: 18px; }
+.connection-group { position: relative; display: grid; gap: 9px; }
+.connection-group > header { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 40px; }
+.connection-group > header div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.connection-group h2 { margin: 0; font-size: 0.95rem; }
+.connection-group > header div > span { color: var(--ink-soft); font-size: 0.72rem; white-space: nowrap; }
+.connection-line { position: relative; display: block; width: 22px; height: 40px; }
+.connection-line::before { position: absolute; top: -25px; bottom: 0; left: 10px; width: 2px; content: ''; background: var(--line); }
+.connection-line::after { position: absolute; bottom: 0; left: 6px; width: 10px; height: 10px; content: ''; border: 2px solid var(--accent); border-radius: 50%; background: var(--canvas); }
+.connection-items { display: grid; gap: 8px; margin: 0; padding: 0 0 0 30px; list-style: none; }
+.connection-node { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 66px; padding: 10px 12px; border-radius: 14px; }
+button.connection-node:hover, button.connection-center:hover { border-color: var(--accent); }
+.connection-node .connection-node-icon { width: 36px; height: 36px; border-radius: 10px; }
+.connection-node.supporting { border-style: dashed; background: color-mix(in oklch, var(--surface) 74%, var(--panel)); }
+.connection-node.supporting small { color: var(--ink-soft); }
+.connection-explorer.list { gap: 16px; }
+.connection-explorer.list .connection-center { min-height: 72px; border-width: 1px; box-shadow: none; }
+.connection-explorer.list .connection-group { gap: 7px; }
+.connection-explorer.list .connection-line { display: none; }
+.connection-explorer.list .connection-group > header { grid-template-columns: 1fr; }
+.connection-explorer.list .connection-items { padding-left: 0; }
+.connection-explorer.list .connection-node { min-height: 58px; }
+.connection-count { margin: -4px 0 0; color: var(--ink-soft); font-size: 0.78rem; }
+.graph-empty { display: grid; justify-items: center; padding: 28px 18px; text-align: center; }
+.graph-empty svg { margin-bottom: 12px; color: var(--accent-strong); }
+.graph-empty h2 { margin-bottom: 6px; }
+.graph-empty p { margin: 0; color: var(--ink-soft); }
+.graph-feedback { display: grid; gap: 14px; }
+.graph-feedback h2 { margin-bottom: 5px; }
+.graph-feedback p { margin-bottom: 0; color: var(--ink-soft); }
+.graph-feedback-actions { display: flex; gap: 9px; }
+.graph-feedback-actions .button { flex: 1; }
+.graph-feedback-thanks { color: var(--accent-strong) !important; font-weight: 760; }
+
+@media (min-width: 720px) {
+  .graph-explorer-hero { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+  .graph-view-switch { min-width: 190px; }
+  .connection-explorer.map { grid-template-columns: minmax(210px, 0.8fr) minmax(0, 1.4fr); gap: 34px; align-items: start; }
+  .connection-explorer.map .connection-center { position: sticky; top: 92px; }
+  .connection-explorer.map .connection-groups { position: relative; padding-left: 30px; }
+  .connection-explorer.map .connection-groups::before { position: absolute; top: 20px; bottom: 20px; left: 0; width: 2px; content: ''; background: var(--line); }
+  .connection-explorer.map .connection-group > header { grid-template-columns: 0 minmax(0, 1fr); }
+  .connection-explorer.map .connection-line { width: 0; }
+  .connection-explorer.map .connection-line::before { top: 19px; bottom: auto; left: -30px; width: 30px; height: 2px; }
+  .connection-explorer.map .connection-line::after { bottom: 14px; left: -5px; }
+  .connection-explorer.map .connection-items { padding-left: 0; }
+  .graph-feedback { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .graph-feedback-actions { min-width: 190px; }
+  .graph-feedback .form-error { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connection-center, .connection-node { scroll-behavior: auto; }
+}
