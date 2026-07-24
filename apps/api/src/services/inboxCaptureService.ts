@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '@ttll/db'
 import { InboxRepository, canonicalizeUrl, extractLikelyUrl } from '@ttll/db'
 import type { CreateInboxRequest, ShareTargetPayload } from '@ttll/shared'
+import { FacebookUrlService, type FacebookUrlResolver } from './facebookUrlService'
 import { YouTubeMetadataService, type VideoMetadataProvider } from './youtubeMetadataService'
 
 type CaptureInput = CreateInboxRequest | ShareTargetPayload
@@ -11,10 +12,20 @@ function isCreateInbox(input: CaptureInput): input is CreateInboxRequest {
 }
 
 export class InboxCaptureService {
-  constructor(private readonly db: Kysely<Database>, private readonly metadataProvider: VideoMetadataProvider = new YouTubeMetadataService()) {}
+  constructor(
+    private readonly db: Kysely<Database>,
+    private readonly metadataProvider: VideoMetadataProvider = new YouTubeMetadataService(),
+    private readonly facebookUrlResolver: FacebookUrlResolver = new FacebookUrlService(),
+  ) {}
+
   async capture(userId: string, input: CaptureInput) {
-    const likelyUrl = extractLikelyUrl(isCreateInbox(input) ? { sourceUrl: input.sourceUrl, sharedText: input.sharedText } : input)
-    const identity = likelyUrl ? canonicalizeUrl(likelyUrl) : null
+    let likelyUrl = extractLikelyUrl(isCreateInbox(input) ? { sourceUrl: input.sourceUrl, sharedText: input.sharedText } : input)
+    let identity = likelyUrl ? canonicalizeUrl(likelyUrl) : null
+    if (likelyUrl && identity?.sourcePlatform === 'facebook') {
+      likelyUrl = await this.facebookUrlResolver.resolve(likelyUrl)
+      identity = canonicalizeUrl(likelyUrl)
+    }
+
     const repo = new InboxRepository(this.db)
     const row = await repo.create({
       userId,
