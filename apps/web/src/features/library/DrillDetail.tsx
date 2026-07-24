@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, CirclePlus, Dumbbell, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
+import { ArrowLeft, CirclePlus, Dumbbell, Network, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
 import { toast } from 'sonner'
 import { NodeNoteComposer } from '../../components/NodeNoteComposer'
 import { PictureAttachments } from '../../components/PictureAttachments'
@@ -72,6 +72,7 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
             </div>
           </div>
           <div className="row">
+            <button className="button secondary" onClick={() => navigate(`/library/connections/${nodeId}`)}><Network size={16} /> Explore connections</button>
             <button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16} /> Add note</button>
             <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!data.isPinned)}>
               {data.isPinned ? <><PinOff size={16} /> Unpin</> : <><Pin size={16} /> Pin to top</>}
