@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { GraphNodeDto, LibraryConnectionGroupDto, NodeType } from '@ttll/shared'
 import {
-  ArrowLeft,
   CalendarDays,
   ChevronRight,
   CircleHelp,
@@ -43,10 +42,6 @@ export function KnowledgeGraphExplorer({ nodeId, navigate }: { nodeId: string; n
 
   return (
     <section className="graph-explorer-page">
-      <button className="back-link" onClick={() => navigate(data?.centerHref ?? '/library')}>
-        <ArrowLeft size={18} /> {data ? `Back to ${nodeTypeLabel(data.center.nodeType)}` : 'Library'}
-      </button>
-
       {connections.isLoading && <div className="library-skeleton">Finding connections…</div>}
       {connections.isError && <div className="notice">These connections could not be loaded.</div>}
 
