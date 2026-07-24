@@ -12,11 +12,21 @@ import { CreateFeedbackRequestSchema } from '@ttll/shared'
  * feedback to the local database.
  *
  *   POST /api/feedback            -> upstream POST /feedback          (JSON)
- *   POST /api/feedback/multipart   -> upstream POST /feedback/multipart (form + files)
+ *   POST /api/feedback/multipart  -> upstream POST /feedback/multipart (form + files)
  */
 
 const SERVICE_URL = (process.env.FEEDBACK_SERVICE_URL ?? 'https://feedback.graceliu.uk').replace(/\/+$/, '')
 const APP_ID = process.env.FEEDBACK_APP_ID ?? 'tt-learning-library'
+
+export const FEEDBACK_ATTACHMENT_LIMITS = {
+  maxFiles: 3,
+  maxFileBytes: 5 * 1024 * 1024,
+  maxTotalBytes: 10 * 1024 * 1024,
+  allowedTypes: new Set(['image/jpeg', 'image/png', 'image/webp']),
+} as const
+
+const MAX_MULTIPART_REQUEST_BYTES = FEEDBACK_ATTACHMENT_LIMITS.maxTotalBytes + 256 * 1024
+const FEEDBACK_TYPES = new Set(['general', 'bug', 'feature', 'data_accuracy'])
 
 /** Map an upstream error response into the app's canonical error envelope. */
 async function upstreamError(res: Response): Promise<{ error: { code: string; message: string; details: unknown } } | null> {
@@ -35,10 +45,43 @@ async function upstreamError(res: Response): Promise<{ error: { code: string; me
   return { error: { code, message, details } }
 }
 
+function textField(form: FormData, name: string): string {
+  const value = form.get(name)
+  return typeof value === 'string' ? value : ''
+}
+
+export function validateFeedbackAttachments(form: FormData): string | null {
+  const attachmentValues = [...form.getAll('attachments'), ...form.getAll('attachment')]
+  if (attachmentValues.some((value) => !(value instanceof File))) return 'Screenshot attachments must be files.'
+
+  const files = attachmentValues as File[]
+  if (files.length > FEEDBACK_ATTACHMENT_LIMITS.maxFiles) return `Attach at most ${FEEDBACK_ATTACHMENT_LIMITS.maxFiles} screenshots.`
+
+  let totalBytes = 0
+  for (const file of files) {
+    if (!FEEDBACK_ATTACHMENT_LIMITS.allowedTypes.has(file.type)) return 'Screenshots must be PNG, JPEG, or WebP images.'
+    if (!file.size) return 'Screenshot files cannot be empty.'
+    if (file.size > FEEDBACK_ATTACHMENT_LIMITS.maxFileBytes) return 'Each screenshot must be 5 MB or smaller.'
+    totalBytes += file.size
+  }
+  if (totalBytes > FEEDBACK_ATTACHMENT_LIMITS.maxTotalBytes) return 'Screenshot attachments must total 10 MB or less.'
+
+  const message = textField(form, 'message').trim()
+  if (message.length < 3 || message.length > 10_000) return 'Feedback must contain between 3 and 10,000 characters.'
+  if (!FEEDBACK_TYPES.has(textField(form, 'message_type'))) return 'Choose a valid feedback type.'
+  return null
+}
+
+function normalizeAttachmentFields(form: FormData) {
+  const singular = form.getAll('attachment')
+  form.delete('attachment')
+  for (const attachment of singular) form.append('attachments', attachment)
+}
+
 export function feedbackRoutes() {
   const app = new Hono()
 
-  // JSON text feedback (used by the current UI)
+  // JSON text feedback.
   app.post('/', zValidator('json', CreateFeedbackRequestSchema), async (c) => {
     const body = c.req.valid('json')
 
@@ -72,9 +115,14 @@ export function feedbackRoutes() {
     return c.json(data, upstream.status as any)
   })
 
-  // Multipart feedback with screenshots (for the screenshot-attachment feature).
-  // Forwards form fields + files, injecting app_id.
+  // Multipart feedback with screenshots. Validate before forwarding and keep
+  // app_id server-controlled. The upstream service expects `attachments`.
   app.post('/multipart', async (c) => {
+    const contentLength = Number(c.req.header('content-length') ?? 0)
+    if (contentLength > MAX_MULTIPART_REQUEST_BYTES) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Screenshot attachments must total 10 MB or less.' } }, 400)
+    }
+
     let form: FormData
     try {
       form = await c.req.formData()
@@ -82,9 +130,21 @@ export function feedbackRoutes() {
       return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Expected multipart/form-data.' } }, 400)
     }
 
-    // Server controls app_id; drop any client-supplied value.
+    const validationError = validateFeedbackAttachments(form)
+    if (validationError) return c.json({ error: { code: 'VALIDATION_ERROR', message: validationError } }, 400)
+
+    normalizeAttachmentFields(form)
     form.delete('app_id')
-    form.append('app_id', APP_ID)
+    form.set('app_id', APP_ID)
+
+    const metadata = textField(form, 'metadata')
+    if (metadata) {
+      try {
+        JSON.parse(metadata)
+      } catch {
+        return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Feedback metadata must be valid JSON.' } }, 400)
+      }
+    }
 
     const upstream = await fetch(`${SERVICE_URL}/feedback/multipart`, {
       method: 'POST',
