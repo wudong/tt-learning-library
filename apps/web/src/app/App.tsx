@@ -14,6 +14,7 @@ import { useAuth } from '../lib/auth/AuthProvider'
 import { TrainingHub } from '../features/training/TrainingHub'
 import { TrainingPlanner } from '../features/training/TrainingPlanner'
 import { TrainingSessionPage } from '../features/training/TrainingSessionPage'
+import { DrillDetail } from '../features/library/DrillDetail'
 import { LibraryNodeDetail } from '../features/library/LibraryNodeDetail'
 
 function NotFound({ navigate }: { navigate: (to: string) => void }) {
@@ -39,6 +40,7 @@ export function App() {
   else if (base === '/library') page = <Library navigate={navigate} />
   else if (/^\/library\/topics\/[^/]+$/.test(base)) page = <LibraryNodeDetail type="topic" nodeId={base.split('/')[3]} navigate={navigate} />
   else if (/^\/library\/skills\/[^/]+$/.test(base)) page = <LibraryNodeDetail type="skill" nodeId={base.split('/')[3]} navigate={navigate} />
+  else if (/^\/library\/drills\/[^/]+$/.test(base)) page = <DrillDetail nodeId={base.split('/')[3]} navigate={navigate} />
   else if (base === '/training') page = <TrainingHub navigate={navigate} />
   else if (base === '/training/new') page = <TrainingPlanner navigate={navigate} />
   else if (/^\/training\/[^/]+\/run$/.test(base)) page = <TrainingSessionPage id={base.split('/')[2]} run navigate={navigate} />
