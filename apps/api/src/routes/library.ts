@@ -7,7 +7,7 @@ import { zValidator } from '@hono/zod-validator'
 import { TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
 import { getPrincipal } from '../auth/principal'
 import { LibraryAggregateService } from '../services/libraryAggregateService'
-import { presentDrill, presentDrillStep, presentNode, presentNote, presentSkill, presentTopic, presentVideo } from '../services/presenters'
+import { presentDrill, presentDrillStep, presentEdge, presentNode, presentNote, presentSkill, presentTopic, presentVideo } from '../services/presenters'
 
 export function libraryRoutes(db: Kysely<Database>) {
   const app = new Hono()
@@ -18,6 +18,21 @@ export function libraryRoutes(db: Kysely<Database>) {
   app.get('/nodes/:nodeId/resources', async (c) => {
     const result = await new LibraryAggregateService(db).getNodeResources(getPrincipal(c).userId, c.req.param('nodeId'))
     return c.json({ data: { node: presentNode(result.node), videos: result.videos.map(presentVideo), skills: result.skills.map(presentNode), drills: result.drills.map(presentDrill), drill: result.drill ? presentDrill(result.drill) : null, drillSteps: result.drillSteps.map(presentDrillStep), isPinned: result.isPinned } })
+  })
+  app.get('/nodes/:nodeId/connections', async (c) => {
+    const result = await new LibraryAggregateService(db).getNodeConnections(getPrincipal(c).userId, c.req.param('nodeId'))
+    return c.json({ data: {
+      center: presentNode(result.center),
+      centerHref: result.centerHref,
+      groups: result.groups.map((group) => ({
+        ...group,
+        items: group.items.map((item) => ({ node: presentNode(item.node), edge: presentEdge(item.edge), href: item.href })),
+      })),
+      maxNodes: result.maxNodes,
+      totalConnections: result.totalConnections,
+      shownConnections: result.shownConnections,
+      truncated: result.truncated,
+    } })
   })
   app.patch('/nodes/:nodeId/pin', zValidator('json', z.object({ pinned: z.boolean() })), async (c) => {
     return c.json({ data: await new LibraryAggregateService(db).setPinned(getPrincipal(c).userId, c.req.param('nodeId'), c.req.valid('json').pinned) })
