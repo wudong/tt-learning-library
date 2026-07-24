@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { canonicalizeUrl, detectProvider, extractLikelyUrl } from '@ttll/db'
+import { canonicalizeUrl, detectProvider, extractLikelyUrl } from '../packages/db/src'
 
 test('detects YouTube boundary-safely', () => {
   expect(detectProvider('youtube.com')).toBe('youtube')
