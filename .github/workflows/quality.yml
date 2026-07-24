@@ -55,7 +55,13 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      - name: Test
+      - name: Test public sharing
+        run: bun test tests/integration/share.test.ts
+
+      - name: Test concurrent migrations
+        run: bun test tests/migrationConcurrency.test.ts
+
+      - name: Test full suite
         run: bun test
 
       - name: Migrate database
