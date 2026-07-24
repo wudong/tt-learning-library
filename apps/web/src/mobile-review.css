@@ -1,3 +1,10 @@
+@media (max-width: 899px) {
+  .training-head h1,
+  .training-head > .button {
+    display: none;
+  }
+}
+
 @media (max-width: 560px) {
   .detail-action-bar .button:first-child {
     grid-column: 1 / -1;
