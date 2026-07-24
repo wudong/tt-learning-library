@@ -16,7 +16,7 @@ export function createPgPool(opts: PgPoolOptions): Pool {
   const url = new URL(opts.connectionString)
   // Parse sslmode from query string
   const sslmode = url.searchParams.get('sslmode')
-  const ca = opts.ca ?? process.env.DATABASE_CA_CERT?.replace(/\n/g, '\n')
+  const ca = opts.ca ?? process.env.DATABASE_CA_CERT?.replace(/\\n/g, '\n')
   const ssl =
     sslmode === 'require' || sslmode === 'verify-full'
       ? { rejectUnauthorized: true, ...(ca ? { ca } : {}) }
