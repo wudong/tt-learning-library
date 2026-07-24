@@ -1,0 +1,15 @@
+@media (max-width: 560px) {
+  .detail-action-bar .button:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .detail-action-bar .detail-pin:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 384px) {
+  .detail-action-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
