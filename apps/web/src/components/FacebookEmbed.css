@@ -1,0 +1,39 @@
+.facebook-embed-gate {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin: -5px -5px 15px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--panel);
+}
+
+.facebook-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: end center;
+  overflow: hidden;
+  border-radius: 13px;
+  color: white;
+  background: #1877f2;
+  font-family: Arial, sans-serif;
+  font-size: 2.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.facebook-embed-copy { min-width: 0; }
+.facebook-embed-copy strong { display: block; margin-top: 2px; }
+.facebook-embed-copy p { margin: 5px 0 0; color: var(--ink-soft); font-size: 0.84rem; }
+.facebook-embed-actions { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
+.facebook-embed-actions .button { min-height: 44px; }
+.facebook-embed-loaded { margin-bottom: 15px; }
+.facebook-embed-loaded .video-embed { margin-bottom: 9px; }
+.facebook-open-link { width: 100%; min-height: 44px; }
+
+@media (max-width: 480px) {
+  .facebook-embed-actions { grid-template-columns: 1fr; }
+}
