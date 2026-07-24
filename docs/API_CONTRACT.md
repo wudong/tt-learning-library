@@ -598,6 +598,45 @@ Soft delete and revoke shares.
 
 ## 12. Notes API
 
+### Library contextual resources
+
+`GET /api/library/overview` returns curated Topics and Skills plus owned Drills.
+Videos are deliberately absent as a top-level Library section.
+
+`PATCH /api/library/topics/:id/visibility` accepts `{ "hidden": boolean }`.
+It changes only the owner's Library visibility preference. Hidden Topics,
+Skills, and attached learning material remain stored and owner scoped.
+
+`PATCH /api/library/nodes/:nodeId/pin` accepts `{ "pinned": boolean }` for an
+owned active Topic, Skill, or Drill. Pinning changes deterministic Library
+ordering only.
+
+`GET /api/library/nodes/:nodeId/resources` accepts an owned active Topic, Skill,
+or Drill graph-node ID and returns its allowlisted contextual projection.
+Topics expose Skills attached through `skill --belongs_to--> topic`:
+
+```json
+{
+  "data": {
+    "node": {},
+    "videos": [],
+    "skills": [],
+    "drills": [],
+    "drill": null,
+    "drillSteps": [],
+    "isPinned": false
+  }
+}
+```
+
+Relationships are resolved through `explains`, `demonstrates`, `drill_for`,
+and `practices`; arbitrary graph traversal is not exposed.
+
+`POST /api/library/nodes/:nodeId/videos/:videoId` attaches an existing owned
+Video contextually. Skills receive `video --explains--> skill`; Drills receive
+`drill --drill_for--> video`. The service validates both objects and creates
+the edge transactionally.
+
 ### POST `/api/notes`
 
 ```json
@@ -636,25 +675,72 @@ offset=
 
 Soft delete.
 
+## 12A. Picture Attachments API
+
+All endpoints are authenticated and owner scoped. Creating a Picture creates a
+private `picture` graph node, its binary domain row, and the contextual graph
+relationship atomically.
+
+### POST `/api/pictures`
+
+Accepts `multipart/form-data` with:
+
+```text
+parentNodeId  required text
+picture       required File (JPEG, PNG, or WebP; maximum 5 MB)
+```
+
+The server validates the active parent node and detects the media type from the
+file bytes. A successful response is `201` with attachment metadata; binary
+content is omitted.
+
+### GET `/api/pictures?parentNodeId=:nodeId`
+
+Returns active attachment metadata in deterministic creation order.
+
+### GET `/api/pictures/:id/content`
+
+Returns authenticated binary content with its validated media type,
+`Cache-Control: private, no-store`, and `X-Content-Type-Options: nosniff`.
+
+### DELETE `/api/pictures/:id`
+
+Soft-deletes an owned attachment. Cross-owner and inactive IDs return `404`.
+
 ## 13. Drills API
 
-### POST `/api/drills`
+### POST `/api/library/drills`
 
 ```json
 {
-  "title": "50 short backspin serves",
-  "description": "Aim half-long second bounce",
-  "instructions": "Five sets of ten",
-  "difficulty": "intermediate",
-  "durationMinutes": 15,
-  "repetitionTarget": 50,
-  "status": "planned",
-  "skillIds": ["skill_backspin_serve"],
-  "videoIds": ["video_123"]
+  "description": "Serve short backspin to the forehand, then attack the long return."
 }
 ```
 
-Creates node + drill row + graph edges atomically.
+The description is required, trimmed, and limited to 2,000 characters. The
+service derives a display title from its first sentence, capped at 80
+characters, then creates the private graph node and Drill row atomically.
+This lightweight capture endpoint does not accept skills, steps, spin, images,
+or advanced Drill metadata.
+
+### POST `/api/library/nodes/:drillNodeId/skills/:skillNodeId`
+
+Optionally links an owned personal Drill to an owned active Skill through
+`drill --practices--> skill`. Both node types and ownership are validated in
+one transaction. Repeating the request is idempotent. Curated starter Drill
+links are protected and cannot be changed through this endpoint.
+
+Curated starter Drills are persisted with `isSystem=true`. User-created Drills
+use the same table with `isSystem=false` and are private. Editing structured
+steps remains deferred.
+
+Drill resource projections include ordered `drillSteps`. Every step exposes
+actor, stroke, spin, origin zone, target zone, and optional instruction. Spin
+is one of `topspin|backspin|sidespin|no_spin|variable`.
+
+Drill DTOs also expose nullable `diagramUrl`. Every curated starter Drill has a
+bundled diagram; user-created Drills may omit one. The diagram does not replace
+the accessible structured step and spin data.
 
 ### GET `/api/drills`
 

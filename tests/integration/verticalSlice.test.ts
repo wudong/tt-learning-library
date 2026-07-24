@@ -3,9 +3,80 @@ import { createMigratedTestDb } from '../../packages/db/src'
 import { InboxCaptureService } from '../../apps/api/src/services/inboxCaptureService'
 import { VideoAggregateService } from '../../apps/api/src/services/videoAggregateService'
 import type { VideoMetadataProvider } from '../../apps/api/src/services/youtubeMetadataService'
-import { GraphRepository, ShareRepository, createId, provisionOntology } from '../../packages/db/src'
+import { AttachmentRepository, GraphRepository, ShareRepository, TopicSkillRepository, createId, provisionOntology } from '../../packages/db/src'
 import { LibraryAggregateService } from '../../apps/api/src/services/libraryAggregateService'
-import { TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
+import { PLAYER_DEFAULT_TOPICS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
+import { AttachmentService } from '../../apps/api/src/services/attachmentService'
+
+test('picture attachment is stored on an owned knowledge node and isolated by owner', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  await db.insertInto('users').values([
+    { id: 'user_picture', email: null, display_name: 'Picture', created_at: now, updated_at: now, deleted_at: null },
+    { id: 'user_picture_other', email: null, display_name: 'Other', created_at: now, updated_at: now, deleted_at: null },
+  ]).execute()
+  const node = await new GraphRepository(db).createNode({ userId: 'user_picture', nodeType: 'skill', title: 'Backspin serve' })
+  const bytes = new Uint8Array(24)
+  bytes.set([0x89, 0x50, 0x4e, 0x47], 0)
+  bytes.set([0x49, 0x48, 0x44, 0x52], 12)
+  bytes.set([0, 0, 0, 10, 0, 0, 0, 20], 16)
+  const created = await new AttachmentService(db).create('user_picture', {
+    parentNodeId: node.id, fileName: 'contact.png', declaredMediaType: 'image/png', content: bytes,
+  })
+  expect(created.width).toBe(10)
+  expect(created.height).toBe(20)
+  expect(created.node_id).toStartWith('node_')
+  expect((await new GraphRepository(db).getNode('user_picture', created.node_id))?.node_type).toBe('picture')
+  const pictureRelationships = await new GraphRepository(db).relationships('user_picture', created.node_id)
+  expect(pictureRelationships.map((item) => item.edge.edge_type)).toEqual(['demonstrates'])
+  expect(pictureRelationships[0]?.node.id).toBe(node.id)
+  expect((await new AttachmentRepository(db).get('user_picture', created.id))?.content).toEqual(bytes)
+  expect(await new AttachmentRepository(db).get('user_picture_other', created.id)).toBeUndefined()
+  await expect(new AttachmentService(db).create('user_picture_other', {
+    parentNodeId: node.id, fileName: 'stolen.png', declaredMediaType: 'image/png', content: bytes,
+  })).rejects.toThrow('Knowledge node not found')
+  await new GraphRepository(db).softDeleteNode('user_picture', node.id)
+  expect(await new AttachmentRepository(db).get('user_picture', created.id)).toBeUndefined()
+  expect(await new AttachmentRepository(db).list('user_picture', node.id)).toEqual([])
+  await db.destroy()
+})
+
+test('Library organizes drills under ontology skills and exposes videos contextually', async () => {
+  const { db } = await createMigratedTestDb()
+  const now = new Date().toISOString()
+  const userId = 'user_library_resources'
+  await db.insertInto('users').values({ id: userId, email: null, display_name: 'Resources', created_at: now, updated_at: now, deleted_at: null }).execute()
+  await provisionOntology(db, userId)
+  const skill = await db.selectFrom('skills').selectAll().where('user_id', '=', userId).where('name', '=', 'Backspin Serve').where('deleted_at', 'is', null).executeTakeFirstOrThrow()
+  const topic = await db.selectFrom('topics').selectAll().where('user_id', '=', userId).where('id', '=', skill.topic_id!).executeTakeFirstOrThrow()
+  const library = new LibraryAggregateService(db)
+  const drill = await library.createDrill(userId, { title: 'Short backspin serve basket', skillNodeId: skill.node_id })
+  expect(drill.is_system).toBe(0)
+  expect((await new GraphRepository(db).relationships(userId, drill.node_id))[0]?.edge.edge_type).toBe('practices')
+  const video = await new VideoAggregateService(db).createVideo(userId, {
+    sourceUrl: 'https://youtu.be/library1', title: 'Backspin contact', topicIds: [],
+    skillIds: [skill.id], tagIds: [], progress: 'saved', learningState: 'practicing',
+  })
+  const skillResources = await library.getNodeResources(userId, skill.node_id)
+  expect(skillResources.drills.map((item) => item.id)).toEqual([drill.id])
+  expect(skillResources.videos.map((item) => item.id)).toEqual([video.video.id])
+  const topicResources = await library.getNodeResources(userId, topic.node_id)
+  expect(topicResources.skills.some((item) => item.id === skill.node_id)).toBe(true)
+  await library.attachVideo(userId, drill.node_id, video.video.id)
+  const drillResources = await library.getNodeResources(userId, drill.node_id)
+  expect(drillResources.skills.map((item) => item.id)).toEqual([skill.node_id])
+  expect(drillResources.videos.map((item) => item.id)).toEqual([video.video.id])
+  const idea = await library.createDrillFromDescription(userId, '  Alternate two backhands and one forehand. Recover to the middle.  ')
+  expect(idea.title).toBe('Alternate two backhands and one forehand.')
+  expect(idea.description).toBe('Alternate two backhands and one forehand. Recover to the middle.')
+  expect(idea.is_system).toBe(0)
+  expect(await new GraphRepository(db).relationships(userId, idea.node_id)).toEqual([])
+  await library.linkPersonalDrillToSkill(userId, idea.node_id, skill.node_id)
+  expect((await new GraphRepository(db).relationships(userId, idea.node_id))[0]?.edge.edge_type).toBe('practices')
+  const starter = await db.selectFrom('drills').selectAll().where('user_id', '=', userId).where('is_system', '=', 1).executeTakeFirstOrThrow()
+  await expect(library.linkPersonalDrillToSkill(userId, starter.node_id, skill.node_id)).rejects.toThrow('Starter Drill links are protected')
+  await db.destroy()
+})
 
 test('manual capture converts to graph-backed video idempotently', async () => {
   const { db } = await createMigratedTestDb()
@@ -154,14 +225,24 @@ test('curated ontology provisioning is complete, protected, and idempotent per o
   const topics = await db.selectFrom('topics').selectAll().where('user_id', '=', 'user_ontology').where('deleted_at', 'is', null).execute()
   const skills = await db.selectFrom('skills').selectAll().where('user_id', '=', 'user_ontology').where('deleted_at', 'is', null).execute()
   const edges = await db.selectFrom('graph_edges').selectAll().where('user_id', '=', 'user_ontology').where('edge_type', '=', 'belongs_to').where('deleted_at', 'is', null).execute()
+  const drills = await db.selectFrom('drills').selectAll().where('user_id', '=', 'user_ontology').where('is_system', '=', 1).where('deleted_at', 'is', null).execute()
+  const drillSteps = await db.selectFrom('drill_steps').selectAll().where('user_id', '=', 'user_ontology').where('deleted_at', 'is', null).execute()
   expect(topics).toHaveLength(TABLE_TENNIS_TOPICS.length)
   expect(skills).toHaveLength(TABLE_TENNIS_SKILLS.length)
   expect(topics.every((topic) => topic.is_system === 1)).toBe(true)
+  expect(topics.filter((topic) => topic.is_hidden === 0).map((topic) => topic.name).sort()).toEqual([...PLAYER_DEFAULT_TOPICS].sort())
+  const coaching = topics.find((topic) => topic.name === 'Coaching')!
+  expect(coaching.is_hidden).toBe(1)
+  expect((await new TopicSkillRepository(db).setTopicHidden('user_ontology', coaching.id, false)).is_hidden).toBe(0)
   expect(skills.every((skill) => skill.is_system === 1)).toBe(true)
   expect(edges).toHaveLength(TABLE_TENNIS_SKILLS.length)
-
+  expect(drills).toHaveLength(TABLE_TENNIS_DRILLS.length)
+  expect(drillSteps).toHaveLength(TABLE_TENNIS_DRILLS.reduce((count, drill) => count + drill.steps.length, 0))
   const serve = topics.find((topic) => topic.name === 'Serve')!
   const reversePendulum = skills.find((skill) => skill.name === 'Reverse Pendulum Serve')!
+  expect((await new LibraryAggregateService(db).setPinned('user_ontology', reversePendulum.node_id, true)).pinned).toBe(true)
+  expect((await new TopicSkillRepository(db).getSkill('user_ontology', reversePendulum.id))?.is_pinned).toBe(1)
+
   const library = new LibraryAggregateService(db)
   const topicNote = await library.createNote('user_ontology', { parentNodeId: serve.node_id, body: 'Vary placement this month', noteType: 'reminder' })
   const skillNote = await library.createNote('user_ontology', { parentNodeId: reversePendulum.node_id, body: 'Keep the contact fine', noteType: 'takeaway' })

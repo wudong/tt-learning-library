@@ -873,6 +873,11 @@ Minimum hosted-MVP controls:
 - explicit share link creation;
 - token hashing and revocation;
 - request body limits;
+- picture attachment multipart requests are capped just above the 5 MB
+  per-picture limit; JPEG/PNG/WebP signatures are checked before PostgreSQL
+  `bytea` persistence;
+- Picture creation transactionally writes `graph_nodes`, `pictures`, and its
+  typed contextual edge; binary bytes never live in graph metadata;
 - request timeout;
 - structured request IDs;
 - secure headers and a Content Security Policy suitable for the deployed app;

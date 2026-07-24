@@ -28,6 +28,7 @@ export class GraphRepository {
   async softDeleteNode(userId: string, id: string) {
     const now = nowIso()
     await this.db.updateTable('graph_edges').set({ deleted_at: now, updated_at: now }).where('user_id','=',userId).where((eb) => eb.or([eb('source_node_id','=',id), eb('target_node_id','=',id)])).where('deleted_at','is',null).execute()
+    await this.db.updateTable('pictures').set({ deleted_at: now, updated_at: now }).where('user_id','=',userId).where((eb) => eb.or([eb('parent_node_id','=',id), eb('node_id','=',id)])).where('deleted_at','is',null).execute()
     await this.db.updateTable('graph_nodes').set({ deleted_at: now, updated_at: now }).where('user_id','=',userId).where('id','=',id).where('deleted_at','is',null).execute()
   }
 

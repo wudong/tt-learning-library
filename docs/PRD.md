@@ -133,6 +133,7 @@ Do not include:
 | M17 | Core flows meet the mobile interaction contract and WCAG 2.2 AA target. |
 | M18 | Hosted session expiry preserves safe continuation context and never silently loses a submitted capture or in-progress edit. |
 | M19 | Exact duplicate identity follows one canonical product policy across manual capture, native capture, and Inbox conversion. |
+| M20 | Users can paste or upload private pictures and attach them directly to an existing knowledge node. |
 
 ### 7.2 Should Have
 
@@ -232,6 +233,25 @@ Acceptance criteria:
 - add/edit/delete;
 - searchable;
 - creation and update times visible where useful.
+
+### 8.5A Attach Pictures
+
+As a player, I want to paste a screenshot or picture onto a learning item so
+that visual coaching cues stay beside the relevant video, skill, topic, drill,
+mistake, or note.
+
+Acceptance criteria:
+
+- clipboard paste and file selection are supported;
+- JPEG, PNG, and WebP content is validated from its bytes, not only its name;
+- picture bytes are stored in PostgreSQL and are owner scoped;
+- each picture is a first-class private graph node and learning resource;
+- its bytes remain in PostgreSQL while typed graph relationships attach it to
+  Topics, Skills, Drills, or Videos;
+- pictures are private by default and excluded from public projections unless a
+  later explicit sharing contract allowlists them;
+- upload size is capped at 5 MB per picture;
+- users can list, view, and remove their own pictures.
 
 ### 8.6 Add Timestamped Notes
 
@@ -674,12 +694,31 @@ Library leads with:
 ```text
 Topics
 Skills
-Videos
 Drills
 Paths
 ```
 
-The product should not lead with folders.
+Videos are captured learning resources, not a top-level Library taxonomy.
+They appear inside the Skills and Drills to which graph relationships attach
+them. The product should not lead with folders or provider-centric video lists.
+
+The default player view shows Fundamentals, Serve, Receive, Spin, Forehand,
+Backhand, Footwork, Defense, Tactics, Training & Drills, Match Analysis,
+Physical Training, Mental Game, and Equipment. Doubles, Rules & Officiating,
+Para Table Tennis, and Coaching remain available through Manage Topics. Users
+may show or hide any Topic without deleting ontology or learning data.
+
+Topics and Skills use full detail pages rather than transient sheets. Users may
+pin Topics, Skills, and Drills to the top of their Library sections. The Skills
+section shows pinned items by default and reveals the broader ontology through
+Topic selection or search.
+
+The Drill catalog combines a compact protected starter set with lightweight
+private Drill ideas. A player adds an idea using only a description; the app
+derives its short display title. Skill selection, structured steps, spin, and
+image creation are not required during capture.
+Starter Drills store ordered stroke steps with explicit spin, origin, and target
+zones. The UI renders accessible spin labels independently of generated images.
 
 ## 12. Key Screens
 

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { EDGE_TYPES, NOTE_PARENT_NODE_TYPES, ONTOLOGY_RELATIONSHIPS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, isAllowedRelationship } from '@ttll/shared'
+import { EDGE_TYPES, NOTE_PARENT_NODE_TYPES, ONTOLOGY_RELATIONSHIPS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, isAllowedRelationship } from '@ttll/shared'
 
 test('ontology defines every edge type', () => {
   expect(Object.keys(ONTOLOGY_RELATIONSHIPS).sort()).toEqual([...EDGE_TYPES].sort())
@@ -9,6 +9,9 @@ test('ontology defines every edge type', () => {
 test('ontology uses table-tennis domain semantics', () => {
   expect(isAllowedRelationship('video', 'skill', 'explains')).toBe(true)
   expect(isAllowedRelationship('video', 'topic', 'belongs_to')).toBe(true)
+  expect(isAllowedRelationship('picture', 'topic', 'belongs_to')).toBe(true)
+  expect(isAllowedRelationship('picture', 'skill', 'demonstrates')).toBe(true)
+  expect(isAllowedRelationship('drill', 'picture', 'drill_for')).toBe(true)
   expect(isAllowedRelationship('drill', 'skill', 'practices')).toBe(true)
   expect(isAllowedRelationship('practice_session', 'skill', 'practices')).toBe(true)
   expect(isAllowedRelationship('practice_session', 'video', 'contains')).toBe(true)
@@ -30,6 +33,10 @@ test('starter taxonomy matches the reviewed product taxonomy', () => {
     'Para Table Tennis', 'Coaching'
   ])
   expect(TABLE_TENNIS_SKILLS).toHaveLength(176)
+  expect(TABLE_TENNIS_DRILLS).toHaveLength(12)
+  expect(TABLE_TENNIS_DRILLS.every((drill) => TABLE_TENNIS_SKILLS.some((skill) => skill.name === drill.skill))).toBe(true)
+  expect(TABLE_TENNIS_DRILLS.every((drill) => drill.description.length > 0 && drill.imageUrl.startsWith('/drills/') && drill.steps.length > 0)).toBe(true)
+  expect(TABLE_TENNIS_DRILLS.flatMap((drill) => drill.steps).every((step) => ['topspin','backspin','sidespin','no_spin','variable'].includes(step.spin))).toBe(true)
   expect(TABLE_TENNIS_SKILLS.find((skill) => skill.name === 'Reverse Pendulum Serve')?.topic).toBe('Serve')
   expect(TABLE_TENNIS_SKILLS.find((skill) => skill.name === 'Banana Flick')?.topic).toBe('Receive')
   expect(new Set(TABLE_TENNIS_SKILLS.map((skill) => skill.name)).size).toBe(TABLE_TENNIS_SKILLS.length)

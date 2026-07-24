@@ -84,6 +84,7 @@ async function provisionUser(db: Kysely<Database>, identity: VerifiedIdentity) {
       'graph_edges', 'videos', 'topics', 'skills', 'notes', 'drills', 'mistakes', 'tags',
       'learning_path_items', 'learning_paths', 'collection_items', 'collections', 'inbox_items', 'share_links', 'graph_nodes',
       'practice_skill_checkins', 'practice_session_blocks', 'practice_sessions',
+      'pictures', 'drill_steps',
     ] as const
     for (const table of ownedTables) {
       await trx.updateTable(table).set({ user_id: identity.id }).where('user_id', '=', legacyId).execute()

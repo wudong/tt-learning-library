@@ -15,6 +15,7 @@ import { shareTargetRoutes } from './routes/shareTarget'
 import { feedbackRoutes } from './routes/feedback'
 import { authRoutes, publicAuthRoutes } from './routes/auth'
 import { trainingRoutes } from './routes/training'
+import { attachmentRoutes } from './routes/attachments'
 
 export async function createApp() {
   const { db } = await createDb()
@@ -44,6 +45,7 @@ export async function createApp() {
   app.route('/api/search', searchRoutes(db))
   app.route('/api/share-links', shareRoutes(db))
   app.route('/api/training', trainingRoutes(db))
+  app.route('/api/pictures', attachmentRoutes(db))
   app.route('/share-target', shareTargetRoutes(db))
   app.route('/api/feedback', feedbackRoutes())
   return { app, db }

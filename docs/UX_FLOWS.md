@@ -253,6 +253,7 @@ Make a saved tutorial useful for learning.
 ```text
 Add Note
 Add Timestamp Note
+Attach Picture
 Create Drill
 Link Related Item
 Add to Path
@@ -267,6 +268,20 @@ Phone hierarchy:
 - show at most four direct quick actions: Note, Timestamp, Drill, More;
 - place Edit/Delete and other low-frequency actions under More;
 - returning from an external source restores the same detail route and practical scroll context.
+
+### Attach Picture Flow
+
+1. User opens a Video or the contextual composer for a Skill or Topic.
+2. User focuses the picture paste target and pastes clipboard image data, or
+   chooses a local image file.
+3. Client rejects unsupported formats and files over 5 MB before upload.
+4. Server validates ownership, the active parent node, the byte signature, and
+   size before committing the bytes to PostgreSQL.
+5. The new thumbnail appears only after the server confirms persistence.
+6. User may remove the picture with explicit confirmation.
+
+Failures leave the existing knowledge item and its other pictures unchanged.
+Authentication interruption never represents an uncommitted picture as saved.
 
 ### Acceptance Criteria
 
@@ -880,12 +895,38 @@ System Topics and Skills are protected from user mutation.
 ### Browse and Enrich
 
 1. User opens Library.
-2. User browses or searches curated Topics and Skills.
-3. User attaches an existing Video or creates a private Note or Drill.
-4. The ontology entry remains unchanged; only the user's private learning
+2. User browses or searches curated Topics and Skills. Opening a Topic shows
+   the Skills attached to it through the ontology.
+3. User opens a Skill to see its attached Videos and Drills, or opens a Drill
+   to see its ontology Skills and source Videos.
+4. User attaches an existing Video or creates a private Note.
+5. The ontology entry remains unchanged; only the user's private learning
    material and relationships are created.
 
 Fast capture selects existing ontology entries and never creates new ones.
+
+### Manage Topic Visibility
+
+1. User opens `Manage Topics` from Library.
+2. The default player set is shown; optional Topics remain listed as hidden.
+3. User chooses `Add` or `Hide`.
+4. Library immediately updates Topic and Skill browsing.
+5. Hidden Topics, Skills, and attached Videos, Drills, Notes, and Pictures
+   remain stored and can be restored by choosing `Add`.
+
+### Skill Detail and Drill Creation
+
+1. User opens a Skill on its dedicated page.
+2. Page shows Pictures, linked Drills, linked Videos, and Pin/Unpin.
+3. The page offers control/consistency, placement/variation, and game-like
+   Drill suggestions derived from the Skill.
+4. A suggestion remains ephemeral until the user chooses it.
+5. Adding it transactionally persists a private Drill node, domain row, and
+   `practices` relationship.
+6. Users may also save a private Drill idea from the Drills Library section by
+   entering only its description; the app derives the title automatically.
+7. From the saved Personal idea, the user may optionally search for and link an
+   existing Skill; Skill selection is not required during creation.
 
 ### Delete
 

@@ -278,8 +278,12 @@ Build useful learning pages.
 - Topics API/UI;
 - Skills API/UI;
 - Notes API/UI;
+- private picture attachment API/UI with PostgreSQL `bytea` storage;
 - Timestamp notes;
 - Drills API/UI;
+- compact persisted starter Drill catalog plus description-only private Drill capture;
+- pinned-first Topic, Skill, and Drill ordering;
+- full Topic and Skill detail routes with bounded Skill discovery;
 - Mistakes API/UI if in active MVP scope;
 - tag create/link UI;
 - detail related sections.
@@ -290,6 +294,8 @@ Build useful learning pages.
 - timestamp validation works;
 - supported timestamps open source;
 - drill links graph-backed;
+- pasted picture bytes are bounded, owner scoped, signature validated, and
+  excluded from public projections;
 - skill page is a primary surface;
 - soft delete works.
 
