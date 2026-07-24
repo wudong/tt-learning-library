@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { ArrowLeft, CirclePlus, Dumbbell, Layers3, Pin, PinOff, Play, Target } from 'lucide-react'
+import { ArrowLeft, CirclePlus, Dumbbell, Layers3, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
 import { toast } from 'sonner'
+import { NodeNoteComposer } from '../../components/NodeNoteComposer'
 import { PictureAttachments } from '../../components/PictureAttachments'
 import { VideoThumbnail } from '../../components/VideoThumbnail'
 import { useAttachLibraryVideo, useLibraryNodeResources, useSetLibraryPin, useVideos } from '../../lib/api/hooks'
@@ -11,6 +12,7 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
   const attach = useAttachLibraryVideo(nodeId)
   const pin = useSetLibraryPin(nodeId)
   const [choosingVideo, setChoosingVideo] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
   const linkedIds = new Set(resources.data?.videos.map((video) => video.id) ?? [])
 
   async function attachVideo(videoId: string) {
@@ -26,7 +28,10 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
       <header className="library-detail-hero">
         <div className="ontology-symbol">{type === 'topic' ? <Layers3 size={22}/> : <Target size={22}/>}</div>
         <div className="library-detail-title"><span className="eyebrow">{type}</span><h1>{resources.data.node.title}</h1>{resources.data.node.summary && <p>{resources.data.node.summary}</p>}</div>
-        <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!resources.data.isPinned)}>{resources.data.isPinned ? <><PinOff size={16}/> Unpin</> : <><Pin size={16}/> Pin to top</>}</button>
+        <div className="row">
+          <button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16}/> Add note</button>
+          <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!resources.data.isPinned)}>{resources.data.isPinned ? <><PinOff size={16}/> Unpin</> : <><Pin size={16}/> Pin to top</>}</button>
+        </div>
       </header>
 
       <div className="library-detail-grid">
@@ -41,7 +46,7 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
 
         {type === 'skill' && resources.data.drills.length > 0 && <article className="card">
           <h2>Drills</h2>
-          <div className="detail-link-list">{resources.data.drills.map((drill) => <div key={drill.id}>{drill.diagramUrl ? <img className="drill-link-image" src={drill.diagramUrl} alt=""/> : <Dumbbell size={18}/>}<span>{drill.title}<small>{drill.isSystem ? 'Starter drill' : 'Personal idea'} · {drill.status.replaceAll('_', ' ')}</small></span></div>)}</div>
+          <div className="detail-link-list">{resources.data.drills.map((drill) => <button key={drill.id} onClick={() => navigate(`/library/drills/${drill.nodeId}`)}>{drill.diagramUrl ? <img className="drill-link-image" src={drill.diagramUrl} alt=""/> : <Dumbbell size={18}/>}<span>{drill.title}<small>{drill.description || `${drill.isSystem ? 'Starter drill' : 'Personal idea'} · ${drill.status.replaceAll('_', ' ')}`}</small></span></button>)}</div>
         </article>}
 
         {type === 'skill' && <article className="card">
@@ -55,6 +60,7 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
           <button className="button detail-add-video" onClick={() => navigate('/videos/new')}><CirclePlus size={17}/> Add a new video</button>
         </article>}
       </div>
+      {noteOpen && <NodeNoteComposer target={{ nodeId, title: resources.data.node.title, type }} onClose={() => setNoteOpen(false)} />}
     </>}
   </section>
 }
