@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { PublicShareResponseSchema } from '@ttll/shared'
 import { FacebookEmbed } from '../components/FacebookEmbed'
 
- type PublicVideo = {
+type PublicVideo = {
   sourceUrl: string
   canonicalUrl: string | null
   sourcePlatform: string
