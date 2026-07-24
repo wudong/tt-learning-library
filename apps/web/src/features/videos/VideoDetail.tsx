@@ -1,10 +1,11 @@
+import { Network } from 'lucide-react'
 import { FacebookEmbed } from '../../components/FacebookEmbed'
 import { PictureAttachments } from '../../components/PictureAttachments'
 import { VideoThumbnail } from '../../components/VideoThumbnail'
 import { YouTubeEmbed } from '../../components/YouTubeEmbed'
 import { useVideo } from '../../lib/api/hooks'
 
-export function VideoDetail({ id }: { id:string }) {
+export function VideoDetail({ id, navigate }: { id:string; navigate: (to: string) => void }) {
   const video = useVideo(id)
   const data = video.data
   const title = data?.video.title || data?.node.title || 'Video'
@@ -29,6 +30,7 @@ export function VideoDetail({ id }: { id:string }) {
         <div className="card">
           <h3>Quick actions</h3>
           <div className="quick-actions">
+            <button className="button secondary" onClick={() => navigate(`/library/connections/${data.node.id}`)}><Network size={16} /> Explore connections</button>
             <button className="button secondary">Note</button>
             <button className="button secondary">Timestamp</button>
             <button className="button secondary">Drill</button>
