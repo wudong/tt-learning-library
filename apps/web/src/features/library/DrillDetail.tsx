@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, CirclePlus, Dumbbell, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
+import { ChevronRight, CirclePlus, Dumbbell, Network, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
 import { toast } from 'sonner'
 import { NodeNoteComposer } from '../../components/NodeNoteComposer'
 import { PictureAttachments } from '../../components/PictureAttachments'
@@ -53,7 +53,6 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
 
   return (
     <section className="library-detail-page">
-      <button className="back-link" onClick={() => navigate('/library')}><ArrowLeft size={18} /> Library</button>
       {resources.isLoading && <div className="library-skeleton">Loading drill…</div>}
       {resources.isError && <div className="notice">This drill could not be loaded.</div>}
 
@@ -71,13 +70,15 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
               {drill.repetitionTarget && <span>{drill.repetitionTarget} repetitions</span>}
             </div>
           </div>
-          <div className="row">
-            <button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16} /> Add note</button>
-            <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!data.isPinned)}>
-              {data.isPinned ? <><PinOff size={16} /> Unpin</> : <><Pin size={16} /> Pin to top</>}
-            </button>
-          </div>
         </header>
+
+        <div className="detail-action-bar" aria-label={`${drill.title} actions`}>
+          <button className="button secondary" onClick={() => navigate(`/library/connections/${nodeId}`)}><Network size={16} /> Explore connections</button>
+          <button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16} /> Add note</button>
+          <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!data.isPinned)}>
+            {data.isPinned ? <><PinOff size={16} /> Unpin</> : <><Pin size={16} /> Pin to top</>}
+          </button>
+        </div>
 
         <div className="library-detail-grid">
           {drill.diagramUrl && <article className="card">
@@ -102,13 +103,13 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
             </li>)}</ol>
           </article>}
 
-          <article className="card">
-            <h2>Skills practised</h2>
+          <section className="detail-section relationship-section" aria-labelledby="drill-skills-title">
+            <h2 id="drill-skills-title">Skills practised</h2>
             {data.skills.length > 0 ? <div className="detail-link-list">{data.skills.map((skill) =>
-              <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18} /><span>{skill.title}<small>Open Skill</small></span></button>
+              <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18} /><span><strong>{skill.title}</strong></span><ChevronRight size={18} aria-hidden="true" /></button>
             )}</div> : <p className="muted">This drill is not linked to a Skill yet.</p>}
 
-            {!drill.isSystem && <div className="stack">
+            {!drill.isSystem && <div className="stack relationship-editor">
               <h3>Link a Skill</h3>
               <p className="muted">Search for the main table-tennis Skill this drill practises.</p>
               <input value={skillQuery} onChange={(event) => setSkillQuery(event.currentTarget.value)} placeholder="Search Skills" />
@@ -117,7 +118,7 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
                 {availableSkills.length === 0 && <p className="muted">No unlinked Skills match.</p>}
               </div>}
             </div>}
-          </article>
+          </section>
 
           <article className="card">
             <PictureAttachments parentNodeId={nodeId} />

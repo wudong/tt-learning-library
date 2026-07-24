@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ArrowLeft,
   BookOpen,
@@ -19,6 +19,10 @@ import {
 import { usePwa } from '../lib/pwa/PwaProvider'
 import { FeedbackSheet } from './FeedbackSheet'
 import { BuildIdentity } from './BuildIdentity'
+import {
+  MobilePageActionsProvider,
+  type MobilePageAction,
+} from './MobilePageActions'
 
 const primaryItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -28,22 +32,30 @@ const primaryItems = [
   { href: '/settings', label: 'More', icon: MoreHorizontal },
 ] as const
 
-const pageMeta = (path: string) => {
+type PageMeta = {
+  title: string
+  eyebrow: string
+  back?: string
+  backLabel?: string
+}
+
+const pageMeta = (path: string): PageMeta => {
   if (path === '/') return { title: 'Home', eyebrow: 'Your learning today' }
   if (path === '/inbox') return { title: 'Inbox', eyebrow: 'Captured for later' }
   if (path === '/library') return { title: 'Library', eyebrow: 'Skills, videos and practice' }
-  if (path.startsWith('/library/topics/')) return { title: 'Topic', eyebrow: 'Learning area', back: '/library' }
-  if (path.startsWith('/library/skills/')) return { title: 'Skill', eyebrow: 'Learning detail', back: '/library' }
-  if (path.startsWith('/library/drills/')) return { title: 'Drill', eyebrow: 'Practice detail', back: '/library' }
+  if (path.startsWith('/library/connections/')) return { title: 'Connections', eyebrow: 'Knowledge graph', back: '/library', backLabel: 'Back to Library' }
+  if (path.startsWith('/library/topics/')) return { title: 'Topic', eyebrow: 'Learning area', back: '/library', backLabel: 'Back to Library' }
+  if (path.startsWith('/library/skills/')) return { title: 'Skill', eyebrow: 'Learning detail', back: '/library', backLabel: 'Back to Library' }
+  if (path.startsWith('/library/drills/')) return { title: 'Drill', eyebrow: 'Practice detail', back: '/library', backLabel: 'Back to Library' }
   if (path === '/training') return { title: 'Training', eyebrow: 'Plan, practice, reflect' }
-  if (path === '/training/new') return { title: 'Plan training', eyebrow: 'Build a focused session', back: '/training' }
-  if (path.startsWith('/training/')) return { title: 'Training session', eyebrow: 'One skill at a time', back: '/training' }
+  if (path === '/training/new') return { title: 'Plan training', eyebrow: 'Build a focused session', back: '/training', backLabel: 'Back to Training' }
+  if (path.startsWith('/training/')) return { title: 'Training session', eyebrow: 'One skill at a time', back: '/training', backLabel: 'Back to Training' }
   if (path === '/search') return { title: 'Search', eyebrow: 'Find what you learned' }
   if (path === '/settings') return { title: 'More', eyebrow: 'App and privacy' }
-  if (path === '/videos/new') return { title: 'Add video', eyebrow: 'Save now, organize later', back: '/' }
-  if (path.startsWith('/quick-save/')) return { title: 'Quick save', eyebrow: 'Capture received', back: '/inbox' }
-  if (path.startsWith('/inbox/')) return { title: 'Organize', eyebrow: 'Turn capture into learning', back: '/inbox' }
-  if (path.startsWith('/videos/')) return { title: 'Video', eyebrow: 'Learning detail', back: '/library' }
+  if (path === '/videos/new') return { title: 'Add video', eyebrow: 'Save now, organize later', back: '/', backLabel: 'Back to Home' }
+  if (path.startsWith('/quick-save/')) return { title: 'Quick save', eyebrow: 'Capture received', back: '/inbox', backLabel: 'Back to Inbox' }
+  if (path.startsWith('/inbox/')) return { title: 'Organize', eyebrow: 'Turn capture into learning', back: '/inbox', backLabel: 'Back to Inbox' }
+  if (path.startsWith('/videos/')) return { title: 'Video', eyebrow: 'Learning detail', back: '/library', backLabel: 'Back to Library' }
   return { title: 'TT Learn', eyebrow: 'Table tennis learning' }
 }
 
@@ -58,9 +70,15 @@ export function Layout({
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [pageActions, setPageActions] = useState<MobilePageAction[]>([])
   const { canInstall, isInstalled, install } = usePwa()
   const meta = pageMeta(path)
   const isActive = (href: string) => href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`)
+
+  const registerPageActions = useCallback((actions: MobilePageAction[]) => {
+    setPageActions(actions)
+    return () => setPageActions((current) => current === actions ? [] : current)
+  }, [])
 
   useEffect(() => {
     setMenuOpen(false)
@@ -84,10 +102,8 @@ export function Layout({
     setMenuOpen(false)
   }
 
-  const toolbarAction = () => {
-    if (meta.back) {
-      return <button className="toolbar-icon" onClick={() => go(meta.back!)} aria-label="Go back"><ArrowLeft size={22} /></button>
-    }
+  const defaultToolbarAction = () => {
+    if (meta.back) return null
     if (path === '/library') {
       return <button className="toolbar-icon" onClick={() => go('/search')} aria-label="Search library"><Search size={22} /></button>
     }
@@ -141,79 +157,98 @@ export function Layout({
   )
 
   return (
-    <div className="app-shell">
-      <aside className="desktop-sidebar">
-        <button className="brand-lockup" onClick={() => go('/')} aria-label="TT Learn home">
-          <span className="brand-mark"><Target size={22} /></span>
-          <span><strong>TT Learn</strong><small>Build your game</small></span>
-        </button>
-        <button className="sidebar-add" onClick={() => go('/videos/new')}>
-          <Plus size={19} aria-hidden="true" /> Add video
-        </button>
-        {navigation}
-        <div className="sidebar-note">
-          <BookOpen size={18} aria-hidden="true" />
-          <span>Private by default<br /><small>Your practice library stays yours.</small></span>
-        </div>
-        <BuildIdentity compact />
-      </aside>
-
-      <div className="app-stage">
-        <header className="mobile-toolbar">
-          <button className="toolbar-icon" onClick={() => setMenuOpen(true)} aria-label="Open menu">
-            <Menu size={22} />
+    <MobilePageActionsProvider register={registerPageActions}>
+      <div className="app-shell">
+        <aside className="desktop-sidebar">
+          <button className="brand-lockup" onClick={() => go('/')} aria-label="TT Learn home">
+            <span className="brand-mark"><Target size={22} /></span>
+            <span><strong>TT Learn</strong><small>Build your game</small></span>
           </button>
-          <div className="toolbar-title">
-            <span>{meta.eyebrow}</span>
-            <strong>{meta.title}</strong>
+          <button className="sidebar-add" onClick={() => go('/videos/new')}>
+            <Plus size={19} aria-hidden="true" /> Add video
+          </button>
+          {navigation}
+          <div className="sidebar-note">
+            <BookOpen size={18} aria-hidden="true" />
+            <span>Private by default<br /><small>Your practice library stays yours.</small></span>
           </div>
-          {toolbarAction()}
-        </header>
+          <BuildIdentity compact />
+        </aside>
 
-        <main className="main-content" id="main-content">{children}</main>
+        <div className="app-stage">
+          <header className="mobile-toolbar">
+            <div className="toolbar-leading">
+              {meta.back
+                ? <button className="toolbar-icon" onClick={() => go(meta.back!)} aria-label={meta.backLabel ?? 'Go back'}><ArrowLeft size={22} /></button>
+                : <button className="toolbar-icon" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={22} /></button>}
+            </div>
+            <div className="toolbar-title">
+              <span>{meta.eyebrow}</span>
+              <strong>{meta.title}</strong>
+            </div>
+            <div className="toolbar-trailing">
+              {pageActions.length > 0
+                ? <div className="toolbar-actions">
+                    {pageActions.map((action) => (
+                      <button
+                        key={action.id}
+                        className={`toolbar-icon toolbar-page-action ${action.tone === 'accent' ? 'toolbar-add' : ''}`}
+                        onClick={action.onPress}
+                        aria-label={action.label}
+                      >
+                        {action.icon}
+                      </button>
+                    ))}
+                  </div>
+                : defaultToolbarAction() ?? <span className="toolbar-spacer" aria-hidden="true" />}
+            </div>
+          </header>
 
-        <nav className="bottom-nav" aria-label="Primary navigation">
-          {primaryItems.map(({ href, label, icon: Icon }) => (
-            <button
-              key={href}
-              className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}
-              aria-current={isActive(href) ? 'page' : undefined}
-              onClick={() => go(href)}
-            >
-              <Icon size={21} aria-hidden="true" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </nav>
-      </div>
+          <main className="main-content" id="main-content">{children}</main>
 
-      {menuOpen && (
-        <div className="drawer-layer">
-          <button className="drawer-scrim" aria-label="Close menu" onClick={() => setMenuOpen(false)} />
-          <aside className="mobile-drawer" role="dialog" aria-modal="true" aria-label="App menu">
-            <div className="drawer-head">
-              <div className="brand-lockup">
-                <span className="brand-mark"><Target size={22} /></span>
-                <span><strong>TT Learn</strong><small>Build your game</small></span>
-              </div>
-              <button className="toolbar-icon" onClick={() => setMenuOpen(false)} aria-label="Close menu">
-                <X size={22} />
+          <nav className="bottom-nav" aria-label="Primary navigation">
+            {primaryItems.map(({ href, label, icon: Icon }) => (
+              <button
+                key={href}
+                className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}
+                aria-current={isActive(href) ? 'page' : undefined}
+                onClick={() => go(href)}
+              >
+                <Icon size={21} aria-hidden="true" />
+                <span>{label}</span>
               </button>
-            </div>
-            <button className="sidebar-add" onClick={() => go('/videos/new')}>
-              <Plus size={19} aria-hidden="true" /> Add video
-            </button>
-            {navigation}
-            <div className="drawer-status">
-              <span className={`status-dot ${isInstalled ? 'ready' : ''}`} />
-              {isInstalled ? 'Installed app' : canInstall ? 'Ready to install' : 'Running in browser'}
-            </div>
-            <BuildIdentity compact />
-          </aside>
+            ))}
+          </nav>
         </div>
-      )}
 
-      {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
-    </div>
+        {menuOpen && (
+          <div className="drawer-layer">
+            <button className="drawer-scrim" aria-label="Close menu" onClick={() => setMenuOpen(false)} />
+            <aside className="mobile-drawer" role="dialog" aria-modal="true" aria-label="App menu">
+              <div className="drawer-head">
+                <div className="brand-lockup">
+                  <span className="brand-mark"><Target size={22} /></span>
+                  <span><strong>TT Learn</strong><small>Build your game</small></span>
+                </div>
+                <button className="toolbar-icon" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+                  <X size={22} />
+                </button>
+              </div>
+              <button className="sidebar-add" onClick={() => go('/videos/new')}>
+                <Plus size={19} aria-hidden="true" /> Add video
+              </button>
+              {navigation}
+              <div className="drawer-status">
+                <span className={`status-dot ${isInstalled ? 'ready' : ''}`} />
+                {isInstalled ? 'Installed app' : canInstall ? 'Ready to install' : 'Running in browser'}
+              </div>
+              <BuildIdentity compact />
+            </aside>
+          </div>
+        )}
+
+        {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
+      </div>
+    </MobilePageActionsProvider>
   )
 }

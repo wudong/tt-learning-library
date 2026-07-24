@@ -15,6 +15,7 @@ import { TrainingHub } from '../features/training/TrainingHub'
 import { TrainingPlanner } from '../features/training/TrainingPlanner'
 import { TrainingSessionPage } from '../features/training/TrainingSessionPage'
 import { DrillDetail } from '../features/library/DrillDetail'
+import { KnowledgeGraphExplorer } from '../features/library/KnowledgeGraphExplorer'
 import { LibraryNodeDetail } from '../features/library/LibraryNodeDetail'
 
 function NotFound({ navigate }: { navigate: (to: string) => void }) {
@@ -38,6 +39,7 @@ export function App() {
   else if (base.startsWith('/quick-save/')) page = <OrganizeInbox quick id={base.split('/')[2]} navigate={navigate} />
   else if (base.startsWith('/inbox/')) page = <OrganizeInbox id={base.split('/')[2]} navigate={navigate} />
   else if (base === '/library') page = <Library navigate={navigate} />
+  else if (/^\/library\/connections\/[^/]+$/.test(base)) page = <KnowledgeGraphExplorer nodeId={base.split('/')[3]} navigate={navigate} />
   else if (/^\/library\/topics\/[^/]+$/.test(base)) page = <LibraryNodeDetail type="topic" nodeId={base.split('/')[3]} navigate={navigate} />
   else if (/^\/library\/skills\/[^/]+$/.test(base)) page = <LibraryNodeDetail type="skill" nodeId={base.split('/')[3]} navigate={navigate} />
   else if (/^\/library\/drills\/[^/]+$/.test(base)) page = <DrillDetail nodeId={base.split('/')[3]} navigate={navigate} />
@@ -45,7 +47,7 @@ export function App() {
   else if (base === '/training/new') page = <TrainingPlanner navigate={navigate} />
   else if (/^\/training\/[^/]+\/run$/.test(base)) page = <TrainingSessionPage id={base.split('/')[2]} run navigate={navigate} />
   else if (/^\/training\/[^/]+$/.test(base)) page = <TrainingSessionPage id={base.split('/')[2]} run={false} navigate={navigate} />
-  else if (base.startsWith('/videos/')) page = <VideoDetail id={base.split('/')[2]} />
+  else if (base.startsWith('/videos/')) page = <VideoDetail id={base.split('/')[2]} navigate={navigate} />
   else if (base === '/search') page = <SearchPage navigate={navigate} />
   else if (base === '/settings') page = <Settings />
   else page = <NotFound navigate={navigate} />

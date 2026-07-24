@@ -1,8 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronRight, CirclePlus, Dumbbell, Eye, EyeOff, Layers3, NotebookPen, Pin, PinOff, Search, SlidersHorizontal, Target, X } from 'lucide-react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { CirclePlus, Dumbbell, Eye, EyeOff, Layers3, Pin, PinOff, Search, SlidersHorizontal, Target, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { MobilePageActionsProvider, useMobilePageActions, type MobilePageAction } from '../../components/MobilePageActions'
 import { NodeNoteComposer } from '../../components/NodeNoteComposer'
 import { useCreateLibraryDrill, useLibraryOverview, useSetLibraryPin, useSetTopicVisibility } from '../../lib/api/hooks'
+import { LibraryCatalogCard } from './LibraryCatalogCard'
 
 type Tab = 'topics' | 'skills' | 'drills'
 type NoteTarget = { nodeId: string; title: string; type: 'topic' | 'skill' | 'drill' }
@@ -14,6 +16,22 @@ export function Library({ navigate }: { navigate:(to:string)=>void }) {
   const [managingTopics, setManagingTopics] = useState(false)
   const [noteTarget, setNoteTarget] = useState<NoteTarget | null>(null)
 
+  const mobileActions = useMemo<MobilePageAction[]>(() => [
+    {
+      id: 'search-library',
+      label: 'Search current Library section',
+      icon: <Search size={20} aria-hidden="true" />,
+      onPress: () => document.getElementById('library-search-input')?.focus(),
+    },
+    {
+      id: 'manage-topics',
+      label: 'Manage Topics',
+      icon: <SlidersHorizontal size={20} aria-hidden="true" />,
+      onPress: () => setManagingTopics(true),
+    },
+  ], [])
+  useMobilePageActions(mobileActions)
+
   const normalizedQuery = query.trim().toLocaleLowerCase()
   const visibleTopicIds = new Set(overview.data?.topics.filter((topic) => !topic.isHidden).map((topic) => topic.id) ?? [])
   const topics = overview.data?.topics.filter((topic) => !topic.isHidden && topic.name.toLocaleLowerCase().includes(normalizedQuery)) ?? []
@@ -21,7 +39,7 @@ export function Library({ navigate }: { navigate:(to:string)=>void }) {
   const drills = overview.data?.drills.filter((drill) => !normalizedQuery || drill.title.toLocaleLowerCase().includes(normalizedQuery) || drill.description?.toLocaleLowerCase().includes(normalizedQuery)) ?? []
 
   return <section className="library-page">
-    <header className="library-intro">
+    <header className="library-intro library-desktop-intro">
       <div>
         <h1>Your learning library</h1>
         <p className="muted">Connect tutorials to the areas and abilities you want to improve.</p>
@@ -38,7 +56,7 @@ export function Library({ navigate }: { navigate:(to:string)=>void }) {
     <label className="library-search">
       <span className="sr-only">Search current library section</span>
       <Search size={18} aria-hidden="true"/>
-      <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder={`Search ${tab}`}/>
+      <input id="library-search-input" value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder={`Search ${tab}`}/>
       {query && <button onClick={() => setQuery('')} aria-label="Clear search"><X size={17}/></button>}
     </label>
 
@@ -75,17 +93,18 @@ function TabButton({ active, icon, label, count, onClick }: { active:boolean; ic
 
 function TopicSection({ topics, skills, counts, onNote, onOpen }: { topics: Array<{id:string;nodeId:string;name:string;description:string|null}>; skills:Array<{id:string;topicId:string|null;name:string}>; counts:Record<string,number>; onNote:(target:NoteTarget)=>void; onOpen:(topic:{nodeId:string;name:string})=>void }) {
   if (!topics.length) return <div className="empty">No topics match this search.</div>
-  return <div className="ontology-list">{topics.map((topic) => {
+  return <div className="library-catalog-list">{topics.map((topic) => {
     const topicSkills = skills.filter((skill) => skill.topicId === topic.id)
-    return <article className="ontology-row" key={topic.id}>
-      <div className="ontology-symbol"><Layers3 size={19}/></div>
-      <div className="ontology-copy"><h2>{topic.name}</h2><p>{topic.description || `${topicSkills.length} ${topicSkills.length === 1 ? 'skill' : 'skills'} in this learning area`}</p>
-        {topicSkills.length > 0 && <div className="mini-chips">{topicSkills.slice(0, 4).map((skill) => <span key={skill.id}>{skill.name}</span>)}</div>}
-      </div>
-      <button className="note-action" onClick={() => onNote({nodeId:topic.nodeId,title:topic.name,type:'topic'})}><NotebookPen size={16}/> Note</button>
-      <button className="note-action" onClick={() => onOpen(topic)}>Open <ChevronRight size={16}/></button>
-      <strong className="ontology-count">{counts[topic.id] ?? 0}<small>videos</small></strong>
-    </article>
+    return <LibraryCatalogCard
+      key={topic.id}
+      icon={Layers3}
+      title={topic.name}
+      context={topic.description || `${topicSkills.length} ${topicSkills.length === 1 ? 'skill' : 'skills'} in this learning area`}
+      metadata={[`${counts[topic.id] ?? 0} videos`, `${topicSkills.length} skills`]}
+      tags={topicSkills.map((skill) => skill.name)}
+      onNote={() => onNote({nodeId:topic.nodeId,title:topic.name,type:'topic'})}
+      onOpen={() => onOpen(topic)}
+    />
   })}</div>
 }
 
@@ -98,32 +117,43 @@ function SkillSection({ query, skills, topics, counts, onNote, onOpen }: { query
   const displayedSkills = visibleSkills.slice(0, visibleLimit)
   return <div>
     <div className="section-action-row"><div><h2>Skills</h2><p>{!topicFilter && !normalized ? 'Pinned Skills are shown first. Choose a Topic or search to browse all Skills.' : 'Curated abilities for organizing your learning material.'}</p></div><label className="compact-filter"><span className="sr-only">Filter skills by topic</span><select value={topicFilter} onChange={(event) => setTopicFilter(event.currentTarget.value)}><option value="">Choose a Topic</option>{topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}</select></label></div>
-    {!visibleSkills.length ? <div className="empty">{!topicFilter && !normalized ? 'Pin frequently used Skills, choose a Topic, or search by name.' : 'No Skills match this search and Topic.'}</div> : <><div className="ontology-list">{displayedSkills.map((skill) => <article className="ontology-row" key={skill.id}>
-      <div className="ontology-symbol"><Target size={19}/></div>
-      <div className="ontology-copy"><h2>{skill.name}</h2><p>{topics.find((topic) => topic.id === skill.topicId)?.name ?? 'No primary topic'} · {skill.status.replaceAll('_', ' ')}</p></div>
-      <button className="note-action" onClick={() => onNote({nodeId:skill.nodeId,title:skill.name,type:'skill'})}><NotebookPen size={16}/> Note</button>
-      <button className="note-action" onClick={() => onOpen(skill)}>Open <ChevronRight size={16}/></button>
-      <strong className="ontology-count">{counts[skill.id] ?? 0}<small>videos</small></strong>
-    </article>)}</div>{displayedSkills.length < visibleSkills.length && <button className="button secondary load-more" onClick={() => setVisibleLimit((value) => value + 50)}>Load more skills <small>{displayedSkills.length} of {visibleSkills.length}</small></button>}</>}
+    {!visibleSkills.length ? <div className="empty">{!topicFilter && !normalized ? 'Pin frequently used Skills, choose a Topic, or search by name.' : 'No Skills match this search and Topic.'}</div> : <><div className="library-catalog-list">{displayedSkills.map((skill) => {
+      const topicName = topics.find((topic) => topic.id === skill.topicId)?.name ?? 'No primary topic'
+      return <LibraryCatalogCard
+        key={skill.id}
+        icon={Target}
+        title={skill.name}
+        context={`${topicName} · ${skill.status.replaceAll('_', ' ')}`}
+        metadata={[`${counts[skill.id] ?? 0} videos`, skill.difficulty ?? 'Difficulty not set']}
+        tags={skill.isPinned ? ['Pinned'] : []}
+        onNote={() => onNote({nodeId:skill.nodeId,title:skill.name,type:'skill'})}
+        onOpen={() => onOpen(skill)}
+      />
+    })}</div>{displayedSkills.length < visibleSkills.length && <button className="button secondary load-more" onClick={() => setVisibleLimit((value) => value + 50)}>Load more skills <small>{displayedSkills.length} of {visibleSkills.length}</small></button>}</>}
   </div>
 }
 
 function DrillSection({ drills, onNote, onOpen }: { drills:Array<{id:string;nodeId:string;title:string;description:string|null;diagramUrl:string|null;status:string;durationMinutes:number|null;isPinned:boolean;isSystem:boolean}>; onNote:(target:NoteTarget)=>void; onOpen:(drill:{nodeId:string;title:string})=>void }) {
   const [creating, setCreating] = useState(false)
   return <div><div className="section-action-row"><div><h2>Drills</h2><p>Use a starter Drill or quickly save your own practice idea.</p></div><button className="button" onClick={() => setCreating(true)}><CirclePlus size={17}/> Add Drill</button></div>
-  {!drills.length ? <div className="empty"><Dumbbell size={28}/><p>No drills match this search.</p></div> : <div className="ontology-list">{drills.map((drill) => <DrillLibraryRow key={drill.id} drill={drill} onNote={onNote} onOpen={onOpen}/>)}</div>}
+  {!drills.length ? <div className="empty"><Dumbbell size={28}/><p>No drills match this search.</p></div> : <div className="library-catalog-list">{drills.map((drill) => <DrillLibraryCard key={drill.id} drill={drill} onNote={onNote} onOpen={onOpen}/>)}</div>}
   {creating && <CreateDrillDialog onClose={() => setCreating(false)}/>}</div>
 }
 
-function DrillLibraryRow({ drill, onNote, onOpen }: { drill:{nodeId:string;title:string;description:string|null;diagramUrl:string|null;status:string;durationMinutes:number|null;isPinned:boolean;isSystem:boolean}; onNote:(target:NoteTarget)=>void; onOpen:(drill:{nodeId:string;title:string})=>void }) {
+function DrillLibraryCard({ drill, onNote, onOpen }: { drill:{nodeId:string;title:string;description:string|null;diagramUrl:string|null;status:string;durationMinutes:number|null;isPinned:boolean;isSystem:boolean}; onNote:(target:NoteTarget)=>void; onOpen:(drill:{nodeId:string;title:string})=>void }) {
   const pin = useSetLibraryPin(drill.nodeId)
-  return <article className="ontology-row">
-    {drill.diagramUrl ? <img className="drill-row-image" src={drill.diagramUrl} alt=""/> : <div className="ontology-symbol"><Dumbbell size={19}/></div>}
-    <div className="ontology-copy"><h2>{drill.title}</h2><p>{drill.description || `${drill.status.replaceAll('_', ' ')}${drill.durationMinutes ? ` · ${drill.durationMinutes} min` : ''}`}</p><span className={drill.isSystem ? 'pill' : 'pill personal-idea'}>{drill.isSystem ? 'Starter drill' : 'Personal idea'}</span></div>
-    <button className="note-action" onClick={() => onNote({nodeId:drill.nodeId,title:drill.title,type:'drill'})}><NotebookPen size={16}/> Note</button>
-    <button className="toolbar-icon" aria-label={drill.isPinned ? `Unpin ${drill.title}` : `Pin ${drill.title}`} disabled={pin.isPending} onClick={() => pin.mutate(!drill.isPinned)}>{drill.isPinned ? <PinOff size={17}/> : <Pin size={17}/>}</button>
-    <button className="button secondary" onClick={() => onOpen(drill)}>Open drill <ChevronRight size={16}/></button>
-  </article>
+  return <LibraryCatalogCard
+    icon={Dumbbell}
+    imageSrc={drill.diagramUrl}
+    imageAlt={drill.diagramUrl ? `${drill.title} diagram` : ''}
+    title={drill.title}
+    context={drill.description || drill.status.replaceAll('_', ' ')}
+    metadata={[drill.durationMinutes ? `${drill.durationMinutes} min` : 'Open duration', drill.status.replaceAll('_', ' ')]}
+    tags={[drill.isSystem ? 'Starter drill' : 'Personal idea']}
+    onNote={() => onNote({nodeId:drill.nodeId,title:drill.title,type:'drill'})}
+    onOpen={() => onOpen(drill)}
+    secondaryActions={<button className="catalog-icon-action" aria-label={drill.isPinned ? `Unpin ${drill.title}` : `Pin ${drill.title}`} disabled={pin.isPending} onClick={() => pin.mutate(!drill.isPinned)}>{drill.isPinned ? <PinOff size={17}/> : <Pin size={17}/>}</button>}
+  />
 }
 
 function CreateDrillDialog({ onClose }: { onClose:()=>void }) {
