@@ -35,9 +35,9 @@ export function PublicShare({ token }: { token: string }) {
   }, [token])
 
   return (
-    <main className="public-share-page">
-      <article className="public-share-card">
-        <a className="brand-link" href="/">Table Tennis Learning Library</a>
+    <main className="login-page">
+      <article className="login-card">
+        <a href="/">Table Tennis Learning Library</a>
         {!data && !error && <p className="muted">Loading shared item…</p>}
         {error && <><h1>Share unavailable</h1><p>{error}</p></>}
         {data && <>
