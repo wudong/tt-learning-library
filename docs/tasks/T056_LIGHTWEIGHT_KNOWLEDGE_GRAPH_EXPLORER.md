@@ -1,8 +1,9 @@
 # T056 — Lightweight Knowledge Graph Explorer
 
-> Status: In progress  
+> Status: Done  
 > Roadmap: Post-MVP product experiment  
-> GitHub issue: [#6](https://github.com/wudong/tt-learning-library/issues/6)
+> GitHub issue: [#6](https://github.com/wudong/tt-learning-library/issues/6)  
+> Pull request: [#20](https://github.com/wudong/tt-learning-library/pull/20)
 
 ## Goal
 
@@ -24,7 +25,7 @@ Expose the existing table-tennis knowledge graph through a small, useful, read-o
 - [x] Add a lightweight usefulness question using the existing feedback service.
 - [x] Document the API, UX, accessibility, privacy, measurement, and non-goals.
 - [x] Add integration coverage for grouping, direction, navigation, ownership, capping, and unsupported centers.
-- [ ] Pass the repository Quality workflow.
+- [x] Pass the repository Quality workflow.
 - [ ] Review the experiment in production and decide whether another graph interaction is justified.
 
 ## Acceptance criteria
@@ -59,9 +60,9 @@ Expose the existing table-tennis knowledge graph through a small, useful, read-o
 - The endpoint does not expose arbitrary graph editing.
 - Experiment feedback sends only the center type and aggregate counts, not node titles or relationship contents.
 
-## Validation plan
+## Validation
 
-The pull request Quality workflow must run:
+GitHub Actions Quality run #17 passed on the pull-request head:
 
 ```text
 typecheck
