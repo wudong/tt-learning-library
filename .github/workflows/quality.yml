@@ -80,5 +80,73 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Capture mobile UI screenshots
+        run: |
+          set -euo pipefail
+          bun run db:seed
+          bun run dev > mobile-audit-server.log 2>&1 &
+          DEV_PID=$!
+          cleanup() {
+            kill "$DEV_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:5174/ >/dev/null && curl -fsS http://localhost:3003/api/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" = "60" ]; then
+              cat mobile-audit-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          OVERVIEW=$(curl -fsS http://localhost:3003/api/library/overview)
+          TOPIC_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.topics[0].nodeId // empty')
+          SKILL_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.skills[0].nodeId // empty')
+          DRILL_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.drills[0].nodeId // empty')
+          test -n "$TOPIC_ID"
+          test -n "$SKILL_ID"
+          test -n "$DRILL_ID"
+
+          CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
+          test -n "$CHROME"
+          mkdir -p mobile-ui-screenshots
+
+          capture() {
+            width=$1
+            height=$2
+            name=$3
+            route=$4
+            "$CHROME" \
+              --headless=new \
+              --no-sandbox \
+              --disable-dev-shm-usage \
+              --disable-gpu \
+              --hide-scrollbars \
+              --run-all-compositor-stages-before-draw \
+              --virtual-time-budget=5000 \
+              --window-size="${width},${height}" \
+              --screenshot="mobile-ui-screenshots/${name}.png" \
+              "http://localhost:5174${route}"
+          }
+
+          capture 384 900 library-384 /library
+          capture 384 900 topic-detail-384 "/library/topics/${TOPIC_ID}"
+          capture 384 900 drill-detail-384 "/library/drills/${DRILL_ID}"
+          capture 320 800 library-320 /library
+          capture 320 800 skill-detail-320 "/library/skills/${SKILL_ID}"
+
+      - name: Upload mobile UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ui-screenshots
+          path: |
+            mobile-ui-screenshots
+            mobile-audit-server.log
+          if-no-files-found: warn
+
       - name: Verify PWA
         run: bun run test:pwa
