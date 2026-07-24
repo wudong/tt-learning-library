@@ -32,6 +32,7 @@ const pageMeta = (path: string) => {
   if (path === '/') return { title: 'Home', eyebrow: 'Your learning today' }
   if (path === '/inbox') return { title: 'Inbox', eyebrow: 'Captured for later' }
   if (path === '/library') return { title: 'Library', eyebrow: 'Skills, videos and practice' }
+  if (path.startsWith('/library/connections/')) return { title: 'Connections', eyebrow: 'Knowledge graph', back: '/library' }
   if (path.startsWith('/library/topics/')) return { title: 'Topic', eyebrow: 'Learning area', back: '/library' }
   if (path.startsWith('/library/skills/')) return { title: 'Skill', eyebrow: 'Learning detail', back: '/library' }
   if (path.startsWith('/library/drills/')) return { title: 'Drill', eyebrow: 'Practice detail', back: '/library' }
