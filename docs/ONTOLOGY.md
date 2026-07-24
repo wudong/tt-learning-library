@@ -27,6 +27,8 @@ packages/shared/src/constants/ontology.ts
   outcome.
 - **Video**: may belong to multiple Topics and explain or demonstrate multiple
   Skills.
+- **Picture**: is a stored visual learning resource that may belong to Topics,
+  explain or demonstrate Skills, and support Drills.
 - **Note**: may attach directly to a Topic, Skill, Video, Drill, or Mistake.
 - Synonyms are normalized to one canonical Skill name; aliases are a future
   search concern, not duplicate ontology entries.

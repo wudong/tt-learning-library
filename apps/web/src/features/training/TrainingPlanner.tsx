@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { ArrowDown, ArrowUp, CalendarDays, Link2, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { CreateTrainingSessionRequest } from '@ttll/shared'
-import { useCreateLinkedTrainingDrill, useCreateTrainingSession, useLibraryOverview, useTrainingPracticeOptions } from '../../lib/api/hooks'
+import { useCreateTrainingSession, useLibraryOverview, useTrainingPracticeOptions } from '../../lib/api/hooks'
 
 type Mode = 'planned'|'quick'|'manual'
 type BlockDraft = {
@@ -141,8 +141,6 @@ function BlockEditor({
   onRemove: () => void
 }) {
   const options = useTrainingPracticeOptions(block.skillId)
-  const createDrill = useCreateLinkedTrainingDrill(block.skillId)
-  const [drillTitle, setDrillTitle] = useState('')
   return <article className="block-editor">
     <header>
       <span className="block-order">{index + 1}</span>
@@ -161,18 +159,7 @@ function BlockEditor({
       <label className="duration-field"><span>{mode === 'manual' ? 'Actual minutes' : 'Target minutes'}</span><input className="input" type="number" inputMode="numeric" min="1" max="180" value={block.minutes} onChange={(event) => onChange({ minutes: Number(event.currentTarget.value) })}/></label>
       <label><span>Drill <small>optional, linked to skill</small></span><select disabled={!block.skillId || options.isLoading} value={block.drillId} onChange={(event) => onChange({ drillId: event.currentTarget.value })}><option value="">{options.isLoading ? 'Loading drills…' : 'No drill selected'}</option>{options.data?.drills.map((drill) => <option key={drill.id} value={drill.id}>{drill.title}</option>)}</select></label>
       <label><span>Reference video <small>optional, linked to skill</small></span><select disabled={!block.skillId || options.isLoading} value={block.videoId} onChange={(event) => onChange({ videoId: event.currentTarget.value })}><option value="">{options.isLoading ? 'Loading videos…' : 'No video selected'}</option>{options.data?.videos.map((video) => <option key={video.id} value={video.id}>{video.title}</option>)}</select></label>
-      {block.skillId && options.data && options.data.drills.length === 0 && <div className="quick-drill-create">
-        <span><Link2 size={16}/> No drill linked to this skill yet.</span>
-        <input className="input" value={drillTitle} maxLength={200} placeholder="Name a simple drill" onChange={(event) => setDrillTitle(event.currentTarget.value)}/>
-        <button className="button secondary" disabled={!drillTitle.trim() || createDrill.isPending} onClick={async () => {
-          try {
-            const drill = await createDrill.mutateAsync({ title: drillTitle.trim(), skillNodeId: options.data!.skill.nodeId })
-            onChange({ drillId: drill.id })
-            setDrillTitle('')
-            toast.success('Drill created and linked')
-          } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not create drill') }
-        }}>{createDrill.isPending ? 'Creating…' : 'Create drill'}</button>
-      </div>}
+      {block.skillId && options.data && options.data.drills.length === 0 && <p className="attachment-hint"><Link2 size={16}/> No curated Drill is linked to this Skill yet. You can leave Drill unselected.</p>}
       {block.skillId && options.data && options.data.videos.length === 0 && <p className="attachment-hint"><Link2 size={16}/> No linked videos yet. Link a tutorial to this skill from Library.</p>}
       <label className="focus-field"><span>{mode === 'manual' ? 'Training note' : 'Focus cue'} <small>optional</small></span><input className="input" value={block.focusNote} maxLength={500} placeholder="Stay low, recover after every ball…" onChange={(event) => onChange({ focusNote: event.currentTarget.value })}/></label>
       {mode === 'manual' && <label><span>Confidence after training <small>optional</small></span><select value={block.confidence} onChange={(event) => onChange({ confidence: event.currentTarget.value })}><option value="">No check-in</option><option value="1">1 · Not clicking yet</option><option value="2">2 · Starting to click</option><option value="3">3 · Repeatable in drills</option><option value="4">4 · Reliable under pressure</option><option value="5">5 · Match ready</option></select></label>}

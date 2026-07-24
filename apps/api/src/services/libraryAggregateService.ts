@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import type { Database } from '@ttll/db'
-import { GraphRepository, NoteDrillRepository, TopicSkillRepository, provisionOntology } from '@ttll/db'
+import { GraphRepository, NoteDrillRepository, TopicSkillRepository, VideoRepository, provisionOntology } from '@ttll/db'
 import { NOTE_PARENT_NODE_TYPES, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
 
 export class LibraryAggregateService {
@@ -9,7 +9,7 @@ export class LibraryAggregateService {
   async getOverview(userId: string) {
     await provisionOntology(this.db, userId)
     const repository = new TopicSkillRepository(this.db)
-    const [systemTopics, systemSkills] = await Promise.all([repository.listSystemTopics(userId), repository.listSystemSkills(userId)])
+    const [systemTopics, systemSkills, drills] = await Promise.all([repository.listSystemTopics(userId), repository.listSystemSkills(userId), new NoteDrillRepository(this.db).listDrills(userId)])
     const topics = systemTopics.filter((topic) => (TABLE_TENNIS_TOPICS as readonly string[]).includes(topic.name))
     const skills = systemSkills.filter((skill) => TABLE_TENNIS_SKILLS.some((definition) => definition.name === skill.name))
     const graph = new GraphRepository(this.db)
@@ -19,7 +19,62 @@ export class LibraryAggregateService {
     ])
     const topicCounts = topics.map((topic) => [topic.id, topicNodeCounts.get(topic.node_id) ?? 0] as const)
     const skillCounts = skills.map((skill) => [skill.id, skillNodeCounts.get(skill.node_id) ?? 0] as const)
-    return { topics, skills, topicVideoCounts: Object.fromEntries(topicCounts), skillVideoCounts: Object.fromEntries(skillCounts) }
+    return { topics, skills, drills, topicVideoCounts: Object.fromEntries(topicCounts), skillVideoCounts: Object.fromEntries(skillCounts) }
+  }
+
+  async getNodeResources(userId: string, nodeId: string) {
+    const graph = new GraphRepository(this.db)
+    const node = await graph.getNode(userId, nodeId)
+    if (!node || !['topic', 'skill', 'drill'].includes(node.node_type)) throw new Error('NOT_FOUND: Library item not found')
+    const related = await graph.related(userId, nodeId, ['belongs_to', 'explains', 'demonstrates', 'drill_for', 'practices'])
+    const videos = (await Promise.all(related.filter((item) => item.node_type === 'video').map((item) => new VideoRepository(this.db).getByNodeId(userId, item.id)))).filter((item) => !!item)
+    const drillRows = (await Promise.all(related.filter((item) => item.node_type === 'drill').map((item) =>
+      this.db.selectFrom('drills').selectAll().where('user_id', '=', userId).where('node_id', '=', item.id).where('deleted_at', 'is', null).executeTakeFirst()
+    ))).filter((item) => !!item)
+    const preference = node.node_type === 'topic'
+      ? await this.db.selectFrom('topics').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
+      : node.node_type === 'skill'
+        ? await this.db.selectFrom('skills').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
+        : await this.db.selectFrom('drills').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
+    const selectedDrill = node.node_type === 'drill' ? await this.db.selectFrom('drills').selectAll().where('user_id','=',userId).where('node_id','=',nodeId).where('deleted_at','is',null).executeTakeFirst() : undefined
+    const drillSteps = selectedDrill ? await new NoteDrillRepository(this.db).listSteps(userId, selectedDrill.id) : []
+    return { node, videos, skills: related.filter((item) => item.node_type === 'skill'), drills: drillRows, drill: selectedDrill, drillSteps, isPinned: preference?.is_pinned === 1 }
+  }
+
+  async setPinned(userId: string, nodeId: string, pinned: boolean) {
+    const node = await new GraphRepository(this.db).getNode(userId, nodeId)
+    if (!node || !['topic', 'skill', 'drill'].includes(node.node_type)) throw new Error('NOT_FOUND: Library item not found')
+    if (node.node_type === 'drill') await new NoteDrillRepository(this.db).setPinnedByNode(userId, nodeId, pinned)
+    else await new TopicSkillRepository(this.db).setPinnedByNode(userId, nodeId, pinned)
+    return { nodeId, pinned }
+  }
+
+  async attachVideo(userId: string, nodeId: string, videoId: string) {
+    return this.db.transaction().execute(async (trx) => {
+      const graph = new GraphRepository(trx)
+      const [target, video] = await Promise.all([graph.getNode(userId, nodeId), new VideoRepository(trx).getById(userId, videoId)])
+      if (!target || !['skill', 'drill'].includes(target.node_type)) throw new Error('NOT_FOUND: Library item not found')
+      if (!video) throw new Error('NOT_FOUND: Video not found')
+      const edge = target.node_type === 'skill'
+        ? await graph.createEdge({ userId, sourceNodeId: video.node_id, targetNodeId: target.id, edgeType: 'explains' })
+        : await graph.createEdge({ userId, sourceNodeId: target.id, targetNodeId: video.node_id, edgeType: 'drill_for' })
+      return { edge, video }
+    })
+  }
+
+  async linkPersonalDrillToSkill(userId: string, drillNodeId: string, skillNodeId: string) {
+    return this.db.transaction().execute(async (trx) => {
+      const graph = new GraphRepository(trx)
+      const [drillNode, skillNode, drill] = await Promise.all([
+        graph.getNode(userId, drillNodeId),
+        graph.getNode(userId, skillNodeId),
+        trx.selectFrom('drills').select(['id', 'is_system']).where('user_id', '=', userId).where('node_id', '=', drillNodeId).where('deleted_at', 'is', null).executeTakeFirst(),
+      ])
+      if (!drillNode || drillNode.node_type !== 'drill' || !drill) throw new Error('NOT_FOUND: Drill not found')
+      if (drill.is_system === 1) throw new Error('VALIDATION_ERROR: Starter Drill links are protected')
+      if (!skillNode || skillNode.node_type !== 'skill') throw new Error('NOT_FOUND: Skill not found')
+      return graph.createEdge({ userId, sourceNodeId: drillNodeId, targetNodeId: skillNodeId, edgeType: 'practices' })
+    })
   }
 
   async createTopic(userId: string, input: { name: string; description?: string }) {
@@ -61,9 +116,16 @@ export class LibraryAggregateService {
       const graph = new GraphRepository(trx)
       const node = await graph.createNode({ userId, nodeType: 'drill', title: input.title, summary: input.description ?? null })
       const drill = await new NoteDrillRepository(trx).createDrill({ userId, nodeId: node.id, title: input.title, description: input.description })
-      if (input.skillNodeId) await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: input.skillNodeId, edgeType: 'drill_for' })
+      if (input.skillNodeId) await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: input.skillNodeId, edgeType: 'practices' })
       if (input.videoNodeId) await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: input.videoNodeId, edgeType: 'drill_for' })
       return drill
     })
+  }
+
+  async createDrillFromDescription(userId: string, description: string) {
+    const normalized = description.trim().replace(/\s+/g, ' ')
+    const firstThought = normalized.split(/(?<=[.!?])\s/, 1)[0] ?? normalized
+    const title = firstThought.length <= 80 ? firstThought : `${firstThought.slice(0, 77).trimEnd()}…`
+    return this.createDrill(userId, { title, description: normalized })
   }
 }

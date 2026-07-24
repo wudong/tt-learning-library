@@ -100,12 +100,13 @@ Lead with learning structure:
 ```text
 Topics
 Skills
-Videos
 Drills
 Paths
 ```
 
-Do not lead with generic folders.
+Videos are supporting resources shown contextually within Skills and Drills,
+not a peer navigation section. Do not lead with generic folders or video
+provider organization.
 
 ### 4.3 Desktop Enhancement
 
@@ -415,12 +416,16 @@ Tabs/sections:
 ```text
 Topics
 Skills
-Videos
 Drills
 Paths
 ```
 
 Lead cards with meaningful learning information:
+
+Topic and Skill cards open dedicated full pages with stable URLs. Pinned
+Topics, Skills, and Drills sort first. To avoid presenting the full Skill
+ontology at once, the Skills tab initially shows pinned Skills and requires a
+Topic selection or search for broader browsing.
 
 Skill card:
 
@@ -431,7 +436,7 @@ Practicing
 3 videos • 2 drills
 ```
 
-Video card:
+Linked video resource:
 
 ```text
 Reverse Pendulum Serve Tutorial
@@ -561,6 +566,13 @@ Related mentions
 
 Notes should be lightweight.
 
+Pictures use the same contextual model as notes: the user opens a knowledge
+item, focuses a clearly labeled paste target, and pastes a screenshot or chooses
+a file. The mobile layout shows a compact image grid with explicit remove
+controls. Upload feedback must distinguish local selection from durable
+database persistence. Supported formats and the 5 MB limit are visible before
+upload.
+
 Phone behavior:
 
 - short note forms may use a sheet;
@@ -602,7 +614,6 @@ Rules:
 Fields:
 
 ```text
-Title
 Description
 Instructions
 Difficulty
@@ -610,7 +621,17 @@ Duration
 Repetition target
 Status
 Linked skills/videos
+Instructional diagram when available
+Ordered stroke sequence with a visible spin badge per step
 ```
+
+Creation is intentionally simpler than the full detail model: the Add Drill
+dialog asks only for a description. The app derives a short title. Users are not
+asked to configure Skills, sequence steps, spin, or diagrams during capture.
+Curated items display a `Starter drill` badge; description-only user items
+display a `Personal idea` badge in lists and Drill details.
+After saving, a Personal idea may optionally be linked to an existing Skill
+from Drill details using bounded search results. This never blocks capture.
 
 Actions:
 
@@ -621,6 +642,11 @@ Mark Done
 Link Item
 Share
 ```
+
+Starter Drill diagrams use one consistent overhead-table visual language.
+Numbered paths correspond to the structured steps displayed immediately below
+the image. The UI, rather than image text, names each stroke and spin so the
+content stays accessible and can be corrected without regenerating the asset.
 
 ### 6.14 Learning Path
 

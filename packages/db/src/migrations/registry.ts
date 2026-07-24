@@ -5,4 +5,11 @@ import * as inboxMetadata from './004_inbox_metadata'
 import * as privateDataRls from './005_private_data_rls'
 import * as feedbackRls from './006_feedback_rls'
 import * as training from './007_training'
-export const migrations = [initial, feedback, feedbackIssue, inboxMetadata, privateDataRls, feedbackRls, training]
+import * as knowledgeAttachments from './008_knowledge_attachments'
+import * as topicVisibility from './009_topic_visibility'
+import * as pictureGraphNodes from './010_picture_graph_nodes'
+import * as ontologyPins from './011_ontology_pins'
+import * as starterDrills from './012_starter_drills'
+import * as drillSteps from './013_drill_steps'
+import * as drillDiagrams from './014_drill_diagrams'
+export const migrations = [initial, feedback, feedbackIssue, inboxMetadata, privateDataRls, feedbackRls, training, knowledgeAttachments, topicVisibility, pictureGraphNodes, ontologyPins, starterDrills, drillSteps, drillDiagrams]

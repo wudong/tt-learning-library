@@ -398,6 +398,8 @@ description         text null
 parent_topic_id     text null references topics(id)
 sort_order          integer not null default 0
 is_system           integer not null default 0
+is_hidden           integer not null default 0
+is_pinned           integer not null default 0
 created_at          text not null
 updated_at          text not null
 deleted_at          text null
@@ -417,6 +419,9 @@ Rules:
 - hierarchy cycle must be rejected;
 - `parent_topic_id` is authoritative;
 - maintain corresponding graph relationship transactionally.
+- `is_hidden` is an owner-specific Library preference; it never deletes the
+  Topic, its Skills, or attached learning objects;
+- `is_pinned` is an owner-specific ordering preference.
 
 ### 7.3 `skills`
 
@@ -430,6 +435,7 @@ description         text null
 difficulty          text null
 status              text not null default 'not_started'
 is_system           integer not null default 0
+is_pinned           integer not null default 0
 created_at          text not null
 updated_at          text not null
 deleted_at          text null
@@ -457,9 +463,44 @@ Rules:
 
 - `topic_id` is the primary topic;
 - maintain matching `belongs_to` graph edge transactionally;
+- `is_pinned` is an owner-specific ordering preference.
 - additional related topics, if later supported, use graph edges and do not overwrite primary topic.
 
 ### 7.4 `notes`
+
+### 7.4A `pictures`
+
+Pictures are first-class private learning resources. Every Picture has a
+`graph_nodes` row with `node_type=picture`; PostgreSQL stores its bytes in the
+domain table. `parent_node_id` records its initial contextual attachment while
+typed graph edges provide semantic traversal.
+
+```text
+id                text primary key
+node_id           text not null unique FK graph_nodes.id
+user_id           text not null FK users.id
+parent_node_id    text not null FK graph_nodes.id
+file_name         text not null
+media_type        text not null       -- image/jpeg|image/png|image/webp
+byte_size         integer not null    -- 1..5242880
+width             integer null
+height            integer null
+content           bytea not null
+created_at        text not null
+updated_at        text not null
+deleted_at        text null
+```
+
+Rules:
+
+- creation writes graph node, Picture row, and required relationship in one
+  transaction;
+- reads and deletes require both attachment ownership and an active row;
+- Picture-to-Topic uses `belongs_to`, Picture-to-Skill uses
+  `explains|demonstrates`, and Drill-to-Picture uses `drill_for`;
+- binary content is never included in list DTOs, logs, or graph traversal;
+- public share projections exclude attachments unless their object-specific
+  allowlist is explicitly revised.
 
 One table for plain and timestamped notes.
 
@@ -502,11 +543,14 @@ node_id             text not null references graph_nodes(id)
 user_id             text not null references users(id)
 title               text not null
 description         text null
+diagram_url         text null
 instructions        text null
 difficulty          text null
 duration_minutes    integer null
 repetition_target   integer null
 status              text not null default 'planned'
+is_system           integer not null default 0
+is_pinned           integer not null default 0
 created_at          text not null
 updated_at          text not null
 deleted_at          text null
@@ -522,6 +566,38 @@ archived
 ```
 
 Links to skills/videos use graph edges.
+
+`diagram_url` identifies the bundled instructional diagram for a curated
+system Drill. The ordered `drill_steps` remain authoritative for stroke
+sequence and spin; the raster asset is a visual aid.
+
+Lightweight user Drill capture requires only `description`; the service derives
+`title` before the transactional node/domain write. Such Drills are private,
+have `is_system=0`, and may initially have no diagram, steps, or Skill edge.
+
+### 7.5A `drill_steps`
+
+Ordered Drill steps provide the authoritative input for diagrams and accessible
+spin labels.
+
+```text
+id             text primary key
+drill_id       text not null FK drills.id
+user_id        text not null FK users.id
+position       integer not null
+actor          text not null
+stroke         text not null
+spin           text not null -- topspin|backspin|sidespin|no_spin|variable
+from_zone      text not null
+target_zone    text not null
+instruction    text null
+created_at     text not null
+updated_at     text not null
+deleted_at     text null
+```
+
+Active positions are unique per owned Drill. Raster diagrams never become the
+authority for stroke order or spin.
 
 ### 7.6 `mistakes`
 
@@ -800,11 +876,14 @@ Examples:
 ```text
 video       --explains-->            skill
 video       --demonstrates-->        skill
+picture     --explains|demonstrates--> skill
 video       --belongs_to-->          topic
+picture     --belongs_to-->          topic
 skill       --belongs_to-->          topic
 topic       --belongs_to-->          topic
 drill       --practices-->           skill
 drill       --drill_for-->           video
+drill       --drill_for-->           picture
 mistake     --common_mistake_for-->  skill
 skill       --requires-->            skill
 skill       --prerequisite_of-->     skill

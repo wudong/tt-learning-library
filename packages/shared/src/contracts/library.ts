@@ -1,26 +1,48 @@
 import { z } from 'zod'
 import { dataEnvelope, idSchema } from './common'
 import { GraphNodeDtoSchema } from './graph'
-import { VideoResponseSchema } from './video'
+import { VideoDtoSchema, VideoResponseSchema } from './video'
 
 export const TopicDtoSchema = z.object({
   id: idSchema, nodeId: idSchema, name: z.string(), description: z.string().nullable(),
-  parentTopicId: idSchema.nullable(), sortOrder: z.number().int(), isSystem: z.boolean()
+  parentTopicId: idSchema.nullable(), sortOrder: z.number().int(), isSystem: z.boolean(), isHidden: z.boolean(), isPinned: z.boolean()
 })
 export type TopicDto = z.infer<typeof TopicDtoSchema>
 
 export const SkillDtoSchema = z.object({
   id: idSchema, nodeId: idSchema, topicId: idSchema.nullable(), name: z.string(),
   description: z.string().nullable(), difficulty: z.string().nullable(), status: z.string(),
-  isSystem: z.boolean()
+  isSystem: z.boolean(), isPinned: z.boolean()
 })
 export type SkillDto = z.infer<typeof SkillDtoSchema>
+export const DrillDtoSchema = z.object({
+  id: idSchema, nodeId: idSchema, title: z.string(), description: z.string().nullable(),
+  diagramUrl: z.string().nullable(),
+  instructions: z.string().nullable(), difficulty: z.string().nullable(),
+  durationMinutes: z.number().int().nullable(), repetitionTarget: z.number().int().nullable(),
+  status: z.string(), isSystem: z.boolean(), isPinned: z.boolean()
+})
+export const DrillStepDtoSchema = z.object({
+  id: idSchema, position: z.number().int().nonnegative(), actor: z.string(),
+  stroke: z.string(), spin: z.enum(['topspin','backspin','sidespin','no_spin','variable']),
+  fromZone: z.string(), targetZone: z.string(), instruction: z.string().nullable()
+})
 
 export const LibraryOverviewResponseSchema = dataEnvelope(z.object({
   topics: z.array(TopicDtoSchema),
   skills: z.array(SkillDtoSchema),
+  drills: z.array(DrillDtoSchema),
   topicVideoCounts: z.record(idSchema, z.number().int().nonnegative()),
   skillVideoCounts: z.record(idSchema, z.number().int().nonnegative())
+}))
+export const LibraryNodeResourcesResponseSchema = dataEnvelope(z.object({
+  node: GraphNodeDtoSchema,
+  videos: z.array(VideoDtoSchema),
+  skills: z.array(GraphNodeDtoSchema),
+  drills: z.array(DrillDtoSchema),
+  drill: DrillDtoSchema.nullable(),
+  drillSteps: z.array(DrillStepDtoSchema),
+  isPinned: z.boolean()
 }))
 
 export const CreateSkillRequestSchema = z.object({

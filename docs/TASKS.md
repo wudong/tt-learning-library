@@ -542,6 +542,24 @@ Acceptance:
 - `mm:ss` and `hh:mm:ss`;
 - video-parent validation.
 
+### [x] T028A — Implement Knowledge-Node Picture Attachments
+
+Deliverables:
+
+- PostgreSQL `bytea` attachment storage;
+- owner-scoped repository and authenticated API;
+- JPEG/PNG/WebP signature and 5 MB size validation;
+- clipboard paste and file selection UI;
+- private, no-store binary retrieval;
+- soft-delete removal.
+
+Acceptance:
+
+- picture attaches only to an active owned graph node;
+- binary data is absent from list DTOs and logs;
+- public share projections do not expose pictures;
+- video, skill, and topic contexts support picture paste.
+
 ### [ ] T030 — Implement Drills
 
 Deliverables:
@@ -553,6 +571,14 @@ Deliverables:
 Acceptance:
 
 - node + row + links atomic.
+
+Implemented extensions:
+
+- curated starter Drill catalog persisted idempotently;
+- description-only private Drill capture from Library with an automatically derived title;
+- canonical `drill --practices--> skill` relationships;
+- owner-specific Topic, Skill, and Drill pinning;
+- pinned-first and Topic/search-gated Skill browsing.
 
 ### [ ] T031 — Implement Mistakes
 

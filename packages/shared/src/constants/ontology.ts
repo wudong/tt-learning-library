@@ -8,6 +8,12 @@ export const TABLE_TENNIS_TOPICS = [
   'Para Table Tennis', 'Coaching'
 ] as const
 
+export const PLAYER_DEFAULT_TOPICS = [
+  'Fundamentals', 'Serve', 'Receive', 'Spin', 'Forehand', 'Backhand', 'Footwork',
+  'Defense', 'Tactics', 'Training & Drills', 'Match Analysis',
+  'Physical Training', 'Mental Game', 'Equipment'
+] as const satisfies readonly (typeof TABLE_TENNIS_TOPICS[number])[]
+
 export const TABLE_TENNIS_SKILLS = [
   { name: 'Ready Position', topic: 'Fundamentals' },
   { name: 'Shakehand Grip', topic: 'Fundamentals' },
@@ -187,6 +193,54 @@ export const TABLE_TENNIS_SKILLS = [
   { name: 'Adapting Coaching to Age and Ability', topic: 'Coaching' }
 ] as const
 
+export const TABLE_TENNIS_DRILLS = [
+  { title: 'Forehand Crosscourt Consistency', skill: 'Forehand Drive', imageUrl: '/drills/forehand-crosscourt-consistency-v2.png', description: 'Cooperative crosscourt forehands with a consistency target.', durationMinutes: 8, steps: [
+    { actor:'player', stroke:'forehand_drive', spin:'topspin', fromZone:'near_forehand', targetZone:'far_forehand' },
+    { actor:'partner', stroke:'forehand_drive', spin:'topspin', fromZone:'far_forehand', targetZone:'near_forehand' }] },
+  { title: 'Backhand Crosscourt Consistency', skill: 'Backhand Drive', imageUrl: '/drills/backhand-crosscourt-consistency.png', description: 'Cooperative backhand exchanges with stable timing and placement.', durationMinutes: 8, steps: [
+    { actor:'player', stroke:'backhand_drive', spin:'topspin', fromZone:'near_backhand', targetZone:'far_backhand' },
+    { actor:'partner', stroke:'backhand_drive', spin:'topspin', fromZone:'far_backhand', targetZone:'near_backhand' }] },
+  { title: 'Two-Point Forehand Footwork', skill: 'Side-Step Footwork', imageUrl: '/drills/two-point-forehand-footwork.png', description: 'Alternate forehands from two positions and recover after every stroke.', durationMinutes: 8, steps: [
+    { actor:'partner', stroke:'block', spin:'no_spin', fromZone:'far_middle', targetZone:'near_backhand' },
+    { actor:'player', stroke:'forehand_drive', spin:'topspin', fromZone:'near_backhand', targetZone:'far_backhand' },
+    { actor:'partner', stroke:'block', spin:'no_spin', fromZone:'far_middle', targetZone:'near_forehand' },
+    { actor:'player', stroke:'forehand_drive', spin:'topspin', fromZone:'near_forehand', targetZone:'far_forehand' }] },
+  { title: 'Forehand–Backhand Alternation', skill: 'Forehand–Backhand Transition', imageUrl: '/drills/forehand-backhand-alternation.png', description: 'Alternate one forehand and one backhand while maintaining balance.', durationMinutes: 8, steps: [
+    { actor:'player', stroke:'backhand_drive', spin:'topspin', fromZone:'near_backhand', targetZone:'far_backhand' },
+    { actor:'partner', stroke:'block', spin:'no_spin', fromZone:'far_backhand', targetZone:'near_forehand' },
+    { actor:'player', stroke:'forehand_drive', spin:'topspin', fromZone:'near_forehand', targetZone:'far_backhand' },
+    { actor:'partner', stroke:'block', spin:'no_spin', fromZone:'far_backhand', targetZone:'near_backhand' }] },
+  { title: 'Falkenberg Pattern', skill: 'Falkenberg Footwork', imageUrl: '/drills/falkenberg-pattern.png', description: 'Backhand, pivot forehand, then wide forehand with continuous recovery.', durationMinutes: 10, steps: [
+    { actor:'player', stroke:'backhand_drive', spin:'topspin', fromZone:'near_backhand', targetZone:'far_backhand' },
+    { actor:'player', stroke:'pivot_forehand', spin:'topspin', fromZone:'near_backhand', targetZone:'far_backhand' },
+    { actor:'player', stroke:'forehand_drive', spin:'topspin', fromZone:'near_forehand', targetZone:'far_forehand' }] },
+  { title: 'Short Serve Target Practice', skill: 'Short Serve', imageUrl: '/drills/short-serve-target-practice.png', description: 'Serve short to marked forehand, middle, and backhand targets.', durationMinutes: 10, steps: [
+    { actor:'player', stroke:'serve', spin:'variable', fromZone:'near_backhand', targetZone:'far_short_forehand' },
+    { actor:'player', stroke:'serve', spin:'variable', fromZone:'near_backhand', targetZone:'far_short_middle' },
+    { actor:'player', stroke:'serve', spin:'variable', fromZone:'near_backhand', targetZone:'far_short_backhand' }] },
+  { title: 'Serve Variation Ladder', skill: 'Serve Variation and Disguise', imageUrl: '/drills/serve-variation-ladder.png', description: 'Repeat one action while changing spin, placement, and depth.', durationMinutes: 10, steps: [
+    { actor:'player', stroke:'serve', spin:'backspin', fromZone:'near_backhand', targetZone:'far_short_forehand' },
+    { actor:'player', stroke:'serve', spin:'no_spin', fromZone:'near_backhand', targetZone:'far_short_middle' },
+    { actor:'player', stroke:'serve', spin:'sidespin', fromZone:'near_backhand', targetZone:'far_long_backhand' }] },
+  { title: 'Short Push Control', skill: 'Short Push Receive', imageUrl: '/drills/short-push-control.png', description: 'Keep cooperative pushes short while varying placement.', durationMinutes: 8, steps: [
+    { actor:'player', stroke:'push', spin:'backspin', fromZone:'near_short_backhand', targetZone:'far_short_forehand' },
+    { actor:'partner', stroke:'push', spin:'backspin', fromZone:'far_short_forehand', targetZone:'near_short_backhand' }] },
+  { title: 'Backhand Flick Receive', skill: 'Backhand Flick Receive', imageUrl: '/drills/backhand-flick-receive.png', description: 'Receive short serves with a controlled backhand flick.', durationMinutes: 8, steps: [
+    { actor:'partner', stroke:'serve', spin:'backspin', fromZone:'far_backhand', targetZone:'near_short_backhand' },
+    { actor:'player', stroke:'backhand_flick', spin:'topspin', fromZone:'near_short_backhand', targetZone:'far_backhand' }] },
+  { title: 'Serve and Third-Ball Attack', skill: 'Third-Ball Attack', imageUrl: '/drills/serve-and-third-ball-attack.png', description: 'Serve, anticipate the return, and attack the third ball.', durationMinutes: 12, steps: [
+    { actor:'player', stroke:'serve', spin:'backspin', fromZone:'near_backhand', targetZone:'far_short_backhand' },
+    { actor:'partner', stroke:'push', spin:'backspin', fromZone:'far_short_backhand', targetZone:'near_long_backhand' },
+    { actor:'player', stroke:'forehand_loop', spin:'topspin', fromZone:'near_backhand', targetZone:'far_forehand' }] },
+  { title: 'Block-to-Counter Transition', skill: 'Counterattack From Defense', imageUrl: '/drills/block-to-counter-transition.png', description: 'Begin with controlled blocks, then counterattack an agreed ball.', durationMinutes: 10, steps: [
+    { actor:'partner', stroke:'topspin', spin:'topspin', fromZone:'far_middle', targetZone:'near_backhand' },
+    { actor:'player', stroke:'block', spin:'no_spin', fromZone:'near_backhand', targetZone:'far_middle' },
+    { actor:'player', stroke:'counter_topspin', spin:'topspin', fromZone:'near_forehand', targetZone:'far_forehand' }] },
+  { title: 'Open Against Backspin Multiball', skill: 'Opening Against Backspin', imageUrl: '/drills/open-against-backspin-multiball.png', description: 'Open repeatedly against fed backspin with recovery between balls.', durationMinutes: 10, steps: [
+    { actor:'feeder', stroke:'multiball_feed', spin:'backspin', fromZone:'far_middle', targetZone:'near_long_backhand' },
+    { actor:'player', stroke:'forehand_loop', spin:'topspin', fromZone:'near_backhand', targetZone:'far_forehand' }] }
+] as const
+
 export const NOTE_PARENT_NODE_TYPES = ['video', 'skill', 'topic', 'drill', 'mistake'] as const satisfies readonly NodeType[]
 
 type Pair = readonly [NodeType, NodeType]
@@ -194,17 +248,17 @@ const pairs = (...values: Pair[]) => values
 const sameTypePairs = (...types: NodeType[]) => types.map((type) => [type, type] as const)
 
 export const ONTOLOGY_RELATIONSHIPS = {
-  belongs_to: pairs(['video', 'topic'], ['skill', 'topic'], ['topic', 'topic']),
+  belongs_to: pairs(['video', 'topic'], ['picture', 'topic'], ['skill', 'topic'], ['topic', 'topic']),
   contains: pairs(
     ['learning_path', 'video'], ['learning_path', 'skill'], ['learning_path', 'drill'], ['learning_path', 'note'],
     ['collection', 'video'], ['collection', 'skill'], ['collection', 'drill'], ['collection', 'note'],
     ['practice_session', 'drill'], ['practice_session', 'video']
   ),
-  explains: pairs(['video', 'skill'], ['note', 'skill']),
-  demonstrates: pairs(['video', 'skill']),
+  explains: pairs(['video', 'skill'], ['picture', 'skill'], ['note', 'skill']),
+  demonstrates: pairs(['video', 'skill'], ['picture', 'skill']),
   practices: pairs(['drill', 'skill'], ['practice_session', 'skill']),
-  drill_for: pairs(['drill', 'skill'], ['drill', 'video']),
-  related_to: pairs(...sameTypePairs('video', 'skill', 'topic', 'drill')),
+  drill_for: pairs(['drill', 'skill'], ['drill', 'video'], ['drill', 'picture']),
+  related_to: pairs(...sameTypePairs('video', 'picture', 'skill', 'topic', 'drill'), ['picture', 'video'], ['video', 'picture']),
   requires: pairs(['skill', 'skill']),
   prerequisite_of: pairs(['skill', 'skill']),
   common_mistake_for: pairs(['mistake', 'skill']),
@@ -213,7 +267,7 @@ export const ONTOLOGY_RELATIONSHIPS = {
   contrasts_with: pairs(['skill', 'skill'], ['video', 'video']),
   saved_from: pairs(['video', 'source']),
   created_by: pairs(['video', 'creator']),
-  tagged_with: pairs(['video', 'tag'], ['skill', 'tag'], ['note', 'tag'], ['drill', 'tag'], ['mistake', 'tag'], ['learning_path', 'tag']),
+  tagged_with: pairs(['video', 'tag'], ['picture', 'tag'], ['skill', 'tag'], ['note', 'tag'], ['drill', 'tag'], ['mistake', 'tag'], ['learning_path', 'tag']),
   copied_from: pairs(['video', 'video'], ['skill', 'skill'], ['drill', 'drill']),
   forked_from: pairs(['video', 'video'], ['skill', 'skill'], ['drill', 'drill'])
 } as const satisfies Record<EdgeType, readonly Pair[]>
