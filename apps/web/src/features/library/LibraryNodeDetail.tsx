@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, CirclePlus, Dumbbell, Layers3, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
+import { ArrowLeft, CirclePlus, Dumbbell, Layers3, Network, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
 import { toast } from 'sonner'
 import { NodeNoteComposer } from '../../components/NodeNoteComposer'
 import { PictureAttachments } from '../../components/PictureAttachments'
@@ -29,6 +29,7 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
         <div className="ontology-symbol">{type === 'topic' ? <Layers3 size={22}/> : <Target size={22}/>}</div>
         <div className="library-detail-title"><span className="eyebrow">{type}</span><h1>{resources.data.node.title}</h1>{resources.data.node.summary && <p>{resources.data.node.summary}</p>}</div>
         <div className="row">
+          <button className="button secondary" onClick={() => navigate(`/library/connections/${nodeId}`)}><Network size={16}/> Explore connections</button>
           <button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16}/> Add note</button>
           <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!resources.data.isPinned)}>{resources.data.isPinned ? <><PinOff size={16}/> Unpin</> : <><Pin size={16}/> Pin to top</>}</button>
         </div>
