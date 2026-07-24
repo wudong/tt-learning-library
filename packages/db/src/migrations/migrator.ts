@@ -10,9 +10,9 @@ export async function ensureMigrationTable(db: Kysely<Database>) {
 }
 
 export async function migrateToLatest(db: Kysely<Database>) {
-  await ensureMigrationTable(db)
   await db.transaction().execute(async (trx) => {
     await sql`select pg_advisory_xact_lock(hashtext(${MIGRATION_LOCK_KEY}))`.execute(trx)
+    await ensureMigrationTable(trx)
     const applied = await trx.selectFrom('schema_migrations').select('id').execute()
     const appliedIds = new Set(applied.map((migration) => migration.id))
     for (const migration of migrations) {
