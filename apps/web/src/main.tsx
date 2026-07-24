@@ -9,6 +9,7 @@ import { AppUpdatePrompt } from './components/AppUpdatePrompt'
 import { AuthPwaHandoff } from './components/AuthPwaHandoff'
 import './styles.css'
 import './mobile-audit.css'
+import './mobile-review.css'
 const client = new QueryClient()
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
