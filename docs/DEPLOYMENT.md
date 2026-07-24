@@ -1,151 +1,150 @@
 # TT Learning Library — Deployment
 
-> Created: 2026-07-05  
-> Updated: 2026-07-22 (Supabase database/auth migration completed and verified on Render)
-> **Credentials vault**: `/Users/wudong/repo/gcloud/vault/tt-learning-library/secrets.md`  
-> **GCP Secret Manager**: `gcloud secrets versions access latest --secret="tt-learning-library-full-config" | jq`
+> Updated: 2026-07-24
 
-This document describes how to deploy the TT Learning Library on Render
-(frontend + backend) with Supabase PostgreSQL and Supabase Auth.
+This public runbook describes the deployment shape without publishing credential
+locations, provider resource IDs, project references, or secret-manager names.
+Keep the exact infrastructure inventory and recovery credentials in a private
+operations system.
 
-## Target Deployment Architecture
-
-```
-Render Static Site (tt-learning)
-  ├── rewrite /api/* → Render Web Service
-  └── custom domain via Cloudflare
-
-Render Web Service (tt-learning-api)
-  └── Supabase PostgreSQL + Auth (tt-learning)
-```
-
-- **Frontend**: Render Static Site, `tt-learning`
-- **Backend API**: Render Web Service, `tt-learning-api`
-- **Database/Auth**: Supabase project `tt-learning` (`jrabgxumevaduailkvhj`)
-- **Keep-awake**: cron-job.org ping every 10 minutes
-
-## Service Inventory
-
-### Supabase PostgreSQL and Auth
-
-| Field | Value |
-|---|---|
-| Project | `tt-learning` |
-| Project ref | `jrabgxumevaduailkvhj` |
-| Region | `eu-west-1` |
-| PG Version | 17.6 |
-| Runtime connection | Supavisor session pooler, port 5432 |
-| Migration connection | direct host, port 5432 |
-| Credentials | GCP Secret Manager, `tt-learning-library-supabase-*` |
-| Auth | passwordless email through Supabase Auth |
-| Status | ✅ ACTIVE_HEALTHY; schema/data migrated and count-verified |
-
-### GitHub Repository
-
-| Field | Value |
-|---|---|
-| URL | `https://github.com/wudong/tt-learning-library` |
-| Branch | `main` |
-| Status | ✅ Pushed |
-
-### Render API Service
-
-| Field | Value |
-|---|---|
-| Service ID | `srv-d95clokvikkc73djd0tg` |
-| URL | `https://tt-learning-api.onrender.com` |
-| Dashboard | https://dashboard.render.com/web/srv-d95clokvikkc73djd0tg |
-| Status | ✅ Live |
-
-### Render Static Site
-
-| Field | Value |
-|---|---|
-| Service ID | `srv-d95clt4vikkc73djd4ag` |
-| URL | `https://tt-learning.onrender.com` |
-| Dashboard | https://dashboard.render.com/static/srv-d95clt4vikkc73djd4ag |
-| Status | ✅ Live |
-
-Rewrite routes:
-- `/api/*` → `https://tt-learning-api.onrender.com/api/*` (route: `rdr-d95clvnaqgkc73evluf0`)
-- `/share-target` → `https://tt-learning-api.onrender.com/share-target` (must precede the SPA fallback and preserve POST bodies)
-- `/*` → `/index.html` (route: `rdr-d95clvgjs32c73fo3k50`)
-
-## Verification Results (2026-07-05)
-
-| Endpoint | Result |
-|---|---|
-| `GET /api/health` | `{"ok":true}` ✅ |
-| `GET /api/ready` | `{"ready":true,"database":true}` ✅ |
-| `GET /health.json` | `{"status":"ok"}` ✅ |
-| `GET /api/health` (via proxy) | `{"ok":true}` ✅ |
-| `POST /api/feedback` | `{"success":true}` ✅ |
-
-## Keep-Awake Ping
-
-Use cron-job.org:
+## Architecture
 
 ```text
-Dashboard: https://console.cron-job.org/dashboard
-Job name: tt-learning-api-health
-URL: https://tt-learning-api.onrender.com/api/health
-Method: GET
-Schedule: every 10 minutes
-Expected HTTP status: 200
+Static web host
+  ├── /api/*       → Hono API service
+  ├── /share-target → Hono API service (preserve POST body and status)
+  └── /*           → /index.html SPA fallback
+
+Hono API service
+  └── managed PostgreSQL + Supabase Auth
 ```
 
-## Database migration notes (2026-07-22)
+The `/share-target` rule must precede the SPA fallback. Public `/s/:token` pages
+are handled by the frontend SPA and retrieve an allowlisted projection from
+`/api/public/share/:token`.
 
-- A full custom-format backup of the Aiven `public` schema was created before
-  target writes. Aiven remains the rollback source until the Supabase cutover is
-  accepted.
-- All application migrations were applied to Supabase, followed by a data-only
-  restore excluding migration bookkeeping.
-- Source and target counts matched across all 17 application tables: 1 user,
-  12 graph nodes, 2 graph edges, 4 videos, 6 topics, 2 notes, 5 Inbox items,
-  4 feedback rows, and zero rows in the remaining tables.
-- Row-level security is enabled on all 17 private/application tables with no
-  browser Data API policies. Private data remains accessible only through Hono.
-- The existing `user_local` rows transfer transactionally on first login only
-  when the verified Supabase email matches `LEGACY_OWNER_EMAIL`.
+## Required environment
 
-## Historical Aiven setup notes (2026-07-05)
+Configure values equivalent to those documented in `.env.example`:
 
-- The Aiven `ttlearn` app user initially lacked `CREATE` on the `public` schema (the
-  database is owned by `avnadmin`). Without it, `migrateToLatest` crashed on
-  startup, which is why earlier Render deploys had status `update_failed` and the
-  service kept serving an old SQLite-based deploy.
-- Fix: as `avnadmin`, ran `GRANT CREATE, USAGE ON SCHEMA public TO ttlearn` (see
-  the credentials vault for the `avnadmin` password), then applied migrations
-  directly against Aiven with `DATABASE_URL=... bun run db:migrate`. All 18 tables
-  and 2 migrations are now present in `tt_learning`.
-- Verified end-to-end: a `POST /api/feedback` through the live Render API
-  produced a row readable directly from Aiven, confirming the live API is
-  connected to Aiven Postgres (not the SQLite fallback).
+- `DATABASE_URL`
+- `DATABASE_CA_CERT` when required by the database provider
+- `WEB_ORIGIN`
+- `PUBLIC_APP_ORIGIN`
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `AUTH_COOKIE_SECRET`
+- `HOSTED_AUTH_REQUIRED=true`
+- `LEGACY_OWNER_EMAIL` only while the one-time legacy ownership transfer is needed
 
-## Local Development
+Never commit real values. Never disable TLS certificate verification.
+
+## Build and deploy
+
+### Web
+
+```bash
+bun install --frozen-lockfile
+bun run --cwd apps/web build
+```
+
+Publish `apps/web/dist` as the static-site output.
+
+### API
+
+```bash
+bun install --frozen-lockfile
+bun run --cwd apps/api build
+```
+
+Run the API using the command configured by `apps/api/package.json`.
+
+## Migrations
+
+The migration runner uses a PostgreSQL advisory lock and applies pending
+migrations in one transaction. Production should run migrations before starting
+the new application revision:
+
+```bash
+bun install --frozen-lockfile
+bun run db:migrate
+```
+
+After the pre-deploy command is configured, set:
+
+```text
+AUTO_MIGRATE=false
+```
+
+This prevents normal API startup from changing the database. For backwards
+compatibility, startup migrations remain enabled unless explicitly disabled.
+
+`GET /api/ready` returns HTTP 503 when the database is unavailable or migrations
+are pending. The deployment platform should not route traffic until readiness
+returns HTTP 200.
+
+## Route configuration
+
+Configure rewrites in this order:
+
+1. `/share-target` → API `/share-target`, preserving POST bodies.
+2. `/api/*` → API `/api/*`.
+3. `/*` → frontend `/index.html`.
+
+Set `PUBLIC_APP_ORIGIN` to the user-facing frontend origin so generated share
+links never point at the API host.
+
+## Verification
+
+After deployment, verify:
+
+```text
+GET  /api/health                         → 200
+GET  /api/ready                          → 200, ready=true, no pending migrations
+POST /api/feedback                       → expected success response
+POST /share-target                       → 303 redirect without caching
+POST /api/share-links                    → shareUrl uses PUBLIC_APP_ORIGIN
+GET  /s/<valid-token>                    → public page without login
+GET  /api/public/share/<valid-token>     → allowlisted projection only
+DELETE /api/share-links/<id>             → subsequent public request unavailable
+```
+
+Also install the PWA on a supported Android device and verify native share-target
+capture, authentication handoff, and update prompts.
+
+## Database and privacy controls
+
+- Use the managed PostgreSQL session pooler for the persistent API when recommended.
+- Use a direct or migration-compatible connection for the pre-deploy migration command.
+- Enable row-level security on private application tables without browser Data API policies.
+- Access private data only through the authenticated Hono API.
+- Store only hashed share tokens and a safe prefix.
+- Keep database backups encrypted and access-controlled.
+
+## Backup and restore
+
+Before schema changes or provider migration:
+
+1. Create a provider snapshot or `pg_dump` custom-format backup.
+2. Record the migration version and application commit.
+3. Restore into a clean non-production database.
+4. Run `bun run db:status` and application smoke tests against the restored data.
+5. Record the restore date and outcome privately.
+
+Do not declare the release gate complete until at least one restore has been
+successfully exercised.
+
+## Local development
 
 ```bash
 bun install
+bun run db:up
 bun run db:migrate
-bun run dev          # API on :3003, Web on :5174
+bun run db:seed
+bun run dev
 ```
 
-The local dev uses PostgreSQL via docker-compose (`bun run db:up`, host port 5433,
-database `tt_learning`, owner `ttlearn`). `DATABASE_URL` must be a
-`postgres://` / `postgresql://` connection string; `sslmode=require` is
-honored for hosted (Aiven) connections. SQLite support has been deprecated.
-
-## Aiven CLI / API Access
-
-```bash
-# Login
-AIVEN_PASSWORD="$(gcloud secrets versions access latest --secret=tt-learning-library-aiven-account-password)" \
-avn user login "$(gcloud secrets versions access latest --secret=tt-learning-library-aiven-account-email)"
-
-# List services
-avn service list --project tt-learn
-
-# Get connection info
-avn service connection-info pg uri tt-learning-db --project tt-learn
-```
+The default local web origin is `http://localhost:5174` and the API listens on
+`http://localhost:3003`. PostgreSQL is required; SQLite is not supported.

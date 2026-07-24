@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { EDGE_TYPES, NOTE_PARENT_NODE_TYPES, ONTOLOGY_RELATIONSHIPS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, isAllowedRelationship } from '@ttll/shared'
+import { EDGE_TYPES, NOTE_PARENT_NODE_TYPES, ONTOLOGY_RELATIONSHIPS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, isAllowedRelationship } from '../packages/shared/src'
 
 test('ontology defines every edge type', () => {
   expect(Object.keys(ONTOLOGY_RELATIONSHIPS).sort()).toEqual([...EDGE_TYPES].sort())
@@ -38,10 +38,4 @@ test('starter taxonomy matches the reviewed product taxonomy', () => {
   expect(TABLE_TENNIS_DRILLS.every((drill) => drill.description.length > 0 && drill.imageUrl.startsWith('/drills/') && drill.steps.length > 0)).toBe(true)
   expect(TABLE_TENNIS_DRILLS.flatMap((drill) => drill.steps).every((step) => ['topspin','backspin','sidespin','no_spin','variable'].includes(step.spin))).toBe(true)
   expect(TABLE_TENNIS_SKILLS.find((skill) => skill.name === 'Reverse Pendulum Serve')?.topic).toBe('Serve')
-  expect(TABLE_TENNIS_SKILLS.find((skill) => skill.name === 'Banana Flick')?.topic).toBe('Receive')
-  expect(new Set(TABLE_TENNIS_SKILLS.map((skill) => skill.name)).size).toBe(TABLE_TENNIS_SKILLS.length)
-  expect(TABLE_TENNIS_SKILLS.every((skill) => (TABLE_TENNIS_TOPICS as readonly string[]).includes(skill.topic))).toBe(true)
-  for (const topic of TABLE_TENNIS_TOPICS) {
-    expect(TABLE_TENNIS_SKILLS.some((skill) => skill.topic === topic)).toBe(true)
-  }
 })

@@ -31,6 +31,16 @@ export class VideoRepository {
     const total = data.length
     return { data, total }
   }
+  async listByNodeIds(userId: string, nodeIds: string[]) {
+    if (!nodeIds.length) return []
+    return this.db.selectFrom('videos').selectAll()
+      .where('user_id', '=', userId)
+      .where('node_id', 'in', nodeIds)
+      .where('deleted_at', 'is', null)
+      .orderBy('updated_at', 'desc')
+      .orderBy('id', 'asc')
+      .execute()
+  }
   async getById(userId: string, id: string) {
     return this.db.selectFrom('videos').selectAll().where('user_id','=',userId).where('id','=',id).where('deleted_at','is',null).executeTakeFirst()
   }

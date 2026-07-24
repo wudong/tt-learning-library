@@ -21,6 +21,24 @@ export class NoteDrillRepository {
     return this.db.selectFrom('drills').selectAll().where('user_id', '=', userId).where('deleted_at', 'is', null)
       .orderBy('is_pinned', 'desc').orderBy('updated_at', 'desc').orderBy('id', 'asc').execute()
   }
+  listDrillsByNodeIds(userId: string, nodeIds: string[]) {
+    if (!nodeIds.length) return Promise.resolve([])
+    return this.db.selectFrom('drills').selectAll()
+      .where('user_id', '=', userId)
+      .where('node_id', 'in', nodeIds)
+      .where('deleted_at', 'is', null)
+      .orderBy('is_pinned', 'desc')
+      .orderBy('updated_at', 'desc')
+      .orderBy('id', 'asc')
+      .execute()
+  }
+  getDrillByNodeId(userId: string, nodeId: string) {
+    return this.db.selectFrom('drills').selectAll()
+      .where('user_id', '=', userId)
+      .where('node_id', '=', nodeId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst()
+  }
   async setPinnedByNode(userId: string, nodeId: string, pinned: boolean) {
     const row = await this.db.updateTable('drills').set({ is_pinned: pinned ? 1 : 0, updated_at: nowIso() })
       .where('user_id', '=', userId).where('node_id', '=', nodeId).where('deleted_at', 'is', null).returning('is_pinned').executeTakeFirst()
