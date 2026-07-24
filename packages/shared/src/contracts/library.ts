@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { dataEnvelope, idSchema } from './common'
-import { GraphNodeDtoSchema } from './graph'
+import { EdgeTypeSchema, GraphEdgeDtoSchema, GraphNodeDtoSchema } from './graph'
 import { VideoDtoSchema, VideoResponseSchema } from './video'
 
 export const TopicDtoSchema = z.object({
@@ -44,6 +44,32 @@ export const LibraryNodeResourcesResponseSchema = dataEnvelope(z.object({
   drillSteps: z.array(DrillStepDtoSchema),
   isPinned: z.boolean()
 }))
+
+export const LibraryConnectionDirectionSchema = z.enum(['incoming', 'outgoing'])
+export const LibraryConnectionItemSchema = z.object({
+  node: GraphNodeDtoSchema,
+  edge: GraphEdgeDtoSchema,
+  href: z.string().startsWith('/').nullable(),
+})
+export const LibraryConnectionGroupSchema = z.object({
+  key: z.string().min(1),
+  edgeType: EdgeTypeSchema,
+  direction: LibraryConnectionDirectionSchema,
+  label: z.string().min(1),
+  total: z.number().int().nonnegative(),
+  items: z.array(LibraryConnectionItemSchema),
+})
+export const LibraryConnectionsResponseSchema = dataEnvelope(z.object({
+  center: GraphNodeDtoSchema,
+  centerHref: z.string().startsWith('/').nullable(),
+  groups: z.array(LibraryConnectionGroupSchema),
+  maxNodes: z.number().int().positive(),
+  totalConnections: z.number().int().nonnegative(),
+  shownConnections: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+}))
+export type LibraryConnectionItemDto = z.infer<typeof LibraryConnectionItemSchema>
+export type LibraryConnectionGroupDto = z.infer<typeof LibraryConnectionGroupSchema>
 
 export const CreateSkillRequestSchema = z.object({
   name: z.string().trim().min(1).max(200),
