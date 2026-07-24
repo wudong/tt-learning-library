@@ -13,9 +13,18 @@ export class InboxRepository {
   }
   async list(userId: string, options: { status?: string; limit: number; offset: number }) {
     let q = this.db.selectFrom('inbox_items').selectAll().where('user_id','=',userId).where('deleted_at','is',null)
-    if (options.status) q = q.where('status','=',options.status)
+    let countQuery = this.db.selectFrom('inbox_items').select((eb)=>eb.fn.countAll().as('count')).where('user_id','=',userId).where('deleted_at','is',null)
+    if (options.status) {
+      q = q.where('status','=',options.status)
+      countQuery = countQuery.where('status','=',options.status)
+    } else {
+      // The Inbox represents work still to organize. Converted rows remain in
+      // storage for idempotency and audit history, but no longer clutter it.
+      q = q.where('status','!=','organized')
+      countQuery = countQuery.where('status','!=','organized')
+    }
     const data = await q.orderBy('created_at', 'desc').limit(options.limit).offset(options.offset).execute()
-    const total = Number((await this.db.selectFrom('inbox_items').select((eb)=>eb.fn.countAll().as('count')).where('user_id','=',userId).where('deleted_at','is',null).executeTakeFirst())?.count ?? 0)
+    const total = Number((await countQuery.executeTakeFirst())?.count ?? 0)
     return { data, total }
   }
   async get(userId: string, id: string) {

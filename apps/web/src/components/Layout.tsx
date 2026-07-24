@@ -32,6 +32,9 @@ const pageMeta = (path: string) => {
   if (path === '/') return { title: 'Home', eyebrow: 'Your learning today' }
   if (path === '/inbox') return { title: 'Inbox', eyebrow: 'Captured for later' }
   if (path === '/library') return { title: 'Library', eyebrow: 'Skills, videos and practice' }
+  if (path.startsWith('/library/topics/')) return { title: 'Topic', eyebrow: 'Learning area', back: '/library' }
+  if (path.startsWith('/library/skills/')) return { title: 'Skill', eyebrow: 'Learning detail', back: '/library' }
+  if (path.startsWith('/library/drills/')) return { title: 'Drill', eyebrow: 'Practice detail', back: '/library' }
   if (path === '/training') return { title: 'Training', eyebrow: 'Plan, practice, reflect' }
   if (path === '/training/new') return { title: 'Plan training', eyebrow: 'Build a focused session', back: '/training' }
   if (path.startsWith('/training/')) return { title: 'Training session', eyebrow: 'One skill at a time', back: '/training' }
@@ -57,7 +60,7 @@ export function Layout({
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const { canInstall, isInstalled, install } = usePwa()
   const meta = pageMeta(path)
-  const isActive = (href: string) => href === '/training' ? path.startsWith('/training') : path === href
+  const isActive = (href: string) => href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`)
 
   useEffect(() => {
     setMenuOpen(false)
@@ -79,6 +82,22 @@ export function Layout({
   const go = (href: string) => {
     navigate(href)
     setMenuOpen(false)
+  }
+
+  const toolbarAction = () => {
+    if (meta.back) {
+      return <button className="toolbar-icon" onClick={() => go(meta.back!)} aria-label="Go back"><ArrowLeft size={22} /></button>
+    }
+    if (path === '/library') {
+      return <button className="toolbar-icon" onClick={() => go('/search')} aria-label="Search library"><Search size={22} /></button>
+    }
+    if (path === '/training') {
+      return <button className="toolbar-icon toolbar-add" onClick={() => go('/training/new')} aria-label="Plan training"><Plus size={22} /></button>
+    }
+    if (path === '/settings') {
+      return <button className="toolbar-icon" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback"><MessageSquare size={22} /></button>
+    }
+    return <button className="toolbar-icon toolbar-add" onClick={() => go('/videos/new')} aria-label="Add video"><Plus size={22} /></button>
   }
 
   const navigation = (
@@ -141,20 +160,14 @@ export function Layout({
 
       <div className="app-stage">
         <header className="mobile-toolbar">
-          <button
-            className="toolbar-icon"
-            onClick={() => meta.back ? go(meta.back) : setMenuOpen(true)}
-            aria-label={meta.back ? 'Go back' : 'Open menu'}
-          >
-            {meta.back ? <ArrowLeft size={22} /> : <Menu size={22} />}
+          <button className="toolbar-icon" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+            <Menu size={22} />
           </button>
           <div className="toolbar-title">
             <span>{meta.eyebrow}</span>
             <strong>{meta.title}</strong>
           </div>
-          <button className="toolbar-icon toolbar-add" onClick={() => go('/videos/new')} aria-label="Add video">
-            <Plus size={22} />
-          </button>
+          {toolbarAction()}
         </header>
 
         <main className="main-content" id="main-content">{children}</main>
