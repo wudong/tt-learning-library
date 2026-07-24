@@ -7,11 +7,11 @@ import { ShareRepository } from '@ttll/db'
 import { getPrincipal } from '../auth/principal'
 import { ShareService } from '../services/shareService'
 
-function publicAppOrigin(requestUrl: string) {
-  return (process.env.PUBLIC_APP_ORIGIN ?? process.env.WEB_ORIGIN ?? new URL(requestUrl).origin).replace(/\/$/, '')
+function publicAppOrigin(requestUrl: string, configuredOrigin?: string) {
+  return (configuredOrigin ?? process.env.PUBLIC_APP_ORIGIN ?? process.env.WEB_ORIGIN ?? new URL(requestUrl).origin).replace(/\/$/, '')
 }
 
-export function shareRoutes(db: Kysely<Database>) {
+export function shareRoutes(db: Kysely<Database>, options: { publicAppOrigin?: string } = {}) {
   const app = new Hono()
   app.post('/', zValidator('json', CreateShareLinkRequestSchema), async (c) => {
     const body = c.req.valid('json')
@@ -20,7 +20,7 @@ export function shareRoutes(db: Kysely<Database>) {
       id: result.row.id,
       targetNodeId: result.row.target_node_id,
       tokenPrefix: result.row.token_prefix,
-      shareUrl: `${publicAppOrigin(c.req.url)}/s/${encodeURIComponent(result.rawToken)}`,
+      shareUrl: `${publicAppOrigin(c.req.url, options.publicAppOrigin)}/s/${encodeURIComponent(result.rawToken)}`,
       expiresAt: result.row.expires_at,
       revokedAt: result.row.revoked_at,
       createdAt: result.row.created_at,
