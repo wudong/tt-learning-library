@@ -82,7 +82,6 @@ export function Layout({
 
   useEffect(() => {
     setMenuOpen(false)
-    setPageActions([])
   }, [path])
 
   useEffect(() => {
