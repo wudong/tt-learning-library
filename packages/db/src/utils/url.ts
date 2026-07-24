@@ -1,7 +1,8 @@
 import type { ShareTargetPayload } from '@ttll/shared'
 
-const TRACKING_PARAMS = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','fbclid','gclid','igshid']
+const TRACKING_PARAMS = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','fbclid','gclid','igshid','mibextid','ref','refsrc']
 const URL_RE = /https?:\/\/[^\s<>()"']+/gi
+const FACEBOOK_ID = /^\d{5,40}$/
 
 export interface UrlIdentity { sourceUrl: string; canonicalUrl: string; sourcePlatform: 'youtube'|'facebook'|'other'; externalId: string | null }
 
@@ -36,6 +37,18 @@ export function detectProvider(hostname: string): 'youtube'|'facebook'|'other' {
   return 'other'
 }
 
+function facebookExternalId(url: URL): { id: string; kind: 'video'|'reel' } | null {
+  const reel = url.pathname.match(/\/reel\/(\d{5,40})(?:\/|$)/i)?.[1]
+  if (reel && FACEBOOK_ID.test(reel)) return { id: reel, kind: 'reel' }
+
+  const queryId = url.searchParams.get('v') ?? url.searchParams.get('video_id')
+  if (queryId && FACEBOOK_ID.test(queryId)) return { id: queryId, kind: 'video' }
+
+  const pathId = url.pathname.match(/\/videos\/(\d{5,40})(?:\/|$)/i)?.[1]
+  if (pathId && FACEBOOK_ID.test(pathId)) return { id: pathId, kind: 'video' }
+  return null
+}
+
 export function canonicalizeUrl(sourceUrl: string): UrlIdentity {
   const url = new URL(sourceUrl)
   const platform = detectProvider(url.hostname)
@@ -53,5 +66,21 @@ export function canonicalizeUrl(sourceUrl: string): UrlIdentity {
       return { sourceUrl, canonicalUrl: canonical.toString(), sourcePlatform: platform, externalId }
     }
   }
+
+  if (platform === 'facebook') {
+    if (url.hostname !== 'fb.watch') url.hostname = 'www.facebook.com'
+    const identity = facebookExternalId(url)
+    if (identity) {
+      externalId = identity.id
+      const canonical = identity.kind === 'reel'
+        ? new URL(`https://www.facebook.com/reel/${encodeURIComponent(identity.id)}`)
+        : new URL('https://www.facebook.com/watch/')
+      if (identity.kind === 'video') canonical.searchParams.set('v', identity.id)
+      return { sourceUrl, canonicalUrl: canonical.toString(), sourcePlatform: platform, externalId }
+    }
+    url.pathname = url.pathname.replace(/\/{2,}/g, '/').replace(/\/+$/, '') || '/'
+    url.searchParams.sort()
+  }
+
   return { sourceUrl, canonicalUrl: url.toString(), sourcePlatform: platform, externalId }
 }

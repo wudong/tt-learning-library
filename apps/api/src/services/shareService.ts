@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely'
 import type { Database, Row } from '@ttll/db'
-import { GraphRepository, ShareRepository } from '@ttll/db'
+import { GraphRepository, ShareRepository, VideoRepository } from '@ttll/db'
 
 async function sha256(value: string) {
   const data = new TextEncoder().encode(value)
@@ -11,6 +11,19 @@ async function sha256(value: string) {
 /** Allowlisted public node DTO — never exposes id, visibility, timestamps, or user_id */
 function presentPublicNode(row: Row<'graph_nodes'>) {
   return { nodeType: row.node_type, title: row.title, summary: row.summary }
+}
+
+/** Explicit video projection for a user-created share link. */
+function presentPublicVideo(row: Row<'videos'>) {
+  return {
+    sourceUrl: row.source_url,
+    canonicalUrl: row.canonical_url,
+    sourcePlatform: row.source_platform,
+    externalId: row.external_id,
+    title: row.title,
+    thumbnailUrl: row.thumbnail_url,
+    creatorName: row.creator_name,
+  }
 }
 
 export class ShareService {
@@ -33,6 +46,12 @@ export class ShareService {
     if (share.expires_at && new Date(share.expires_at).getTime() < Date.now()) throw new Error('EXPIRED')
     const node = await new GraphRepository(this.db).getNode(share.user_id, share.target_node_id)
     if (!node) throw new Error('NOT_FOUND')
-    return { nodeType: node.node_type, title: node.title, summary: node.summary, projection: { node: presentPublicNode(node) } }
+
+    const projection: Record<string, unknown> = { node: presentPublicNode(node) }
+    if (node.node_type === 'video') {
+      const video = await new VideoRepository(this.db).getByNodeId(share.user_id, node.id)
+      if (video) projection.video = presentPublicVideo(video)
+    }
+    return { nodeType: node.node_type, title: node.title, summary: node.summary, projection }
   }
 }
