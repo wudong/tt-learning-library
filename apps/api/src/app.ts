@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { timeout } from 'hono/timeout'
-import { createDb, migrateToLatest } from '@ttll/db'
+import { createDb, migrateToLatest, migrationStatus } from '@ttll/db'
 import { errorMiddleware } from './middleware/errors'
 import { requestIdMiddleware } from './middleware/requestId'
 import { principalMiddleware } from './auth/principal'
@@ -19,7 +19,7 @@ import { attachmentRoutes } from './routes/attachments'
 
 export async function createApp() {
   const { db } = await createDb()
-  await migrateToLatest(db)
+  if (process.env.AUTO_MIGRATE !== 'false') await migrateToLatest(db)
   const app = new Hono()
   app.use('*', errorMiddleware)
   app.use('*', requestIdMiddleware)
@@ -29,10 +29,12 @@ export async function createApp() {
   app.get('/api/health', (c) => c.json({ data: { ok: true, service: 'tt-learning-library-api' } }))
   app.get('/api/ready', async (c) => {
     try {
-      await db.selectFrom('schema_migrations').select('id').limit(1).execute()
-      return c.json({ data: { ready: true, database: true } })
+      const migrations = await migrationStatus(db)
+      const pendingMigrations = migrations.filter((migration) => !migration.applied).map((migration) => migration.id)
+      const ready = pendingMigrations.length === 0
+      return c.json({ data: { ready, database: true, pendingMigrations } }, ready ? 200 : 503)
     } catch {
-      return c.json({ data: { ready: false, database: false } }, 503)
+      return c.json({ data: { ready: false, database: false, pendingMigrations: [] } }, 503)
     }
   })
   app.route('/api/public/share', publicShareRoutes(db))

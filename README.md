@@ -1,10 +1,19 @@
 # Table Tennis Learning Library
 
-Mobile-first graph-backed PWA for capturing table-tennis tutorial videos, organizing them by topics and skills, adding notes/drills, and sharing explicit read-only projections.
+Mobile-first graph-backed PWA for capturing table-tennis tutorial videos, organizing them by topics and skills, turning learning into structured practice, and sharing explicit read-only projections.
 
 ## Status
 
-This repository implements the reviewed architecture foundation and the central capture/inbox/video vertical slice from `docs/TASKS.md`. It is structured for Bun, React, Hono, Kysely, PostgreSQL, and shared Zod contracts.
+The application is in private-beta shape. It includes:
+
+- durable manual and native PWA share-target capture;
+- a curated table-tennis Topic, Skill, and Drill ontology;
+- graph-backed videos, notes, pictures, relationships, and safe removal;
+- a mobile training planner with session tracking and insights;
+- Supabase passwordless authentication with owner isolation;
+- explicit public share links that render without authentication.
+
+`docs/TASKS.md` preserves the original reviewed implementation sequence and is not the source of truth for current completion. Use merged pull requests and `docs/RELEASE_STATUS.md` for the current release view.
 
 ## Run
 
@@ -35,7 +44,17 @@ capture remains available when installation or native sharing is unsupported.
 
 ```bash
 bun run quality
+bun run test:pwa
 ```
+
+The same checks run in GitHub Actions for pull requests and pushes to `main`.
+
+## Database migrations
+
+Migrations are protected by a PostgreSQL advisory lock and applied transactionally.
+Local development auto-migrates by default. For production, prefer running
+`bun run db:migrate` as a pre-deploy step and set `AUTO_MIGRATE=false`. The
+`/api/ready` endpoint returns `503` while migrations are pending.
 
 ## Important implementation notes
 
@@ -43,4 +62,5 @@ bun run quality
 - First-class objects use `graph_nodes`; semantic relationships use `graph_edges`.
 - Inbox capture is durable before organization.
 - Native PWA share capture posts to same-origin `/share-target` and redirects to `/quick-save/:id`.
-- Local development injects a seeded user; hosted auth is represented by a principal boundary and must be wired to a real provider before internet exposure.
+- Public share URLs use `/s/:token`; the public API projection remains allowlisted under `/api/public/share/:token`.
+- Hosted authentication uses Supabase access-token verification; local development uses the configured development principal.

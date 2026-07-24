@@ -1,15 +1,33 @@
 import type { Kysely } from 'kysely'
 import type { Database } from '@ttll/db'
 import { GraphRepository, NoteDrillRepository, TopicSkillRepository, VideoRepository, provisionOntology } from '@ttll/db'
-import { NOTE_PARENT_NODE_TYPES, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
+import { NOTE_PARENT_NODE_TYPES, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
 
 export class LibraryAggregateService {
   constructor(private readonly db: Kysely<Database>) {}
 
   async getOverview(userId: string) {
-    await provisionOntology(this.db, userId)
     const repository = new TopicSkillRepository(this.db)
-    const [systemTopics, systemSkills, drills] = await Promise.all([repository.listSystemTopics(userId), repository.listSystemSkills(userId), new NoteDrillRepository(this.db).listDrills(userId)])
+    const drillRepository = new NoteDrillRepository(this.db)
+    let [systemTopics, systemSkills, drills] = await Promise.all([
+      repository.listSystemTopics(userId),
+      repository.listSystemSkills(userId),
+      drillRepository.listDrills(userId),
+    ])
+
+    const ontologyIsCurrent = TABLE_TENNIS_TOPICS.every((name) => systemTopics.some((topic) => topic.name === name))
+      && TABLE_TENNIS_SKILLS.every((definition) => systemSkills.some((skill) => skill.name === definition.name))
+      && TABLE_TENNIS_DRILLS.every((definition) => drills.some((drill) => drill.is_system === 1 && drill.title === definition.title))
+
+    if (!ontologyIsCurrent) {
+      await provisionOntology(this.db, userId)
+      ;[systemTopics, systemSkills, drills] = await Promise.all([
+        repository.listSystemTopics(userId),
+        repository.listSystemSkills(userId),
+        drillRepository.listDrills(userId),
+      ])
+    }
+
     const topics = systemTopics.filter((topic) => (TABLE_TENNIS_TOPICS as readonly string[]).includes(topic.name))
     const skills = systemSkills.filter((skill) => TABLE_TENNIS_SKILLS.some((definition) => definition.name === skill.name))
     const graph = new GraphRepository(this.db)
@@ -27,17 +45,20 @@ export class LibraryAggregateService {
     const node = await graph.getNode(userId, nodeId)
     if (!node || !['topic', 'skill', 'drill'].includes(node.node_type)) throw new Error('NOT_FOUND: Library item not found')
     const related = await graph.related(userId, nodeId, ['belongs_to', 'explains', 'demonstrates', 'drill_for', 'practices'])
-    const videos = (await Promise.all(related.filter((item) => item.node_type === 'video').map((item) => new VideoRepository(this.db).getByNodeId(userId, item.id)))).filter((item) => !!item)
-    const drillRows = (await Promise.all(related.filter((item) => item.node_type === 'drill').map((item) =>
-      this.db.selectFrom('drills').selectAll().where('user_id', '=', userId).where('node_id', '=', item.id).where('deleted_at', 'is', null).executeTakeFirst()
-    ))).filter((item) => !!item)
+    const videoNodeIds = related.filter((item) => item.node_type === 'video').map((item) => item.id)
+    const drillNodeIds = related.filter((item) => item.node_type === 'drill').map((item) => item.id)
+    const drillRepository = new NoteDrillRepository(this.db)
+    const [videos, drillRows, selectedDrill] = await Promise.all([
+      new VideoRepository(this.db).listByNodeIds(userId, videoNodeIds),
+      drillRepository.listDrillsByNodeIds(userId, drillNodeIds),
+      node.node_type === 'drill' ? drillRepository.getDrillByNodeId(userId, nodeId) : Promise.resolve(undefined),
+    ])
     const preference = node.node_type === 'topic'
       ? await this.db.selectFrom('topics').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
       : node.node_type === 'skill'
         ? await this.db.selectFrom('skills').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
         : await this.db.selectFrom('drills').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
-    const selectedDrill = node.node_type === 'drill' ? await this.db.selectFrom('drills').selectAll().where('user_id','=',userId).where('node_id','=',nodeId).where('deleted_at','is',null).executeTakeFirst() : undefined
-    const drillSteps = selectedDrill ? await new NoteDrillRepository(this.db).listSteps(userId, selectedDrill.id) : []
+    const drillSteps = selectedDrill ? await drillRepository.listSteps(userId, selectedDrill.id) : []
     return { node, videos, skills: related.filter((item) => item.node_type === 'skill'), drills: drillRows, drill: selectedDrill, drillSteps, isPinned: preference?.is_pinned === 1 }
   }
 
