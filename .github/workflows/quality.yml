@@ -62,7 +62,17 @@ jobs:
         run: bun test tests/migrationConcurrency.test.ts
 
       - name: Test full suite
-        run: bun test
+        run: |
+          set -o pipefail
+          bun test 2>&1 | tee full-test-output.log
+
+      - name: Upload full test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-test-output
+          path: full-test-output.log
+          if-no-files-found: ignore
 
       - name: Migrate database
         run: bun run db:migrate
