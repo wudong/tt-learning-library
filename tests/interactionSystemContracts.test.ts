@@ -19,12 +19,16 @@ async function sourceFiles(directory: string): Promise<string[]> {
 describe('interaction design-system contracts', () => {
   test('web product code contains no browser-native alert, confirm, or global prompt calls', async () => {
     const files = await sourceFiles('apps/web/src')
-    // Property methods such as BeforeInstallPromptEvent.prompt() are not global
-    // product dialogs. The PWA installation API is documented as an exception.
     const forbidden = /(?:\b(?:window|globalThis)\.(?:alert|confirm|prompt)|(?<![\w.])(?:alert|confirm|prompt))\s*\(/
     const violations: string[] = []
     for (const path of files) {
-      const content = await readFile(new URL(`../${path}`, import.meta.url), 'utf8')
+      let content = await readFile(new URL(`../${path}`, import.meta.url), 'utf8')
+      if (path === 'apps/web/src/lib/pwa/PwaProvider.tsx') {
+        // Exact standards-based PWA install API type declaration. The runtime
+        // call is installPrompt.prompt(), which is a property method and does
+        // not match the global-dialog contract.
+        content = content.replace('prompt(): Promise<void>', '')
+      }
       if (forbidden.test(content)) violations.push(path)
     }
     expect(violations).toEqual([])
