@@ -30,6 +30,8 @@ export function Dialog({
 }) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -46,7 +48,7 @@ export function Dialog({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (event.key !== 'Tab' || !panel) return
@@ -74,7 +76,7 @@ export function Dialog({
       document.body.style.overflow = previousOverflow
       previousFocus?.focus()
     }
-  }, [onClose])
+  }, [])
 
   return createPortal(
     <div className="dialog-layer">
