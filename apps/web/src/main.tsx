@@ -10,6 +10,7 @@ import { AuthPwaHandoff } from './components/AuthPwaHandoff'
 import './styles.css'
 import './mobile-audit.css'
 import './mobile-review.css'
+import './interaction-system.css'
 const client = new QueryClient()
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
