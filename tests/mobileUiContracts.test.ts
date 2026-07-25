@@ -14,14 +14,17 @@ describe('mobile UI contracts', () => {
     expect(layout).toContain('MobilePageActionsProvider')
   })
 
-  test('library catalog sections share one compact card pattern', async () => {
+  test('library catalog sections share one compact card pattern with explicit actions', async () => {
     const library = await source('apps/web/src/features/library/Library.tsx')
     const catalog = await source('apps/web/src/features/library/LibraryCatalogCard.tsx')
 
     expect((library.match(/<LibraryCatalogCard/g) ?? []).length).toBeGreaterThanOrEqual(3)
     expect(catalog).toContain('const visibleTags = tags.slice(0, 2)')
     expect(catalog).toContain('library-catalog-overflow')
-    expect(catalog).toContain('aria-label={`Open ${title}`}')
+    expect(catalog).toContain('aria-label={`${openLabel}: ${title}`}')
+    expect(catalog).toContain('library-catalog-open-label')
+    expect(library).toContain('openLabel="Open topic"')
+    expect(library).toContain('catalog-manage-action')
   })
 
   test('detail routes do not render duplicate back rows or nested relationship cards', async () => {
