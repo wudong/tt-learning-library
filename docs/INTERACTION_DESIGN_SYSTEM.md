@@ -9,6 +9,7 @@ This document records the approved user-facing interaction patterns for TT Learn
 3. **Design for a phone first.** Controls use reachable layouts, 44px-or-larger touch targets, safe-area spacing, and bottom sheets where a full-width mobile surface improves selection.
 4. **Preserve context and progress.** Closing a selector or collapsing an editor must not silently discard entered data.
 5. **Make consequential actions explicit.** Destructive actions require a labelled design-system confirmation. Reversible organization actions should prefer immediate feedback with Undo.
+6. **Separate reading from management.** Default detail pages prioritize learning content. Occasional upload, delete, and configuration tools belong behind explicit management actions or focused routes.
 
 ## Approved patterns
 
@@ -62,6 +63,16 @@ Long mobile forms should expose one active editor at a time.
 - Reopening a summary preserves all entered values.
 - Adding the next object collapses the previous editor automatically.
 
+### Read-only detail and focused management
+
+When an object has optional supporting media or configuration:
+
+- The normal detail route shows compact read-only content only when it exists.
+- Empty supporting sections do not occupy permanent page space.
+- A subtle labelled **Add** or **Manage** action opens a focused management route.
+- The management route owns upload, paste, review, and destructive controls.
+- Returning to the detail route uses shared query caching so saved changes appear without a separate backend projection.
+
 ### Feedback and validation
 
 - Use Sonner toasts for short success/error feedback after an action.
@@ -84,9 +95,10 @@ Icon-only actions are reserved for universally understood compact controls such 
 
 - Inbox archive with Undo and organize Topic/Skill sheets.
 - Topic management and Drill creation sheets.
+- Topic read-only picture gallery with a dedicated picture-management route.
 - Note composer, picture removal, and Feedback sheet.
 - Training recent-plan entry, Topic/Skill sheets, progressive block editing, plan review, finish sheet, remaining-plan editor, and delete confirmation.
 
 ## Enforcement
 
-`tests/interactionSystemContracts.test.ts` scans the web source for browser-native `alert`, `confirm`, and global `prompt` calls and protects the core dialog, Inbox, Training, and catalog interaction contracts. The documented PWA installation API exception is deliberately excluded from that scan.
+`tests/interactionSystemContracts.test.ts` scans the web source for browser-native `alert`, `confirm`, and global `prompt` calls and protects the core dialog, Inbox, Training, catalog, and Topic picture-management contracts. The documented PWA installation API exception is deliberately excluded from that scan.
