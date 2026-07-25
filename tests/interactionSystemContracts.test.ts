@@ -83,9 +83,9 @@ describe('interaction design-system contracts', () => {
     const layout = await source('apps/web/src/components/Layout.tsx')
 
     expect(detail).toContain('PictureGallery pictures={pictures.data}')
-    expect(detail).toContain("pictures.data.length > 0")
+    expect(detail).toContain('pictures.data.length > 0')
     expect(detail).toContain("type === 'skill' && <article className=\"card\"><PictureAttachments")
-    expect(detail).toContain(`/library/topics/${nodeId}/pictures`)
+    expect(detail).toContain('/library/topics/${nodeId}/pictures')
     expect(manager).toContain('<PictureAttachments parentNodeId={nodeId} />')
     expect(app).toContain('/pictures$')
     expect(layout).toContain("backLabel: 'Back to Topic'")
