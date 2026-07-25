@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-const root = new URL('../', import.meta.url)
 const source = (path: string) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 async function sourceFiles(directory: string): Promise<string[]> {
@@ -18,9 +17,11 @@ async function sourceFiles(directory: string): Promise<string[]> {
 }
 
 describe('interaction design-system contracts', () => {
-  test('web product code contains no browser-native alert, confirm, or prompt calls', async () => {
+  test('web product code contains no browser-native alert, confirm, or global prompt calls', async () => {
     const files = await sourceFiles('apps/web/src')
-    const forbidden = /\b(?:window\.|globalThis\.)?(?:alert|confirm|prompt)\s*\(/
+    // Property methods such as BeforeInstallPromptEvent.prompt() are not global
+    // product dialogs. The PWA installation API is documented as an exception.
+    const forbidden = /(?:\b(?:window|globalThis)\.(?:alert|confirm|prompt)|(?<![\w.])(?:alert|confirm|prompt))\s*\(/
     const violations: string[] = []
     for (const path of files) {
       const content = await readFile(new URL(`../${path}`, import.meta.url), 'utf8')
