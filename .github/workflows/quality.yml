@@ -135,11 +135,13 @@ jobs:
 
           capture 384 900 library-384 /library
           capture 384 900 topic-detail-384 "/library/topics/${TOPIC_ID}"
+          capture 384 900 topic-pictures-384 "/library/topics/${TOPIC_ID}/pictures"
           capture 384 900 drill-detail-384 "/library/drills/${DRILL_ID}"
           capture 384 900 inbox-384 /inbox
           capture 384 900 training-384 /training
           capture 384 900 plan-training-384 "/training/new?date=${TODAY}&mode=planned"
           capture 320 800 library-320 /library
+          capture 320 800 topic-pictures-320 "/library/topics/${TOPIC_ID}/pictures"
           capture 320 800 skill-detail-320 "/library/skills/${SKILL_ID}"
           capture 320 800 training-320 /training
           capture 320 800 plan-training-320 "/training/new?date=${TODAY}&mode=planned"
