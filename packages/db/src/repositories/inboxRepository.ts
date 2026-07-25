@@ -18,10 +18,10 @@ export class InboxRepository {
       q = q.where('status','=',options.status)
       countQuery = countQuery.where('status','=',options.status)
     } else {
-      // The Inbox represents work still to organize. Converted rows remain in
-      // storage for idempotency and audit history, but no longer clutter it.
-      q = q.where('status','!=','organized')
-      countQuery = countQuery.where('status','!=','organized')
+      // The active Inbox represents work still to organize. Converted and
+      // archived rows remain durable for idempotency, audit history, and undo.
+      q = q.where('status','!=','organized').where('status','!=','archived')
+      countQuery = countQuery.where('status','!=','organized').where('status','!=','archived')
     }
     const data = await q.orderBy('created_at', 'desc').limit(options.limit).offset(options.offset).execute()
     const total = Number((await countQuery.executeTakeFirst())?.count ?? 0)

@@ -1,4 +1,4 @@
-import { ChevronRight, NotebookPen, type LucideIcon } from 'lucide-react'
+import { ChevronRight, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export function LibraryCatalogCard({
@@ -10,7 +10,7 @@ export function LibraryCatalogCard({
   metadata = [],
   tags = [],
   onOpen,
-  onNote,
+  openLabel = 'Open details',
   secondaryActions,
 }: {
   icon: LucideIcon
@@ -21,7 +21,7 @@ export function LibraryCatalogCard({
   metadata?: string[]
   tags?: string[]
   onOpen: () => void
-  onNote?: () => void
+  openLabel?: string
   secondaryActions?: ReactNode
 }) {
   const visibleTags = tags.slice(0, 2)
@@ -29,7 +29,7 @@ export function LibraryCatalogCard({
 
   return (
     <article className="library-catalog-card">
-      <button className="library-catalog-open" onClick={onOpen} aria-label={`Open ${title}`}>
+      <button className="library-catalog-open" onClick={onOpen} aria-label={`${openLabel}: ${title}`}>
         {imageSrc
           ? <img className="library-catalog-image" src={imageSrc} alt={imageAlt} />
           : <span className="library-catalog-symbol"><Icon size={19} aria-hidden="true" /></span>}
@@ -47,20 +47,11 @@ export function LibraryCatalogCard({
               {remainingTags > 0 && <small className="library-catalog-overflow">+{remainingTags}</small>}
             </span>
           )}
+          <span className="library-catalog-open-label">{openLabel} <ChevronRight size={15} aria-hidden="true" /></span>
         </span>
-        <ChevronRight className="library-catalog-chevron" size={19} aria-hidden="true" />
       </button>
 
-      {(onNote || secondaryActions) && (
-        <div className="library-catalog-actions" aria-label={`Actions for ${title}`}>
-          {onNote && (
-            <button className="catalog-icon-action" onClick={onNote} aria-label={`Add note to ${title}`}>
-              <NotebookPen size={17} aria-hidden="true" />
-            </button>
-          )}
-          {secondaryActions}
-        </div>
-      )}
+      {secondaryActions && <div className="library-catalog-actions" aria-label={`Manage ${title}`}>{secondaryActions}</div>}
     </article>
   )
 }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, CalendarPlus, Check, CircleStop, Clock3, Copy, ExternalLink, Pause, Play, Plus, RotateCcw, SkipForward, Trash2, Video } from 'lucide-react'
+import { ArrowDown, ArrowUp, CalendarPlus, Check, CircleStop, Clock3, Copy, Edit3, ExternalLink, Pause, Play, Plus, RotateCcw, SkipForward, Trash2, Video } from 'lucide-react'
 import { toast } from 'sonner'
 import type { TrainingSessionDetailDto } from '@ttll/shared'
+import { ConfirmDialog, Dialog } from '../../components/Dialog'
 import { VideoThumbnail } from '../../components/VideoThumbnail'
 import { useCompleteTrainingSession, useCopyTrainingSession, useDeleteTrainingSession, useLibraryOverview, useReplaceTrainingBlocks, useStartTrainingSession, useTrainingPracticeOptions, useTrainingSession, useTransitionTrainingBlock } from '../../lib/api/hooks'
 
@@ -25,6 +26,7 @@ export function TrainingSessionPage({ id, run, navigate }: { id: string; run: bo
   const [alertedTarget, setAlertedTarget] = useState('')
   const [showFinish, setShowFinish] = useState(false)
   const [showRemaining, setShowRemaining] = useState(false)
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const [copyDate, setCopyDate] = useState(new Date().toLocaleDateString('en-CA'))
   const data = query.data
   const active = data?.blocks.find((block) => block.status === 'active')
@@ -71,6 +73,17 @@ export function TrainingSessionPage({ id, run, navigate }: { id: string; run: bo
     catch (error) { toast.error(error instanceof Error ? error.message : 'Could not update the timer') }
   }
 
+  async function deleteSession() {
+    try {
+      await remove.mutateAsync(id)
+      toast.success('Training session removed')
+      setShowRemoveConfirm(false)
+      navigate('/training')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not remove session')
+    }
+  }
+
   if (query.isLoading) return <section><div className="library-skeleton">Loading training session…</div></section>
   if (query.isError || !data) return <section><div className="notice">We could not load this training session.</div></section>
   if (run && data.session.status !== 'completed') return <LiveSession
@@ -82,13 +95,13 @@ export function TrainingSessionPage({ id, run, navigate }: { id: string; run: bo
     onStartSession={async () => { try { await start.mutateAsync() } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not start session') } }}
     onAction={act}
     onFinish={() => setShowFinish(true)}
-    onEditRemaining={() => setShowRemaining(true)}
+    onEditPlan={() => setShowRemaining(true)}
   >
     {showFinish && <FinishPanel data={data} pending={complete.isPending} onCancel={() => setShowFinish(false)} onComplete={async (body) => {
       try { await complete.mutateAsync(body); toast.success('Training session complete'); setShowFinish(false); navigate(`/training/${id}`) }
       catch (error) { toast.error(error instanceof Error ? error.message : 'Could not finish training') }
-    }}/>}
-    {showRemaining && <RemainingEditor data={data} onClose={() => setShowRemaining(false)}/>}
+    }} />}
+    {showRemaining && <RemainingEditor data={data} onClose={() => setShowRemaining(false)} />}
   </LiveSession>
 
   return <section className="session-detail-page">
@@ -106,7 +119,7 @@ export function TrainingSessionPage({ id, run, navigate }: { id: string; run: bo
 
     <div className="session-block-list">
       {data.blocks.map((block) => <div className="session-block-row" key={block.id}>
-        <span className={`block-status-icon ${block.status}`}>{block.status === 'completed' ? <Check size={18}/> : block.position + 1}</span>
+        <span className={`block-status-icon ${block.status}`}>{block.status === 'completed' ? <Check size={18} /> : block.position + 1}</span>
         <div><strong>{block.skill.title}</strong><small>{block.drill?.title ?? block.focusNote ?? 'Skill practice'}{block.video ? ` · ${block.video.title}` : ''}</small></div>
         <span><strong>{minutes(block.actualDurationSeconds)}</strong><small>of {block.plannedDurationSeconds ? minutes(block.plannedDurationSeconds) : 'manual'}</small></span>
       </div>)}
@@ -116,18 +129,25 @@ export function TrainingSessionPage({ id, run, navigate }: { id: string; run: bo
     {data.checkins.length > 0 && <div className="checkin-summary"><span className="eyebrow">Skill confidence</span>{data.checkins.map((checkin) => <div key={checkin.skillId}><strong>{data.blocks.find((block) => block.skillId === checkin.skillId)?.skill.title}</strong><span>{checkin.confidenceRating ? `${checkin.confidenceRating}/5` : 'No rating'}</span></div>)}</div>}
 
     <div className="session-detail-actions">
-      {data.session.status !== 'completed' && <button className="button" onClick={() => navigate(`/training/${id}/run`)}><Play size={18}/> Start training</button>}
-      <label className="copy-date"><span>Copy to</span><input type="date" value={copyDate} onChange={(event) => setCopyDate(event.currentTarget.value)}/></label>
+      {data.session.status !== 'completed' && <button className="button" onClick={() => navigate(`/training/${id}/run`)}><Play size={18} /> Start training</button>}
+      {data.session.status !== 'completed' && data.session.entryMode !== 'manual' && <button className="button secondary" onClick={() => setShowRemaining(true)}><Edit3 size={18} /> Edit plan</button>}
+      <label className="copy-date"><span>Copy to</span><input type="date" value={copyDate} onChange={(event) => setCopyDate(event.currentTarget.value)} /></label>
       <button className="button secondary" disabled={copy.isPending} onClick={async () => {
         try { const result = await copy.mutateAsync({ scheduledDate: copyDate, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }); toast.success('Plan copied'); navigate(`/training/${result.session.id}`) }
         catch (error) { toast.error(error instanceof Error ? error.message : 'Could not copy plan') }
-      }}><Copy size={18}/> Copy plan</button>
-      <button className="button danger" disabled={remove.isPending} onClick={async () => {
-        if (!window.confirm('Remove this training session and its private history?')) return
-        try { await remove.mutateAsync(id); toast.success('Training session removed'); navigate('/training') }
-        catch (error) { toast.error(error instanceof Error ? error.message : 'Could not remove session') }
-      }}><Trash2 size={18}/> Remove</button>
+      }}><Copy size={18} /> Copy plan</button>
+      <button className="button danger" disabled={remove.isPending} onClick={() => setShowRemoveConfirm(true)}><Trash2 size={18} /> Remove</button>
     </div>
+
+    {showRemaining && <RemainingEditor data={data} onClose={() => setShowRemaining(false)} />}
+    {showRemoveConfirm && <ConfirmDialog
+      title="Remove this training session?"
+      message="This removes the plan and its private history. Completed time and reflections cannot be recovered."
+      confirmLabel="Remove session"
+      pending={remove.isPending}
+      onClose={() => setShowRemoveConfirm(false)}
+      onConfirm={deleteSession}
+    />}
   </section>
 }
 
@@ -140,7 +160,7 @@ function LiveSession({
   onStartSession,
   onAction,
   onFinish,
-  onEditRemaining,
+  onEditPlan,
   children,
 }: {
   data: TrainingSessionDetailDto
@@ -151,43 +171,43 @@ function LiveSession({
   onStartSession: () => Promise<void>
   onAction: (action: 'start'|'pause'|'resume'|'complete'|'skip'|'add_time', seconds?: number) => Promise<void>
   onFinish: () => void
-  onEditRemaining: () => void
+  onEditPlan: () => void
   children: React.ReactNode
 }) {
   const options = useTrainingPracticeOptions(current?.skillId ?? '')
   const completed = data.blocks.filter((block) => block.status === 'completed' || block.status === 'skipped').length
   if (!current) return <section className="live-session">
-    <div className="training-empty"><Check size={30}/><strong>All blocks are accounted for</strong><span>Add a quick reflection, or finish immediately.</span><button className="button" onClick={onFinish}>Finish session</button></div>
+    <div className="training-empty"><Check size={30} /><strong>All blocks are accounted for</strong><span>Add a quick reflection, or finish immediately.</span><button className="button" onClick={onFinish}>Finish session</button></div>
     {children}
   </section>
   return <section className="live-session">
     <header className="live-head">
       <div><span className="eyebrow">Block {current.position + 1} of {data.blocks.length}</span><h1>{current.skill.title}</h1><p>{completed} blocks complete · {data.session.title}</p></div>
-      <button className="button secondary" onClick={onEditRemaining}>Edit remaining</button>
+      <button className="button secondary" onClick={onEditPlan}><Edit3 size={17} /> Edit plan</button>
     </header>
 
     <div className="live-timer" aria-live="off">
       <span>{current.status === 'active' ? 'Training now' : current.status === 'paused' ? 'Paused' : data.session.status === 'planned' ? 'Ready to begin' : 'Up next'}</span>
       <strong aria-label={`${Math.floor(liveActual / 60)} minutes ${liveActual % 60} seconds`}>{clock(liveActual)}</strong>
       <small>Target {current.plannedDurationSeconds ? clock(current.plannedDurationSeconds) : 'open'}</small>
-      <div className="timer-progress" aria-hidden="true"><span style={{ width: `${Math.min(100, current.plannedDurationSeconds ? liveActual / current.plannedDurationSeconds * 100 : 0)}%` }}/></div>
+      <div className="timer-progress" aria-hidden="true"><span style={{ width: `${Math.min(100, current.plannedDurationSeconds ? liveActual / current.plannedDurationSeconds * 100 : 0)}%` }} /></div>
     </div>
 
     {targetReached && current.status === 'active' && <div className="time-up-panel" role="status">
-      <Clock3 size={24}/>
+      <Clock3 size={24} />
       <div><strong>Target time reached</strong><span>Choose what happens next. Nothing advances automatically.</span></div>
-      <button className="button" disabled={pending} onClick={() => onAction('complete')}><SkipForward size={18}/> Continue to next</button>
-      <button className="button secondary" disabled={pending} onClick={() => onAction('add_time', 300)}><Plus size={18}/> Add 5 min</button>
-      <button className="button secondary" onClick={onFinish}><CircleStop size={18}/> Finish session</button>
+      <button className="button" disabled={pending} onClick={() => onAction('complete')}><SkipForward size={18} /> Continue to next</button>
+      <button className="button secondary" disabled={pending} onClick={() => onAction('add_time', 300)}><Plus size={18} /> Add 5 min</button>
+      <button className="button secondary" onClick={onFinish}><CircleStop size={18} /> Finish session</button>
     </div>}
 
     <div className="timer-actions">
-      {data.session.status === 'planned' && <button className="button" disabled={pending} onClick={onStartSession}><Play size={19}/> Begin session</button>}
-      {data.session.status !== 'planned' && current.status === 'planned' && <button className="button" disabled={pending} onClick={() => onAction('start')}><Play size={19}/> Start this skill</button>}
-      {current.status === 'active' && <button className="button" disabled={pending} onClick={() => onAction('pause')}><Pause size={19}/> Pause</button>}
-      {current.status === 'paused' && <button className="button" disabled={pending} onClick={() => onAction('resume')}><RotateCcw size={19}/> Resume</button>}
-      {data.session.status !== 'planned' && <button className="button secondary" disabled={pending} onClick={() => onAction('skip')}><SkipForward size={18}/> Skip</button>}
-      <button className="button secondary" onClick={onFinish}><CircleStop size={18}/> Finish</button>
+      {data.session.status === 'planned' && <button className="button" disabled={pending} onClick={onStartSession}><Play size={19} /> Begin session</button>}
+      {data.session.status !== 'planned' && current.status === 'planned' && <button className="button" disabled={pending} onClick={() => onAction('start')}><Play size={19} /> Start this skill</button>}
+      {current.status === 'active' && <button className="button" disabled={pending} onClick={() => onAction('pause')}><Pause size={19} /> Pause</button>}
+      {current.status === 'paused' && <button className="button" disabled={pending} onClick={() => onAction('resume')}><RotateCcw size={19} /> Resume</button>}
+      {data.session.status !== 'planned' && <button className="button secondary" disabled={pending} onClick={() => onAction('skip')}><SkipForward size={18} /> Skip</button>}
+      <button className="button secondary" onClick={onFinish}><CircleStop size={18} /> Finish</button>
     </div>
 
     {(current.focusNote || current.drill) && <div className="practice-cue">
@@ -200,13 +220,13 @@ function LiveSession({
     <div className="training-video-area">
       <div><span className="eyebrow">Reference video</span><h2>{current.video?.title ?? 'No video pinned'}</h2></div>
       {current.video ? <>
-        <InlineVideo video={current.video}/>
-        <a className="button secondary" href={current.video.sourceUrl ?? '#'} target="_blank" rel="noreferrer"><ExternalLink size={17}/> Open source video</a>
+        <InlineVideo video={current.video} />
+        <a className="button secondary" href={current.video.sourceUrl ?? '#'} target="_blank" rel="noreferrer"><ExternalLink size={17} /> Open source video</a>
       </> : <p className="muted">This block is ready without a video. Related tutorials appear below when available.</p>}
-      {options.data && <div className="related-training-videos"><strong>Other videos for {current.skill.title}</strong>{options.data.videos.filter((video) => video.id !== current.videoId).slice(0, 4).map((video) => <a key={video.id} href={video.sourceUrl ?? '#'} target="_blank" rel="noreferrer"><Video size={17}/><span>{video.title}<small>{video.subtitle}</small></span><ExternalLink size={15}/></a>)}{options.data.videos.length <= (current.video ? 1 : 0) && <span className="muted">No other linked videos.</span>}</div>}
+      {options.data && <div className="related-training-videos"><strong>Other videos for {current.skill.title}</strong>{options.data.videos.filter((video) => video.id !== current.videoId).slice(0, 4).map((video) => <a key={video.id} href={video.sourceUrl ?? '#'} target="_blank" rel="noreferrer"><Video size={17} /><span>{video.title}<small>{video.subtitle}</small></span><ExternalLink size={15} /></a>)}{options.data.videos.length <= (current.video ? 1 : 0) && <span className="muted">No other linked videos.</span>}</div>}
     </div>
 
-    <p className="timer-honesty"><Clock3 size={16}/> Keep this screen open for the reliable time-up alert. Locked-screen alerts depend on browser support.</p>
+    <p className="timer-honesty"><Clock3 size={16} /> Keep this screen open for the reliable time-up alert. Locked-screen alerts depend on browser support.</p>
     {children}
   </section>
 }
@@ -218,8 +238,8 @@ function InlineVideo({ video }: { video: TrainingSessionDetailDto['blocks'][numb
     if (url.hostname === 'youtu.be') youtubeId = url.pathname.slice(1).split('/')[0] || null
     if (url.hostname === 'youtube.com' || url.hostname.endsWith('.youtube.com')) youtubeId = url.searchParams.get('v') ?? url.pathname.match(/\/(?:shorts|embed)\/([^/]+)/)?.[1] ?? null
   } catch { youtubeId = null }
-  if (youtubeId && /^[A-Za-z0-9_-]{6,32}$/.test(youtubeId)) return <div className="video-embed"><iframe src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}`} title={`Video reference: ${video.title}`} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy"/></div>
-  return <VideoThumbnail src={video.thumbnailUrl} title={video.title}/>
+  if (youtubeId && /^[A-Za-z0-9_-]{6,32}$/.test(youtubeId)) return <div className="video-embed"><iframe src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}`} title={`Video reference: ${video.title}`} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy" /></div>
+  return <VideoThumbnail src={video.thumbnailUrl} title={video.title} />
 }
 
 function FinishPanel({ data, pending, onCancel, onComplete }: { data: TrainingSessionDetailDto; pending: boolean; onCancel: () => void; onComplete: (body: { overallRating: number|null; reflection: string|null; checkins: Array<{ skillId: string; confidenceRating: number|null }> }) => Promise<void> }) {
@@ -227,13 +247,20 @@ function FinishPanel({ data, pending, onCancel, onComplete }: { data: TrainingSe
   const [reflection, setReflection] = useState(data.session.reflection ?? '')
   const distinctSkills = useMemo(() => [...new Map(data.blocks.map((block) => [block.skillId, block.skill])).entries()], [data.blocks])
   const [confidence, setConfidence] = useState<Record<string, string>>(() => Object.fromEntries(data.checkins.map((checkin) => [checkin.skillId, checkin.confidenceRating?.toString() ?? ''])))
-  return <div className="finish-panel">
-    <div><span className="eyebrow">Optional reflection</span><h2>Finish training</h2><p>Skip every field if you just want to save the time.</p></div>
-    <label><span>Overall session</span><select value={rating} onChange={(event) => setRating(event.currentTarget.value)}><option value="">No rating</option><option value="1">1 · Rough session</option><option value="2">2 · Difficult</option><option value="3">3 · Solid</option><option value="4">4 · Strong</option><option value="5">5 · Excellent</option></select></label>
-    <div className="confidence-list"><strong>Skill confidence</strong>{distinctSkills.map(([skillId, skill]) => <label key={skillId}><span>{skill.title}</span><select value={confidence[skillId] ?? ''} onChange={(event) => setConfidence((current) => ({ ...current, [skillId]: event.currentTarget.value }))}><option value="">No check-in</option><option value="1">1 · Not clicking yet</option><option value="2">2 · Starting to click</option><option value="3">3 · Repeatable in drills</option><option value="4">4 · Reliable under pressure</option><option value="5">5 · Match ready</option></select></label>)}</div>
-    <label><span>Reflection</span><textarea rows={4} maxLength={5000} value={reflection} placeholder="What worked, what needs another look…" onChange={(event) => setReflection(event.currentTarget.value)}/></label>
-    <div className="finish-actions"><button className="button secondary" onClick={onCancel}>Keep training</button><button className="button" disabled={pending} onClick={() => onComplete({ overallRating: rating ? Number(rating) : null, reflection: reflection.trim() || null, checkins: distinctSkills.filter(([skillId]) => confidence[skillId]).map(([skillId]) => ({ skillId, confidenceRating: Number(confidence[skillId]) })) })}>{pending ? 'Saving…' : 'Finish session'}</button></div>
-  </div>
+  return <Dialog
+    title="Finish training"
+    eyebrow="Optional reflection"
+    variant="sheet"
+    onClose={onCancel}
+    footer={<><button className="button secondary" onClick={onCancel}>Keep training</button><button className="button" disabled={pending} onClick={() => onComplete({ overallRating: rating ? Number(rating) : null, reflection: reflection.trim() || null, checkins: distinctSkills.filter(([skillId]) => confidence[skillId]).map(([skillId]) => ({ skillId, confidenceRating: Number(confidence[skillId]) })) })}>{pending ? 'Saving…' : 'Finish session'}</button></>}
+  >
+    <div className="stack">
+      <p className="muted">Skip every field if you just want to save the time.</p>
+      <label><span>Overall session</span><select value={rating} onChange={(event) => setRating(event.currentTarget.value)}><option value="">No rating</option><option value="1">1 · Rough session</option><option value="2">2 · Difficult</option><option value="3">3 · Solid</option><option value="4">4 · Strong</option><option value="5">5 · Excellent</option></select></label>
+      <div className="confidence-list"><strong>Skill confidence</strong>{distinctSkills.map(([skillId, skill]) => <label key={skillId}><span>{skill.title}</span><select value={confidence[skillId] ?? ''} onChange={(event) => setConfidence((current) => ({ ...current, [skillId]: event.currentTarget.value }))}><option value="">No check-in</option><option value="1">1 · Not clicking yet</option><option value="2">2 · Starting to click</option><option value="3">3 · Repeatable in drills</option><option value="4">4 · Reliable under pressure</option><option value="5">5 · Match ready</option></select></label>)}</div>
+      <label><span>Reflection</span><textarea rows={4} maxLength={5000} value={reflection} placeholder="What worked, what needs another look…" onChange={(event) => setReflection(event.currentTarget.value)} /></label>
+    </div>
+  </Dialog>
 }
 
 function RemainingEditor({ data, onClose }: { data: TrainingSessionDetailDto; onClose: () => void }) {
@@ -242,22 +269,29 @@ function RemainingEditor({ data, onClose }: { data: TrainingSessionDetailDto; on
   const [blocks, setBlocks] = useState<Array<{ id?: string; skillId: string; drillId: string|null; videoId: string|null; minutes: number; focusNote: string }>>(() => data.blocks.filter((block) => block.status === 'planned').map((block) => ({ id: block.id, skillId: block.skillId, drillId: block.drillId, videoId: block.videoId, minutes: (block.plannedDurationSeconds ?? 900) / 60, focusNote: block.focusNote ?? '' })))
   const skills = overview.data?.skills ?? []
   const move = (index: number, direction: -1|1) => setBlocks((current) => { const next = [...current]; const target = index + direction; if (target < 0 || target >= next.length) return current; [next[index], next[target]] = [next[target], next[index]]; return next })
-  return <div className="remaining-editor">
-    <div><span className="eyebrow">Adapt the plan</span><h2>Edit remaining blocks</h2><p>Completed and current blocks stay fixed. Live changes keep the original plan for comparison.</p></div>
-    {blocks.map((block, index) => <div className="remaining-row" key={block.id ?? index}>
-      <select value={block.skillId} onChange={(event) => setBlocks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, skillId: event.currentTarget.value, drillId: null, videoId: null } : item))}>{skills.map((skill) => <option key={skill.id} value={skill.id}>{skill.name}</option>)}</select>
-      <label><span className="sr-only">Minutes</span><input className="input" type="number" min="1" max="180" value={block.minutes} onChange={(event) => setBlocks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, minutes: Number(event.currentTarget.value) } : item))}/></label>
-      <button onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move earlier"><ArrowUp size={17}/></button>
-      <button onClick={() => move(index, 1)} disabled={index === blocks.length - 1} aria-label="Move later"><ArrowDown size={17}/></button>
-      <button onClick={() => setBlocks((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="Remove remaining block"><Trash2 size={17}/></button>
-    </div>)}
-    <button className="add-block-button" onClick={() => { const skill = skills[0]; if (skill) setBlocks((current) => [...current, { id: undefined, skillId: skill.id, drillId: null, videoId: null, minutes: 15, focusNote: '' }]) }}><Plus size={18}/> Add skill</button>
-    <div className="finish-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button" disabled={replace.isPending || blocks.length === 0} onClick={async () => {
+  return <Dialog
+    title="Edit remaining plan"
+    eyebrow="Completed work stays fixed"
+    variant="sheet"
+    onClose={onClose}
+    footer={<><button className="button secondary" onClick={onClose}>Cancel</button><button className="button" disabled={replace.isPending || blocks.length === 0} onClick={async () => {
       try {
         await replace.mutateAsync({ blocks: blocks.map((block) => ({ id: block.id, skillId: block.skillId, drillId: block.drillId, videoId: block.videoId, plannedDurationSeconds: Math.round(block.minutes * 60), focusNote: block.focusNote })) })
         toast.success('Remaining plan updated')
         onClose()
       } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not update remaining plan') }
-    }}>{replace.isPending ? 'Saving…' : 'Save changes'}</button></div>
-  </div>
+    }}>{replace.isPending ? 'Saving…' : 'Save changes'}</button></>}
+  >
+    <div className="stack">
+      <p className="muted">Completed and current blocks stay fixed. Only upcoming work changes, and logged time is preserved.</p>
+      {blocks.map((block, index) => <div className="remaining-row" key={block.id ?? index}>
+        <select aria-label={`Skill for remaining block ${index + 1}`} value={block.skillId} onChange={(event) => setBlocks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, skillId: event.currentTarget.value, drillId: null, videoId: null } : item))}>{skills.map((skill) => <option key={skill.id} value={skill.id}>{skill.name}</option>)}</select>
+        <label><span className="sr-only">Minutes</span><input className="input" type="number" min="1" max="180" value={block.minutes} onChange={(event) => setBlocks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, minutes: Number(event.currentTarget.value) } : item))} /></label>
+        <button onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move earlier"><ArrowUp size={17} /></button>
+        <button onClick={() => move(index, 1)} disabled={index === blocks.length - 1} aria-label="Move later"><ArrowDown size={17} /></button>
+        <button onClick={() => setBlocks((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="Remove remaining block"><Trash2 size={17} /></button>
+      </div>)}
+      <button className="add-block-button" onClick={() => { const skill = skills[0]; if (skill) setBlocks((current) => [...current, { id: undefined, skillId: skill.id, drillId: null, videoId: null, minutes: 15, focusNote: '' }]) }}><Plus size={18} /> Add skill</button>
+    </div>
+  </Dialog>
 }

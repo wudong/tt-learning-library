@@ -44,6 +44,7 @@ const pageMeta = (path: string): PageMeta => {
   if (path === '/inbox') return { title: 'Inbox', eyebrow: 'Captured for later' }
   if (path === '/library') return { title: 'Library', eyebrow: 'Skills, videos and practice' }
   if (path.startsWith('/library/connections/')) return { title: 'Connections', eyebrow: 'Knowledge graph', back: '/library', backLabel: 'Back to Library' }
+  if (/^\/library\/topics\/[^/]+\/pictures$/.test(path)) return { title: 'Pictures', eyebrow: 'Topic management', back: path.replace(/\/pictures$/, ''), backLabel: 'Back to Topic' }
   if (path.startsWith('/library/topics/')) return { title: 'Topic', eyebrow: 'Learning area', back: '/library', backLabel: 'Back to Library' }
   if (path.startsWith('/library/skills/')) return { title: 'Skill', eyebrow: 'Learning detail', back: '/library', backLabel: 'Back to Library' }
   if (path.startsWith('/library/drills/')) return { title: 'Drill', eyebrow: 'Practice detail', back: '/library', backLabel: 'Back to Library' }

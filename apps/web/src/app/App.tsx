@@ -17,6 +17,7 @@ import { TrainingSessionPage } from '../features/training/TrainingSessionPage'
 import { DrillDetail } from '../features/library/DrillDetail'
 import { KnowledgeGraphExplorer } from '../features/library/KnowledgeGraphExplorer'
 import { LibraryNodeDetail } from '../features/library/LibraryNodeDetail'
+import { PictureManagerPage } from '../features/library/PictureManagerPage'
 
 function NotFound({ navigate }: { navigate: (to: string) => void }) {
   return <section className="card"><h1>Page not found</h1><p className="muted">The page you requested does not exist.</p><button className="button" onClick={() => navigate('/')}>Go home</button></section>
@@ -40,6 +41,7 @@ export function App() {
   else if (base.startsWith('/inbox/')) page = <OrganizeInbox id={base.split('/')[2]} navigate={navigate} />
   else if (base === '/library') page = <Library navigate={navigate} />
   else if (/^\/library\/connections\/[^/]+$/.test(base)) page = <KnowledgeGraphExplorer nodeId={base.split('/')[3]} navigate={navigate} />
+  else if (/^\/library\/topics\/[^/]+\/pictures$/.test(base)) page = <PictureManagerPage nodeId={base.split('/')[3]} />
   else if (/^\/library\/topics\/[^/]+$/.test(base)) page = <LibraryNodeDetail type="topic" nodeId={base.split('/')[3]} navigate={navigate} />
   else if (/^\/library\/skills\/[^/]+$/.test(base)) page = <LibraryNodeDetail type="skill" nodeId={base.split('/')[3]} navigate={navigate} />
   else if (/^\/library\/drills\/[^/]+$/.test(base)) page = <DrillDetail nodeId={base.split('/')[3]} navigate={navigate} />

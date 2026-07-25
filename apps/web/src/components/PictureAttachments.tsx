@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ClipboardEvent } from 'react'
 import { ImagePlus, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAttachmentBlob, useAttachments, useCreateAttachment, useDeleteAttachment } from '../lib/api/hooks'
+import { ConfirmDialog } from './Dialog'
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024
@@ -12,6 +13,7 @@ export function PictureAttachments({ parentNodeId }: { parentNodeId: string }) {
   const remove = useDeleteAttachment(parentNodeId)
   const input = useRef<HTMLInputElement>(null)
   const [isPasteFocused, setPasteFocused] = useState(false)
+  const [pendingRemoval, setPendingRemoval] = useState<{ id: string; name: string } | null>(null)
 
   async function add(file: File) {
     if (!ACCEPTED_TYPES.includes(file.type)) return toast.error('Use a JPEG, PNG, or WebP picture')
@@ -25,24 +27,37 @@ export function PictureAttachments({ parentNodeId }: { parentNodeId: string }) {
     event.preventDefault()
     void Promise.all(pictures.map(add))
   }
-  async function discard(id: string) {
-    if (!window.confirm('Remove this picture from the knowledge item?')) return
-    try { await remove.mutateAsync(id); toast.success('Picture removed') }
-    catch (error) { toast.error(error instanceof Error ? error.message : 'Could not remove picture') }
+  async function discard() {
+    if (!pendingRemoval) return
+    try {
+      await remove.mutateAsync(pendingRemoval.id)
+      toast.success('Picture removed')
+      setPendingRemoval(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not remove picture')
+    }
   }
 
   return <section className="picture-attachments">
     <div className="picture-heading"><div><h3>Pictures</h3><p>Paste a screenshot or attach a picture to this learning item.</p></div>
-      <button className="button secondary" onClick={() => input.current?.click()} disabled={create.isPending}><Upload size={16}/> Choose picture</button>
-      <input ref={input} className="sr-only" type="file" accept={ACCEPTED_TYPES.join(',')} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void add(file); event.currentTarget.value = '' }}/>
+      <button className="button secondary" onClick={() => input.current?.click()} disabled={create.isPending}><Upload size={16} /> Choose picture</button>
+      <input ref={input} className="sr-only" type="file" accept={ACCEPTED_TYPES.join(',')} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void add(file); event.currentTarget.value = '' }} />
     </div>
     <div className={isPasteFocused ? 'picture-paste focused' : 'picture-paste'} tabIndex={0} onPaste={paste} onFocus={() => setPasteFocused(true)} onBlur={() => setPasteFocused(false)}>
-      <ImagePlus size={22}/><span>Tap here, then paste a copied picture</span><small>JPEG, PNG, or WebP · up to 5 MB</small>
+      <ImagePlus size={22} /><span>Tap here, then paste a copied picture</span><small>JPEG, PNG, or WebP · up to 5 MB</small>
     </div>
     {attachments.isLoading && <p className="muted">Loading pictures…</p>}
     {attachments.data && attachments.data.length > 0 && <div className="picture-grid">{attachments.data.map((attachment) =>
-      <Picture key={attachment.id} id={attachment.id} name={attachment.fileName} onRemove={() => discard(attachment.id)} removing={remove.isPending && remove.variables === attachment.id}/>
+      <Picture key={attachment.id} id={attachment.id} name={attachment.fileName} onRemove={() => setPendingRemoval({ id: attachment.id, name: attachment.fileName })} removing={remove.isPending && remove.variables === attachment.id} />
     )}</div>}
+    {pendingRemoval && <ConfirmDialog
+      title="Remove this picture?"
+      message={`Remove ${pendingRemoval.name} from this learning item? This cannot be undone.`}
+      confirmLabel="Remove picture"
+      pending={remove.isPending}
+      onClose={() => setPendingRemoval(null)}
+      onConfirm={discard}
+    />}
   </section>
 }
 
@@ -56,7 +71,7 @@ function Picture({ id, name, onRemove, removing }: { id: string; name: string; o
     return () => URL.revokeObjectURL(next)
   }, [content.data])
   return <figure className="picture-card">
-    {url ? <img src={url} alt={name}/> : <div className="picture-loading">Loading…</div>}
-    <figcaption><span title={name}>{name}</span><button className="toolbar-icon" aria-label={`Remove ${name}`} disabled={removing} onClick={onRemove}><Trash2 size={16}/></button></figcaption>
+    {url ? <img src={url} alt={name} /> : <div className="picture-loading">Loading…</div>}
+    <figcaption><span title={name}>{name}</span><button className="toolbar-icon" aria-label={`Remove ${name}`} disabled={removing} onClick={onRemove}><Trash2 size={16} /></button></figcaption>
   </figure>
 }
