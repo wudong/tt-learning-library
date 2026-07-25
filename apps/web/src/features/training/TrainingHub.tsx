@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subDays, subMonths } from 'date-fns'
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Zap } from 'lucide-react'
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Clock3, Zap } from 'lucide-react'
 import { useTrainingInsights, useTrainingSessions } from '../../lib/api/hooks'
 
 const isoDate = (date: Date) => format(date, 'yyyy-MM-dd')
@@ -29,25 +29,16 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
   }
 
   return <section className="training-page">
-    <header className="training-head">
-      <div>
-        <span className="eyebrow">Practice with intent</span>
-        <h1>Training</h1>
-        <p>Plan skills, run one focused block at a time, and see where your table time goes.</p>
-      </div>
-      <button className="button" onClick={() => navigate(`/training/new?date=${isoDate(selected)}&mode=planned`)}><Plus size={18}/> Plan session</button>
-    </header>
-
     <div className="training-tabs" role="tablist" aria-label="Training sections">
-      <button role="tab" aria-selected={tab === 'calendar'} className={tab === 'calendar' ? 'active' : ''} onClick={() => setTab('calendar')}><CalendarDays size={18}/> Calendar</button>
-      <button role="tab" aria-selected={tab === 'insights'} className={tab === 'insights' ? 'active' : ''} onClick={() => setTab('insights')}><BarChart3 size={18}/> Insights</button>
+      <button role="tab" aria-selected={tab === 'calendar'} className={tab === 'calendar' ? 'active' : ''} onClick={() => setTab('calendar')}><CalendarDays size={18} /> Calendar</button>
+      <button role="tab" aria-selected={tab === 'insights'} className={tab === 'insights' ? 'active' : ''} onClick={() => setTab('insights')}><BarChart3 size={18} /> Insights</button>
     </div>
 
     {tab === 'calendar' ? <>
       <div className="calendar-toolbar">
-        <button className="toolbar-icon" onClick={() => moveMonth(-1)} aria-label="Previous month"><ChevronLeft/></button>
+        <button className="toolbar-icon" onClick={() => moveMonth(-1)} aria-label="Previous month"><ChevronLeft /></button>
         <h2>{format(month, 'MMMM yyyy')}</h2>
-        <button className="toolbar-icon" onClick={() => moveMonth(1)} aria-label="Next month"><ChevronRight/></button>
+        <button className="toolbar-icon" onClick={() => moveMonth(1)} aria-label="Next month"><ChevronRight /></button>
       </div>
       <div className="training-calendar" aria-label={`${format(month, 'MMMM yyyy')} training calendar`}>
         <div className="weekday-row" aria-hidden="true">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day) => <span key={day}>{day}</span>)}</div>
@@ -73,31 +64,33 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
         </div>
       </div>
 
-      <div className="selected-day-head">
-        <div><span className="eyebrow">{isSameDay(selected, new Date()) ? 'Today' : format(selected, 'EEEE')}</span><h2>{format(selected, 'd MMMM')}</h2></div>
-        <div className="day-actions">
-          <button className="button secondary" onClick={() => navigate(`/training/new?date=${isoDate(selected)}&mode=quick`)}><Zap size={17}/> Quick start</button>
-          {selected <= new Date() && <button className="button secondary" onClick={() => navigate(`/training/new?date=${isoDate(selected)}&mode=manual`)}><Clock3 size={17}/> Log</button>}
+      <section className="selected-day-card" aria-labelledby="selected-day-title">
+        <div className="selected-day-summary">
+          <div><span className="eyebrow">{isSameDay(selected, new Date()) ? 'Today' : format(selected, 'EEEE')}</span><h2 id="selected-day-title">{format(selected, 'd MMMM')}</h2></div>
+          <div className="selected-day-actions">
+            <button className="button secondary" onClick={() => navigate(`/training/new?date=${isoDate(selected)}&mode=quick`)}><Zap size={17} /> Quick start</button>
+            {selected <= new Date() && <button className="button secondary" onClick={() => navigate(`/training/new?date=${isoDate(selected)}&mode=manual`)}><Clock3 size={17} /> Log</button>}
+          </div>
         </div>
-      </div>
 
-      {sessions.isLoading && <div className="library-skeleton">Loading training calendar…</div>}
-      {sessions.isError && <div className="notice">We could not load this month. Check your connection and try again.</div>}
-      {!sessions.isLoading && selectedSessions.length === 0 && <div className="training-empty">
-        <CalendarDays size={28}/>
-        <strong>No training on this day</strong>
-        <span>Add a skill plan now, or log the work after practice.</span>
-        <button className="button" onClick={() => navigate(`/training/new?date=${isoDate(selected)}&mode=planned`)}>Plan this day</button>
-      </div>}
-      <div className="day-session-list">
-        {selectedSessions.map((session) => <button key={session.id} className="session-row" onClick={() => navigate(session.status === 'in_progress' ? `/training/${session.id}/run` : `/training/${session.id}`)}>
-          <span className={`session-symbol ${session.status}`}><Clock3 size={19}/></span>
-          <span className="session-copy"><strong>{session.title}</strong><small>{session.skillNames.join(' · ') || 'Training session'}</small></span>
-          <span className="session-meta"><strong>{session.actualDurationSeconds ? minutes(session.actualDurationSeconds) : minutes(session.plannedDurationSeconds)}</strong><small>{session.entryMode === 'manual' ? 'Manual log' : statusLabel[session.status]}</small></span>
-          <ChevronRight size={18}/>
-        </button>)}
-      </div>
-    </> : <TrainingInsights month={month}/>}
+        {sessions.isLoading && <div className="library-skeleton">Loading training for this day…</div>}
+        {sessions.isError && <div className="notice">We could not load this month. Check your connection and try again.</div>}
+        {!sessions.isLoading && selectedSessions.length === 0 && <div className="selected-day-empty">
+          <span><CalendarDays size={21} /></span>
+          <div><strong>No training planned</strong><p>Add a focused plan now, or use Log after practice.</p></div>
+          <button className="button" onClick={() => navigate(`/training/new?date=${isoDate(selected)}&mode=planned`)}>Plan this day</button>
+        </div>}
+
+        {selectedSessions.length > 0 && <div className="day-session-list">
+          {selectedSessions.map((session) => <button key={session.id} className="session-row" onClick={() => navigate(session.status === 'in_progress' ? `/training/${session.id}/run` : `/training/${session.id}`)}>
+            <span className={`session-symbol ${session.status}`}><Clock3 size={19} /></span>
+            <span className="session-copy"><strong>{session.title}</strong><small>{session.skillNames.join(' · ') || 'Training session'}</small></span>
+            <span className="session-meta"><strong>{session.actualDurationSeconds ? minutes(session.actualDurationSeconds) : minutes(session.plannedDurationSeconds)}</strong><small>{session.entryMode === 'manual' ? 'Manual log' : statusLabel[session.status]}</small></span>
+            <ChevronRight size={18} />
+          </button>)}
+        </div>}
+      </section>
+    </> : <TrainingInsights month={month} />}
   </section>
 }
 
@@ -125,10 +118,10 @@ function TrainingInsights({ month }: { month: Date }) {
       </dl>
       <div className="skill-time-section">
         <div><span className="eyebrow">Where time went</span><h2>Skills trained</h2></div>
-        {data.skills.length === 0 ? <div className="training-empty"><BarChart3 size={28}/><strong>No practice data yet</strong><span>Complete a timed session or add a manual log to build this view.</span></div> :
+        {data.skills.length === 0 ? <div className="training-empty"><BarChart3 size={28} /><strong>No practice data yet</strong><span>Complete a timed session or add a manual log to build this view.</span></div> :
           <div className="skill-time-list">{data.skills.map((skill) => <div className="skill-time-row" key={skill.skillId}>
             <div><strong>{skill.skillName}</strong><small>{minutes(skill.actualDurationSeconds)} actual · {minutes(skill.plannedDurationSeconds)} planned</small></div>
-            <div className="time-bar" aria-label={`${skill.skillName}, ${minutes(skill.actualDurationSeconds)}`}><span style={{ width: `${Math.max(4, skill.actualDurationSeconds / maxSkillTime * 100)}%` }}/></div>
+            <div className="time-bar" aria-label={`${skill.skillName}, ${minutes(skill.actualDurationSeconds)}`}><span style={{ width: `${Math.max(4, skill.actualDurationSeconds / maxSkillTime * 100)}%` }} /></div>
             <span className="confidence-mark">{skill.latestConfidenceRating ? `${skill.latestConfidenceRating}/5` : 'No check-in'}{skill.latestConfidenceRating && skill.previousConfidenceRating ? <small>{skill.latestConfidenceRating > skill.previousConfidenceRating ? 'Improving' : skill.latestConfidenceRating < skill.previousConfidenceRating ? 'Lower today' : 'Steady'}</small> : null}</span>
           </div>)}</div>}
       </div>
