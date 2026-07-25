@@ -75,4 +75,19 @@ describe('interaction design-system contracts', () => {
     expect(session).toContain('Completed and current blocks stay fixed')
     expect(session).toContain('ConfirmDialog')
   })
+
+  test('Topic viewing is separated from picture management', async () => {
+    const detail = await source('apps/web/src/features/library/LibraryNodeDetail.tsx')
+    const manager = await source('apps/web/src/features/library/PictureManagerPage.tsx')
+    const app = await source('apps/web/src/app/App.tsx')
+    const layout = await source('apps/web/src/components/Layout.tsx')
+
+    expect(detail).toContain('PictureGallery pictures={pictures.data}')
+    expect(detail).toContain("pictures.data.length > 0")
+    expect(detail).toContain("type === 'skill' && <article className=\"card\"><PictureAttachments")
+    expect(detail).toContain(`/library/topics/${nodeId}/pictures`)
+    expect(manager).toContain('<PictureAttachments parentNodeId={nodeId} />')
+    expect(app).toContain('/pictures$')
+    expect(layout).toContain("backLabel: 'Back to Topic'")
+  })
 })
