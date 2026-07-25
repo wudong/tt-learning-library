@@ -28,8 +28,12 @@ Use `ConfirmDialog`.
 
 - State the object and consequence clearly.
 - Use a neutral **Cancel** action and a specific destructive label such as **Remove session** or **Discard capture**.
-- Never call browser `alert`, `confirm`, or `prompt` for product interactions.
+- Never call browser `alert`, `confirm`, or global `prompt` for product interactions.
 - Do not add a confirmation to reversible, low-risk actions merely to slow the user down.
+
+### Explicit platform exception
+
+`BeforeInstallPromptEvent.prompt()` in `PwaProvider` is the standards-based browser API required to display the user-requested PWA installation surface. It is not a product alert/prompt implementation and is permitted only for that installation trigger. Product flows must not introduce other native prompt APIs.
 
 ### Reversible organization action
 
@@ -80,9 +84,9 @@ Icon-only actions are reserved for universally understood compact controls such 
 
 - Inbox archive with Undo and organize Topic/Skill sheets.
 - Topic management and Drill creation sheets.
-- Note composer and Feedback sheet.
+- Note composer, picture removal, and Feedback sheet.
 - Training recent-plan entry, Topic/Skill sheets, progressive block editing, plan review, finish sheet, remaining-plan editor, and delete confirmation.
 
 ## Enforcement
 
-`tests/interactionSystemContracts.test.ts` scans the web source for browser-native `alert`, `confirm`, and `prompt` calls and protects the core dialog, Inbox, Training, and catalog interaction contracts.
+`tests/interactionSystemContracts.test.ts` scans the web source for browser-native `alert`, `confirm`, and global `prompt` calls and protects the core dialog, Inbox, Training, and catalog interaction contracts. The documented PWA installation API exception is deliberately excluded from that scan.
