@@ -11,6 +11,7 @@ import './styles.css'
 import './mobile-audit.css'
 import './mobile-review.css'
 import './interaction-system.css'
+import './topic-pictures.css'
 const client = new QueryClient()
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
