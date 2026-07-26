@@ -3,6 +3,7 @@ import { Check, ChevronRight, Layers3, Target } from 'lucide-react'
 import { toast } from 'sonner'
 import { ConfirmDialog, Dialog } from '../../components/Dialog'
 import { FacebookEmbed } from '../../components/FacebookEmbed'
+import { TopicPickerDialog } from '../../components/TopicPickerDialog'
 import { VideoThumbnail } from '../../components/VideoThumbnail'
 import { useConvertInbox, useDeleteInbox, useInboxItem, useLibraryOverview } from '../../lib/api/hooks'
 
@@ -51,15 +52,12 @@ export function OrganizeInbox({ id, navigate, quick = false }: { id: string; nav
     }
   }
 
-  function toggleTopic(topicId: string) {
-    setSelectedTopicIds((current) => {
-      const next = current.includes(topicId) ? current.filter((id) => id !== topicId) : [...current, topicId]
-      setSelectedSkillIds((selected) => selected.filter((skillId) => {
-        const skill = skills.find((candidate) => candidate.id === skillId)
-        return next.length === 0 || !skill?.topicId || next.includes(skill.topicId)
-      }))
-      return next
-    })
+  function updateTopics(next: string[]) {
+    setSelectedTopicIds(next)
+    setSelectedSkillIds((selected) => selected.filter((skillId) => {
+      const skill = skills.find((candidate) => candidate.id === skillId)
+      return next.length === 0 || !skill?.topicId || next.includes(skill.topicId)
+    }))
   }
 
   const data = item.data
@@ -79,7 +77,7 @@ export function OrganizeInbox({ id, navigate, quick = false }: { id: string; nav
           <span className="pill">{data.sourcePlatform}</span>
           <h2>{displayTitle}</h2>
           {data.creatorName && <p className="muted">By {data.creatorName}</p>}
-          <p className="muted">{data.sourceUrl || 'Needs URL correction before a Video can be created.'}</p>
+          <p className="muted capture-source-url">{data.sourceUrl || 'Needs URL correction before a Video can be created.'}</p>
           {isFacebook && <p className="notice">Public Facebook videos and posts can be played here when Facebook permits embedding. The original link remains available as a fallback.</p>}
           {quick && <div className="quick-actions">
             <button className="button secondary" onClick={() => navigate('/inbox')}>Done</button>
@@ -117,12 +115,12 @@ export function OrganizeInbox({ id, navigate, quick = false }: { id: string; nav
         </div>
       </>}
 
-      {picker === 'topics' && <MultiChoiceDialog
+      {picker === 'topics' && <TopicPickerDialog
         title="Choose topics"
         eyebrow="Learning areas"
-        options={topics.map((topic) => ({ id: topic.id, name: topic.name, detail: topic.description ?? undefined }))}
-        selected={selectedTopicIds}
-        onToggle={toggleTopic}
+        topics={topics}
+        selectedIds={selectedTopicIds}
+        onChange={updateTopics}
         onClose={() => setPicker(null)}
       />}
       {picker === 'skills' && <MultiChoiceDialog
