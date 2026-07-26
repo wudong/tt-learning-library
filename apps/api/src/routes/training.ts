@@ -16,6 +16,47 @@ import {
 import { getPrincipal } from '../auth/principal'
 import { ProfiledTrainingService } from '../services/profiledTrainingService'
 
+const MAX_SESSION_QUERY_DAYS = 366
+const SERVICE_WINDOW_DAYS = 61
+
+function parseLocalDate(value: string) {
+  return new Date(`${value}T00:00:00Z`)
+}
+
+function localDate(value: Date) {
+  return value.toISOString().slice(0, 10)
+}
+
+function plusDays(value: string, days: number) {
+  const date = parseLocalDate(value)
+  date.setUTCDate(date.getUTCDate() + days)
+  return localDate(date)
+}
+
+async function listSessionRange(
+  service: ProfiledTrainingService,
+  userId: string,
+  from: string,
+  to: string,
+  profileId?: string,
+) {
+  const start = parseLocalDate(from)
+  const end = parseLocalDate(to)
+  const totalDays = Math.floor((end.getTime() - start.getTime()) / 86_400_000)
+  if (!Number.isFinite(totalDays) || totalDays < 0) throw new Error('VALIDATION_ERROR: Invalid date range')
+  if (totalDays >= MAX_SESSION_QUERY_DAYS) throw new Error(`VALIDATION_ERROR: Date range cannot exceed ${MAX_SESSION_QUERY_DAYS} days`)
+
+  const sessions = []
+  let cursor = from
+  while (cursor <= to) {
+    const candidateEnd = plusDays(cursor, SERVICE_WINDOW_DAYS)
+    const windowEnd = candidateEnd < to ? candidateEnd : to
+    sessions.push(...await service.listSessions(userId, cursor, windowEnd, profileId))
+    cursor = plusDays(windowEnd, 1)
+  }
+  return sessions.sort((left, right) => left.scheduledDate.localeCompare(right.scheduledDate) || left.createdAt.localeCompare(right.createdAt))
+}
+
 export function trainingRoutes(db: Kysely<Database>) {
   const app = new Hono()
 
@@ -46,7 +87,8 @@ export function trainingRoutes(db: Kysely<Database>) {
 
   app.get('/sessions', zValidator('query', TrainingRangeQuerySchema), async (c) => {
     const query = c.req.valid('query')
-    return c.json({ data: await new ProfiledTrainingService(db).listSessions(getPrincipal(c).userId, query.from, query.to, query.profileId) })
+    const service = new ProfiledTrainingService(db)
+    return c.json({ data: await listSessionRange(service, getPrincipal(c).userId, query.from, query.to, query.profileId) })
   })
 
   app.post('/sessions', zValidator('json', CreateTrainingSessionRequestSchema), async (c) => {
