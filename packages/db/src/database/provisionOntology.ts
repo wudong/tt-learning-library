@@ -1,5 +1,5 @@
 import { sql, type Kysely, type Transaction } from 'kysely'
-import { PLAYER_DEFAULT_TOPICS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
+import { PLAYER_DEFAULT_TOPICS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, tableTennisSkillDescription } from '@ttll/shared'
 import { NoteDrillRepository } from '../repositories/noteDrillRepository'
 import type { Database } from '../schema/database'
 import { GraphRepository } from '../repositories/graphRepository'
@@ -26,23 +26,30 @@ async function provisionOntologyInTransaction(conn: Conn, userId: string) {
   }
 
   const existingSkills = await repository.listSystemSkills(userId)
-  const skillNames = new Set(existingSkills.map((skill) => skill.name))
+  const skillsByName = new Map(existingSkills.map((skill) => [skill.name, skill]))
   for (const definition of TABLE_TENNIS_SKILLS) {
-    if (skillNames.has(definition.name)) continue
+    const description = tableTennisSkillDescription(definition)
+    const existing = skillsByName.get(definition.name)
+    if (existing) {
+      if (!existing.description) await repository.setSkillDescription(userId, existing.node_id, description)
+      const node = await graph.getNode(userId, existing.node_id)
+      if (node && !node.summary) await graph.updateNode(userId, node.id, { summary: description })
+      continue
+    }
     const topic = topicsByName.get(definition.topic)
     if (!topic) throw new Error(`Ontology topic missing: ${definition.topic}`)
-    const node = await graph.createNode({ userId, nodeType: 'skill', title: definition.name })
-    await repository.createSkill({ userId, nodeId: node.id, name: definition.name, topicId: topic.id, isSystem: true })
+    const node = await graph.createNode({ userId, nodeType: 'skill', title: definition.name, summary: description })
+    await repository.createSkill({ userId, nodeId: node.id, name: definition.name, description, topicId: topic.id, isSystem: true })
     await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
   }
 
   const skills = await repository.listSystemSkills(userId)
-  const skillsByName = new Map(skills.map((skill) => [skill.name, skill]))
+  const currentSkillsByName = new Map(skills.map((skill) => [skill.name, skill]))
   const existingDrills = await new NoteDrillRepository(conn).listDrills(userId)
   const systemDrillTitles = new Set(existingDrills.filter((drill) => drill.is_system === 1).map((drill) => drill.title))
   for (const definition of TABLE_TENNIS_DRILLS) {
     if (systemDrillTitles.has(definition.title)) continue
-    const skill = skillsByName.get(definition.skill)
+    const skill = currentSkillsByName.get(definition.skill)
     if (!skill) throw new Error(`Ontology drill skill missing: ${definition.skill}`)
     const node = await graph.createNode({ userId, nodeType: 'drill', title: definition.title, summary: definition.description })
     const drillRepository = new NoteDrillRepository(conn)
