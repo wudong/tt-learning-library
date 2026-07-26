@@ -1,11 +1,30 @@
 import { expect, test } from 'bun:test'
+import { LibraryConnectionsResponseSchema } from '@ttll/shared'
 import { GraphRepository, createMigratedTestDb, provisionOntology } from '../../packages/db/src'
 import { LibraryAggregateService } from '../../apps/api/src/services/libraryAggregateService'
 import { VideoAggregateService } from '../../apps/api/src/services/videoAggregateService'
+import { presentEdge, presentNode } from '../../apps/api/src/services/presenters'
 
 async function createUser(db: Awaited<ReturnType<typeof createMigratedTestDb>>['db'], id: string) {
   const now = new Date().toISOString()
   await db.insertInto('users').values({ id, email: null, display_name: id, created_at: now, updated_at: now, deleted_at: null }).execute()
+}
+
+function presentConnections(result: Awaited<ReturnType<LibraryAggregateService['getNodeConnections']>>) {
+  return {
+    data: {
+      center: presentNode(result.center),
+      centerHref: result.centerHref,
+      groups: result.groups.map((group) => ({
+        ...group,
+        items: group.items.map((item) => ({ node: presentNode(item.node), edge: presentEdge(item.edge), href: item.href })),
+      })),
+      maxNodes: result.maxNodes,
+      totalConnections: result.totalConnections,
+      shownConnections: result.shownConnections,
+      truncated: result.truncated,
+    },
+  }
 }
 
 test('knowledge graph explorer groups direct and nearby connections and resolves detail links', async () => {
@@ -30,6 +49,7 @@ test('knowledge graph explorer groups direct and nearby connections and resolves
   const note = await library.createNote(userId, { parentNodeId: skill.node_id, body: 'Brush underneath the ball', noteType: 'takeaway' })
 
   const result = await library.getNodeConnections(userId, skill.node_id)
+  expect(() => LibraryConnectionsResponseSchema.parse(presentConnections(result))).not.toThrow()
   expect(result.center.id).toBe(skill.node_id)
   expect(result.centerHref).toBe(`/library/skills/${skill.node_id}`)
   expect(result.totalConnections).toBeGreaterThan(4)
@@ -53,6 +73,7 @@ test('knowledge graph explorer groups direct and nearby connections and resolves
   expect(result.groups.flatMap((group) => group.items).some((item) => item.node.node_type === 'skill' && item.node.id !== skill.node_id)).toBe(true)
 
   const videoResult = await library.getNodeConnections(userId, video.node.id)
+  expect(() => LibraryConnectionsResponseSchema.parse(presentConnections(videoResult))).not.toThrow()
   expect(videoResult.centerHref).toBe(`/videos/${video.video.id}`)
   expect(videoResult.groups.some((group) => group.label === 'Explains' && group.items.some((item) => item.node.id === skill.node_id))).toBe(true)
 
@@ -68,6 +89,7 @@ test('Backhand Chop is connected to foundations, defence, spin, contrasting atta
   const backhandChop = overview.skills.find((skill) => skill.name === 'Backhand Chop')!
 
   const result = await library.getNodeConnections(userId, backhandChop.node_id)
+  expect(() => LibraryConnectionsResponseSchema.parse(presentConnections(result))).not.toThrow()
   const connectedTitles = new Set(result.groups.flatMap((group) => group.items.map((item) => item.node.title)))
   expect(connectedTitles.has('Backhand')).toBe(true)
   expect(connectedTitles.has('Racket Angle Control')).toBe(true)
@@ -102,6 +124,7 @@ test('knowledge graph explorer is owner-scoped, capped, and rejects unsupported 
   const tag = await graph.createNode({ userId, nodeType: 'tag', title: 'Serve' })
 
   const result = await new LibraryAggregateService(db).getNodeConnections(userId, skill.id)
+  expect(() => LibraryConnectionsResponseSchema.parse(presentConnections(result))).not.toThrow()
   expect(result.maxNodes).toBe(36)
   expect(result.totalConnections).toBe(40)
   expect(result.shownConnections).toBe(36)
