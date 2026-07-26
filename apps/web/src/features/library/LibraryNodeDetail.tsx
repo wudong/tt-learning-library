@@ -27,8 +27,8 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
     {resources.isError && <div className="notice">This {type} could not be loaded.</div>}
     {resources.data && <>
       <header className="library-detail-hero">
-        <div className="ontology-symbol">{type === 'topic' ? <Layers3 size={22} /> : <Target size={22} />}</div>
-        <div className="library-detail-title"><span className="eyebrow">{type}</span><h1>{resources.data.node.title}</h1>{resources.data.node.summary && <p>{resources.data.node.summary}</p>}</div>
+        <div className="ontology-symbol detail-title-only">{type === 'topic' ? <Layers3 size={22} /> : <Target size={22} />}</div>
+        <div className="library-detail-title"><span className="eyebrow detail-title-only">{type}</span><h1 className="detail-title-only">{resources.data.node.title}</h1>{resources.data.node.summary && <p>{resources.data.node.summary}</p>}</div>
       </header>
 
       <div className="detail-action-bar" aria-label={`${resources.data.node.title} actions`}>
@@ -45,6 +45,13 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
         </section>}
 
         {type === 'skill' && <article className="card"><PictureAttachments parentNodeId={nodeId} /></article>}
+
+        {type === 'skill' && <section className="detail-section relationship-section" aria-labelledby="skill-notes-title">
+          <div className="picture-heading"><div><h2 id="skill-notes-title">Notes</h2><p>Your takeaways, questions, and reminders for this Skill.</p></div><button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16} /> Add note</button></div>
+          {resources.data.notes.length ? <div className="skill-note-list">{resources.data.notes.map((note) => <article key={note.id}>
+            <span>{note.noteType.replaceAll('_', ' ')}</span><p>{note.body}</p>
+          </article>)}</div> : <p className="muted">No notes yet. Add a takeaway or question to keep it with this Skill.</p>}
+        </section>}
 
         {type === 'topic' && <section className="detail-section relationship-section" aria-labelledby="topic-skills-title">
           <h2 id="topic-skills-title">Skills in this Topic</h2>
