@@ -7,6 +7,7 @@ import {
   type FeedbackType,
 } from '../lib/api/feedback'
 import { loadFeedbackContactEmail, saveFeedbackContactEmail } from '../lib/feedbackContact'
+import './FeedbackForm.css'
 
 interface FeedbackFormProps {
   variant?: 'quick' | 'full'
