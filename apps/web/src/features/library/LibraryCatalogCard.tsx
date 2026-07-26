@@ -11,6 +11,7 @@ export function LibraryCatalogCard({
   tags = [],
   onOpen,
   openLabel = 'Open details',
+  showOpenLabel = true,
   secondaryActions,
 }: {
   icon: LucideIcon
@@ -22,6 +23,7 @@ export function LibraryCatalogCard({
   tags?: string[]
   onOpen: () => void
   openLabel?: string
+  showOpenLabel?: boolean
   secondaryActions?: ReactNode
 }) {
   const visibleTags = tags.slice(0, 2)
@@ -47,8 +49,9 @@ export function LibraryCatalogCard({
               {remainingTags > 0 && <small className="library-catalog-overflow">+{remainingTags}</small>}
             </span>
           )}
-          <span className="library-catalog-open-label">{openLabel} <ChevronRight size={15} aria-hidden="true" /></span>
+          {showOpenLabel && <span className="library-catalog-open-label">{openLabel}</span>}
         </span>
+        <span className="library-catalog-chevron" aria-hidden="true"><ChevronRight size={19} /></span>
       </button>
 
       {secondaryActions && <div className="library-catalog-actions" aria-label={`Manage ${title}`}>{secondaryActions}</div>}
