@@ -102,9 +102,12 @@ export class LibraryAggregateService {
     const discoveries: Discovery[] = direct.map((relationship) => ({ relationship, via: null, depth: 1 }))
     const directNodeIds = new Set(direct.map((relationship) => relationship.node.id))
     const secondSeen = new Set<string>()
+    const nearbyByRoot = await Promise.all(direct.slice(0, SECOND_HOP_ROOT_LIMIT).map(async (first) => ({
+      first,
+      nearby: (await graph.relationships(userId, first.node.id)).sort(compareRelationship),
+    })))
 
-    for (const first of direct.slice(0, SECOND_HOP_ROOT_LIMIT)) {
-      const nearby = (await graph.relationships(userId, first.node.id)).sort(compareRelationship)
+    for (const { first, nearby } of nearbyByRoot) {
       for (const relationship of nearby) {
         if (relationship.node.id === center.id || directNodeIds.has(relationship.node.id)) continue
         const key = `${first.node.id}:${relationship.node.id}:${relationship.edge.edge_type}:${relationship.direction}`
