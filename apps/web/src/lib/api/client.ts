@@ -13,7 +13,7 @@ export async function apiRequest<T>(input: RequestInfo | URL, init: RequestInit 
   const parsed = schema.safeParse(payload)
   if (!parsed.success) {
     const summary = parsed.error.issues.slice(0, 3).map((issue) => `${issue.path.join('.') || 'response'}: ${issue.message}`).join('; ')
-    console.error('API response validation failed', { input: String(input), issues: parsed.error.issues })
+    console.error(`API response validation failed for ${String(input)}: ${JSON.stringify(parsed.error.issues)}`)
     throw new ApiClientError(res.status, 'INVALID_RESPONSE', `Invalid API response: ${summary}`)
   }
   return parsed.data
