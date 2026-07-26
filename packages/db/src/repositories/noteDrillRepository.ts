@@ -11,6 +11,11 @@ export class NoteDrillRepository {
     await this.db.insertInto('notes').values(row).execute()
     return row
   }
+  listNotesByParent(userId: string, parentNodeId: string) {
+    return this.db.selectFrom('notes').selectAll()
+      .where('user_id', '=', userId).where('parent_node_id', '=', parentNodeId).where('deleted_at', 'is', null)
+      .orderBy('updated_at', 'desc').orderBy('id', 'asc').execute()
+  }
   async createDrill(input: { userId: string; nodeId: string; title: string; description?: string | null; diagramUrl?: string | null; instructions?: string | null; difficulty?: string | null; durationMinutes?: number | null; repetitionTarget?: number | null; status?: string; isSystem?: boolean }) {
     const now = nowIso()
     const row = { id: createId('drill'), node_id: input.nodeId, user_id: input.userId, title: input.title, description: input.description ?? null, diagram_url: input.diagramUrl ?? null, instructions: input.instructions ?? null, difficulty: input.difficulty ?? null, duration_minutes: input.durationMinutes ?? null, repetition_target: input.repetitionTarget ?? null, status: input.status ?? 'planned', is_system: input.isSystem ? 1 : 0, is_pinned: 0, created_at: now, updated_at: now, deleted_at: null }
