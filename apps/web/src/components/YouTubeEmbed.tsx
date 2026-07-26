@@ -14,7 +14,7 @@ export function YouTubeEmbed({ externalId, title }: { externalId: string | null;
       <iframe
         src={src}
         title={`YouTube video player: ${title}`}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share"
         allowFullScreen
         loading="lazy"
         referrerPolicy="strict-origin-when-cross-origin"
