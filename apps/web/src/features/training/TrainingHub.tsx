@@ -3,6 +3,7 @@ import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay,
 import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Clock3, Rows3, Zap } from 'lucide-react'
 import { useTrainingInsights, useTrainingSessions } from '../../lib/api/hooks'
 import { isMissedTrainingSession, trainingDayState, trainingDayStateLabel } from './calendarState'
+import { TrainingProfileSwitcher } from './TrainingProfileSwitcher'
 
 const isoDate = (date: Date) => format(date, 'yyyy-MM-dd')
 const minutes = (seconds: number) => seconds < 60 ? '<1m' : `${Math.round(seconds / 60)}m`
@@ -32,6 +33,7 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
   }
 
   return <section className="training-page">
+    <TrainingProfileSwitcher />
     <div className="training-tabs" role="tablist" aria-label="Training sections">
       <button role="tab" aria-selected={tab === 'calendar'} className={tab === 'calendar' ? 'active' : ''} onClick={() => setTab('calendar')}><CalendarDays size={18} /> Calendar</button>
       <button role="tab" aria-selected={tab === 'insights'} className={tab === 'insights' ? 'active' : ''} onClick={() => setTab('insights')}><BarChart3 size={18} /> Insights</button>
@@ -113,7 +115,7 @@ function TrainingInsights({ month }: { month: Date }) {
       <button className={range === 'week' ? 'active' : ''} onClick={() => setRange('week')}>Last 7 days</button>
       <button className={range === 'month' ? 'active' : ''} onClick={() => setRange('month')}>This month</button>
     </div>
-    {insights.isLoading && <div className="library-skeleton">Calculating your training summary…</div>}
+    {insights.isLoading && <div className="library-skeleton">Calculating the training summary…</div>}
     {insights.isError && <div className="notice">We could not calculate insights right now.</div>}
     {data && <>
       <dl className="training-summary">
@@ -123,7 +125,7 @@ function TrainingInsights({ month }: { month: Date }) {
         <div><dt>Plan vs actual</dt><dd>{minutes(data.plannedDurationSeconds)} / {minutes(data.actualDurationSeconds)}</dd></div>
       </dl>
       <div className="skill-time-section">
-        <div><span className="eyebrow">Where time went</span><h2>Skills trained</h2></div>
+        <div><span className="eyebrow">{data.profile ? `${data.profile.displayName}'s practice` : 'Where time went'}</span><h2>Skills trained</h2></div>
         {data.skills.length === 0 ? <div className="training-empty"><BarChart3 size={28} /><strong>No practice data yet</strong><span>Complete a timed session or add a manual log to build this view.</span></div> :
           <div className="skill-time-list">{data.skills.map((skill) => <div className="skill-time-row" key={skill.skillId}>
             <div><strong>{skill.skillName}</strong><small>{minutes(skill.actualDurationSeconds)} actual · {minutes(skill.plannedDurationSeconds)} planned</small></div>
