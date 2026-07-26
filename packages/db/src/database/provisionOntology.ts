@@ -47,7 +47,38 @@ const DRILL_DEFINITIONS: DrillDefinition[] = [
 ]
 
 export async function provisionOntology(db: Kysely<Database>, userId: string) {
+  if (await ontologyContentIsCurrent(db, userId)) return
   return db.transaction().execute((trx) => provisionOntologyInTransaction(trx, userId))
+}
+
+async function ontologyContentIsCurrent(db: Kysely<Database>, userId: string) {
+  const [topicCount, skillCount, drillCount, topic, skill, drill, markerEdge] = await Promise.all([
+    db.selectFrom('topics').select((eb) => eb.fn.countAll().as('count')).where('user_id', '=', userId).where('is_system', '=', 1).where('deleted_at', 'is', null).executeTakeFirst(),
+    db.selectFrom('skills').select((eb) => eb.fn.countAll().as('count')).where('user_id', '=', userId).where('is_system', '=', 1).where('deleted_at', 'is', null).executeTakeFirst(),
+    db.selectFrom('drills').select((eb) => eb.fn.countAll().as('count')).where('user_id', '=', userId).where('is_system', '=', 1).where('deleted_at', 'is', null).executeTakeFirst(),
+    db.selectFrom('topics').select('description').where('user_id', '=', userId).where('name', '=', 'Backhand').where('is_system', '=', 1).where('deleted_at', 'is', null).executeTakeFirst(),
+    db.selectFrom('skills').select('description').where('user_id', '=', userId).where('name', '=', 'Backhand Chop').where('is_system', '=', 1).where('deleted_at', 'is', null).executeTakeFirst(),
+    db.selectFrom('drills').select(['description', 'instructions']).where('user_id', '=', userId).where('title', '=', 'Backhand Chop Depth Control').where('is_system', '=', 1).where('deleted_at', 'is', null).executeTakeFirst(),
+    db.selectFrom('graph_edges as edge')
+      .innerJoin('graph_nodes as source', 'source.id', 'edge.source_node_id')
+      .innerJoin('graph_nodes as target', 'target.id', 'edge.target_node_id')
+      .select('edge.id')
+      .where('edge.user_id', '=', userId)
+      .where('edge.edge_type', '=', 'requires')
+      .where('edge.deleted_at', 'is', null)
+      .where('source.user_id', '=', userId).where('source.title', '=', 'Backhand Chop').where('source.deleted_at', 'is', null)
+      .where('target.user_id', '=', userId).where('target.title', '=', 'Generating Backspin').where('target.deleted_at', 'is', null)
+      .executeTakeFirst(),
+  ])
+
+  return Number(topicCount?.count ?? 0) >= TABLE_TENNIS_TOPICS.length
+    && Number(skillCount?.count ?? 0) >= TABLE_TENNIS_SKILLS.length
+    && Number(drillCount?.count ?? 0) >= DRILL_DEFINITIONS.length
+    && topic?.description === tableTennisTopicDescription('Backhand')
+    && skill?.description === enrichedTableTennisSkillDescription({ name: 'Backhand Chop', topic: 'Backhand' })
+    && drill?.description === ADDITIONAL_TABLE_TENNIS_DRILLS[0].description
+    && drill.instructions === ADDITIONAL_TABLE_TENNIS_DRILLS[0].instructions
+    && !!markerEdge
 }
 
 async function provisionOntologyInTransaction(conn: Conn, userId: string) {
@@ -102,9 +133,9 @@ async function provisionOntologyInTransaction(conn: Conn, userId: string) {
       continue
     }
     const node = await graph.createNode({ userId, nodeType: 'skill', title: definition.name, summary: description })
-    const skill = await repository.createSkill({ userId, nodeId: node.id, name: definition.name, description, topicId: topic.id, isSystem: true })
+    const createdSkill = await repository.createSkill({ userId, nodeId: node.id, name: definition.name, description, topicId: topic.id, isSystem: true })
     await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
-    skillsByName.set(definition.name, skill)
+    skillsByName.set(definition.name, createdSkill)
   }
 
   for (const link of TABLE_TENNIS_SKILL_LINKS) {
@@ -116,7 +147,7 @@ async function provisionOntologyInTransaction(conn: Conn, userId: string) {
 
   const drillRepository = new NoteDrillRepository(conn)
   const existingDrills = await drillRepository.listDrills(userId)
-  const systemDrillsByTitle = new Map(existingDrills.filter((drill) => drill.is_system === 1).map((drill) => [drill.title, drill]))
+  const systemDrillsByTitle = new Map(existingDrills.filter((existingDrill) => existingDrill.is_system === 1).map((existingDrill) => [existingDrill.title, existingDrill]))
 
   for (const definition of DRILL_DEFINITIONS) {
     const primarySkill = skillsByName.get(definition.skill)
@@ -156,9 +187,9 @@ async function provisionOntologyInTransaction(conn: Conn, userId: string) {
 
     const relatedSkillNames = new Set([definition.skill, ...(TABLE_TENNIS_DRILL_RELATED_SKILLS[definition.title] ?? [])])
     for (const skillName of relatedSkillNames) {
-      const skill = skillsByName.get(skillName)
-      if (!skill) throw new Error(`Ontology related drill skill missing: ${skillName}`)
-      await graph.createEdge({ userId, sourceNodeId: drill.node_id, targetNodeId: skill.node_id, edgeType: 'practices' })
+      const relatedSkill = skillsByName.get(skillName)
+      if (!relatedSkill) throw new Error(`Ontology related drill skill missing: ${skillName}`)
+      await graph.createEdge({ userId, sourceNodeId: drill.node_id, targetNodeId: relatedSkill.node_id, edgeType: 'practices' })
     }
   }
 }
