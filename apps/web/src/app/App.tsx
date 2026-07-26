@@ -24,7 +24,7 @@ function NotFound({ navigate }: { navigate: (to: string) => void }) {
 }
 
 export function App() {
-  const { path, navigate } = useRoute()
+  const { path, navigate, navigateBack } = useRoute()
   const auth = useAuth()
   const base = path.split('?')[0]
   const publicShareMatch = base.match(/^\/s\/([^/]+)$/)
@@ -54,5 +54,5 @@ export function App() {
   else if (base === '/settings') page = <Settings />
   else page = <NotFound navigate={navigate} />
 
-  return <Layout path={base} navigate={navigate}>{page}</Layout>
+  return <Layout path={base} navigate={navigate} navigateBack={navigateBack}>{page}</Layout>
 }
