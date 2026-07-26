@@ -141,7 +141,7 @@ jobs:
 
           CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
           test -n "$CHROME"
-          mkdir -p mobile-ui-screenshots
+          mkdir -p mobile-ui-screenshots mobile-ui-debug
 
           capture() {
             width=$1
@@ -159,6 +159,25 @@ jobs:
               --window-size="${width},${height}" \
               --screenshot="mobile-ui-screenshots/${name}.png" \
               "http://localhost:5174${route}"
+          }
+
+          debug_route() {
+            name=$1
+            route=$2
+            "$CHROME" \
+              --headless=new \
+              --no-sandbox \
+              --disable-dev-shm-usage \
+              --disable-gpu \
+              --enable-logging=stderr \
+              --log-level=0 \
+              --run-all-compositor-stages-before-draw \
+              --virtual-time-budget=10000 \
+              --window-size=384,900 \
+              --dump-dom \
+              "http://localhost:5174${route}" \
+              > "mobile-ui-debug/${name}.html" \
+              2> "mobile-ui-debug/${name}.log" || true
           }
 
           capture_routes() {
@@ -186,6 +205,8 @@ jobs:
 
           capture_routes 384 900 384
           capture_routes 320 800 320
+          debug_route connections "/library/connections/${SKILL_ID}"
+          debug_route video-detail "/videos/${VIDEO_ID}"
 
       - name: Upload mobile UI screenshots
         if: always()
@@ -194,6 +215,7 @@ jobs:
           name: mobile-ui-screenshots
           path: |
             mobile-ui-screenshots
+            mobile-ui-debug
             mobile-audit-server.log
           if-no-files-found: warn
 
