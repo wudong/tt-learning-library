@@ -705,13 +705,15 @@ them. The product should not lead with folders or provider-centric video lists.
 The default player view shows Fundamentals, Serve, Receive, Spin, Forehand,
 Backhand, Footwork, Defense, Tactics, Training & Drills, Match Analysis,
 Physical Training, Mental Game, and Equipment. Doubles, Rules & Officiating,
-Para Table Tennis, and Coaching remain available through Manage Topics. Users
+Para Table Tennis, and Coaching remain available through Choose visible Topics. Users
 may show or hide any Topic without deleting ontology or learning data.
 
 Topics and Skills use full detail pages rather than transient sheets. Users may
 pin Topics, Skills, and Drills to the top of their Library sections. The Skills
 section shows pinned items by default and reveals the broader ontology through
-Topic selection or search.
+one searchable Topic picker or search. The same Topic-selection interaction is
+reused for capture and training planning. Library subpages return through the
+user's actual in-Library history, with `/library` as the deep-link fallback.
 
 The Drill catalog combines a compact protected starter set with lightweight
 private Drill ideas. A player adds an idea using only a description; the app
