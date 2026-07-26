@@ -58,8 +58,12 @@ test('Library organizes drills under ontology skills and exposes videos contextu
     skillIds: [skill.id], tagIds: [], progress: 'saved', learningState: 'practicing',
   })
   const skillResources = await library.getNodeResources(userId, skill.node_id)
+  expect(skill.description).not.toBeNull()
+  expect(skillResources.node.summary).toBe(skill.description)
   expect(skillResources.drills.map((item) => item.id)).toEqual([drill.id])
   expect(skillResources.videos.map((item) => item.id)).toEqual([video.video.id])
+  const note = await library.createNote(userId, { parentNodeId: skill.node_id, body: 'Keep the contact fine and low', noteType: 'takeaway' })
+  expect((await library.getNodeResources(userId, skill.node_id)).notes.map((item) => item.id)).toEqual([note.id])
   const topicResources = await library.getNodeResources(userId, topic.node_id)
   expect(topicResources.skills.some((item) => item.id === skill.node_id)).toBe(true)
   await library.attachVideo(userId, drill.node_id, video.video.id)
