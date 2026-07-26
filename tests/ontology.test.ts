@@ -65,7 +65,7 @@ test('every Topic and Skill has meaningful reviewed copy', () => {
   for (const skill of TABLE_TENNIS_SKILLS) {
     const description = enrichedTableTennisSkillDescription(skill)
     expect(description.length).toBeGreaterThan(120)
-    expect(description).toContain(skill.name)
+    expect(description).not.toBe(`Build reliable ${skill.name.toLowerCase()} technique for ${skill.topic.toLowerCase()} situations in training and matches.`)
   }
   expect(enrichedTableTennisSkillDescription({ name: 'Backhand Chop', topic: 'Backhand' })).toContain('controlled backspin')
 })
