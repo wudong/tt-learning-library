@@ -50,9 +50,12 @@ export const LibraryNodeResourcesResponseSchema = dataEnvelope(z.object({
   isPinned: z.boolean()
 }))
 
+const LibraryConnectionNodeSchema = GraphNodeDtoSchema.extend({
+  nodeType: z.enum(['video','picture','skill','topic','note','drill','mistake','learning_path','collection','tag','creator','source','practice_session'])
+})
 export const LibraryConnectionDirectionSchema = z.enum(['incoming', 'outgoing'])
 export const LibraryConnectionItemSchema = z.object({
-  node: GraphNodeDtoSchema,
+  node: LibraryConnectionNodeSchema,
   edge: GraphEdgeDtoSchema,
   href: z.string().startsWith('/').nullable(),
 })
@@ -65,7 +68,7 @@ export const LibraryConnectionGroupSchema = z.object({
   items: z.array(LibraryConnectionItemSchema),
 })
 export const LibraryConnectionsResponseSchema = dataEnvelope(z.object({
-  center: GraphNodeDtoSchema,
+  center: LibraryConnectionNodeSchema,
   centerHref: z.string().startsWith('/').nullable(),
   groups: z.array(LibraryConnectionGroupSchema),
   maxNodes: z.number().int().positive(),
