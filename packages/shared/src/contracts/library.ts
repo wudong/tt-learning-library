@@ -27,6 +27,10 @@ export const DrillStepDtoSchema = z.object({
   stroke: z.string(), spin: z.enum(['topspin','backspin','sidespin','no_spin','variable']),
   fromZone: z.string(), targetZone: z.string(), instruction: z.string().nullable()
 })
+export const NoteDtoSchema = z.object({
+  id: idSchema, nodeId: idSchema, parentNodeId: idSchema, body: z.string(),
+  noteType: z.string(), timestampSeconds: z.number().int().nullable()
+})
 
 export const LibraryOverviewResponseSchema = dataEnvelope(z.object({
   topics: z.array(TopicDtoSchema),
@@ -42,6 +46,7 @@ export const LibraryNodeResourcesResponseSchema = dataEnvelope(z.object({
   drills: z.array(DrillDtoSchema),
   drill: DrillDtoSchema.nullable(),
   drillSteps: z.array(DrillStepDtoSchema),
+  notes: z.array(NoteDtoSchema),
   isPinned: z.boolean()
 }))
 
@@ -73,6 +78,7 @@ export type LibraryConnectionGroupDto = z.infer<typeof LibraryConnectionGroupSch
 
 export const CreateSkillRequestSchema = z.object({
   name: z.string().trim().min(1).max(200),
+  description: z.string().trim().min(1).max(1000).optional(),
   topicId: idSchema.optional(),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
   status: z.enum(['not_started', 'learning', 'practicing', 'improving', 'comfortable']).optional()
@@ -83,10 +89,6 @@ export const CreateNoteRequestSchema = z.object({
   parentNodeId: idSchema,
   body: z.string().trim().min(1).max(10000),
   noteType: z.enum(['plain', 'question', 'takeaway', 'reminder']).default('plain')
-})
-export const NoteDtoSchema = z.object({
-  id: idSchema, nodeId: idSchema, parentNodeId: idSchema, body: z.string(),
-  noteType: z.string(), timestampSeconds: z.number().int().nullable()
 })
 export const NoteResponseSchema = dataEnvelope(NoteDtoSchema)
 
