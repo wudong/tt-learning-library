@@ -58,10 +58,10 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
 
       {drill && data && <>
         <header className="library-detail-hero">
-          <div className="ontology-symbol"><Dumbbell size={22} /></div>
+          <div className="ontology-symbol detail-title-only"><Dumbbell size={22} /></div>
           <div className="library-detail-title">
-            <span className="eyebrow">{drill.isSystem ? 'Starter drill' : 'Personal drill'}</span>
-            <h1>{drill.title}</h1>
+            <span className="eyebrow detail-title-only">{drill.isSystem ? 'Starter drill' : 'Personal drill'}</span>
+            <h1 className="detail-title-only">{drill.title}</h1>
             {drill.description && <p>{drill.description}</p>}
             <div className="mini-chips">
               <span>{drill.status.replaceAll('_', ' ')}</span>
