@@ -111,6 +111,9 @@
 .choice-option strong,
 .choice-option small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .choice-search { margin-bottom: 12px; }
+.choice-search-label { position: relative; display: block; }
+.choice-search-label > svg { position: absolute; z-index: 1; top: 15px; left: 13px; color: var(--ink-soft); pointer-events: none; }
+.choice-search-label .choice-search { width: 100%; padding-left: 40px; }
 
 .inbox-card { display: grid; gap: 12px; }
 .inbox-card .video-thumbnail { margin: 0; }
@@ -119,6 +122,7 @@
 .inbox-card-head h2 { margin: 6px 0 2px; overflow-wrap: anywhere; }
 .inbox-card-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px; }
 .organize-fields { display: grid; gap: 16px; }
+.capture-source-url { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .organize-associations { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .selection-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .selection-summary span { padding: 5px 8px; border-radius: 999px; color: var(--accent-strong); background: var(--accent-soft); font-size: 0.72rem; font-weight: 750; }
