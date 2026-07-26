@@ -6,6 +6,8 @@ import {
   validateFeedbackScreenshots,
   type FeedbackType,
 } from '../lib/api/feedback'
+import { loadFeedbackContactEmail, saveFeedbackContactEmail } from '../lib/feedbackContact'
+import './FeedbackForm.css'
 
 interface FeedbackFormProps {
   variant?: 'quick' | 'full'
@@ -35,6 +37,8 @@ export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormPro
   const [type, setType] = useState<FeedbackType>('general')
   const [screenshots, setScreenshots] = useState<File[]>([])
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const [email, setEmail] = useState(loadFeedbackContactEmail)
+  const hasRememberedEmail = Boolean(loadFeedbackContactEmail())
 
   if (submitSuccess) {
     return (
@@ -86,15 +90,16 @@ export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormPro
     }
     const form = e.currentTarget
     const data = new FormData(form)
-    await submit({
+    const submitted = await submit({
       name: (data.get('name') as string) || null,
-      email: (data.get('email') as string) || null,
+      email: email || null,
       message_type: type,
       message: (data.get('message') as string) || '',
       website: (data.get('website') as string) || null,
       screenshots,
       ...getPageContext(),
     })
+    if (submitted) saveFeedbackContactEmail(email)
   }
 
   const ctx = getPageContext()
@@ -179,7 +184,30 @@ export function FeedbackForm({ variant = 'quick', onSubmitted }: FeedbackFormPro
 
       <div className="feedback-field">
         <label htmlFor={`fb-email-${variant}`}>Email (optional)</label>
-        <input id={`fb-email-${variant}`} name="email" type="email" className="input" placeholder="For follow-up if needed" />
+        <input
+          id={`fb-email-${variant}`}
+          name="email"
+          type="email"
+          className="input"
+          placeholder="For follow-up if needed"
+          value={email}
+          onChange={(event) => setEmail(event.currentTarget.value)}
+        />
+        {hasRememberedEmail && (
+          <div className="feedback-contact-memory">
+            <p className="muted">Saved on this device for future feedback.</p>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => {
+                setEmail('')
+                saveFeedbackContactEmail('')
+              }}
+            >
+              Forget saved email
+            </button>
+          </div>
+        )}
       </div>
 
       {(attachmentError || submitError) && <p className="feedback-error" role="alert">{attachmentError || submitError}</p>}
