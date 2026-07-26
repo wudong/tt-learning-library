@@ -522,6 +522,8 @@ small { color: var(--ink-soft); font-weight: 500; }
 .training-tabs button.active, .insight-range button.active { color: var(--accent-strong); background: var(--surface); box-shadow: 0 2px 8px oklch(0.3 0.02 150 / 0.08); }
 .calendar-toolbar { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
 .calendar-toolbar h2 { margin: 0; text-align: center; }
+.calendar-display-options { display: flex; justify-content: flex-end; margin-top: -12px; }
+.calendar-display-options .button[aria-pressed="true"] { color: var(--accent-strong); background: var(--accent-soft); }
 .training-calendar { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
 .weekday-row, .month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .weekday-row { padding: 8px 6px; border-bottom: 1px solid var(--line); background: var(--panel); }
@@ -534,6 +536,10 @@ small { color: var(--ink-soft); font-weight: 500; }
 .calendar-day .day-number { font-size: 0.82rem; font-weight: 800; }
 .calendar-day .day-state { align-self: end; width: fit-content; padding: 2px 5px; border-radius: 6px; color: var(--ink-soft); background: var(--panel); font-size: 0.57rem; font-weight: 800; text-transform: uppercase; }
 .calendar-day.trained .day-state { color: var(--accent-strong); background: oklch(0.88 0.07 150); }
+.calendar-day.missed .day-state, .calendar-day.partial .day-state { color: oklch(0.44 0.16 28); background: oklch(0.92 0.07 35); }
+.calendar-day.missed { background-image: linear-gradient(135deg, transparent 46%, oklch(0.72 0.12 30 / 0.2) 46%, oklch(0.72 0.12 30 / 0.2) 54%, transparent 54%); }
+.training-calendar.compact .calendar-day { min-height: 50px; padding: 5px 4px; }
+.training-calendar.compact .calendar-day > strong { display: none; }
 .calendar-day > strong { margin-top: auto; color: var(--accent-strong); font-size: 0.69rem; }
 .selected-day-head, .planner-section-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding-top: 4px; }
 .selected-day-head h2, .planner-section-head h2 { margin: 0; }
@@ -548,6 +554,7 @@ small { color: var(--ink-soft); font-weight: 500; }
 .session-symbol { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; color: var(--ink-soft); background: var(--panel); }
 .session-symbol.completed { color: var(--accent-strong); background: var(--accent-soft); }
 .session-symbol.in_progress { color: oklch(0.43 0.13 60); background: oklch(0.92 0.06 70); }
+.session-symbol.missed { color: oklch(0.44 0.16 28); background: oklch(0.92 0.07 35); }
 .session-copy, .session-meta { display: grid; min-width: 0; }
 .session-copy strong, .session-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session-copy small, .session-meta small { margin-top: 3px; font-size: 0.7rem; }
@@ -613,6 +620,10 @@ small { color: var(--ink-soft); font-weight: 500; }
 .library-detail-hero h1 { margin: 3px 0 5px; }
 .library-detail-hero p { margin: 0; color: var(--ink-soft); }
 .library-detail-title { flex: 1; min-width: 0; }
+.skill-note-list { display: grid; gap: 8px; margin-top: 14px; }
+.skill-note-list article { padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.skill-note-list article span { color: var(--accent-strong); font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+.skill-note-list article p { margin: 5px 0 0; white-space: pre-wrap; }
 .detail-pin { margin-left: auto; }
 .library-detail-grid { display: grid; gap: 16px; }
 .library-detail-grid .card h2 { margin-top: 0; }
@@ -691,6 +702,8 @@ small { color: var(--ink-soft); font-weight: 500; }
   .calendar-day { min-height: 68px; padding: 6px 4px; }
   .calendar-day .day-state { font-size: 0.52rem; }
   .calendar-day > strong { font-size: 0.62rem; }
+  .detail-title-only { display: none !important; }
+  .library-detail-hero { display: block; margin-bottom: 4px; }
   .selected-day-head { align-items: start; }
   .day-actions { justify-content: end; }
   .session-row { grid-template-columns: 42px minmax(0, 1fr) auto; }
