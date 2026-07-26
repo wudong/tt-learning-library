@@ -68,6 +68,7 @@ describe('interaction design-system contracts', () => {
     expect(hub).not.toContain('Practice with intent')
     expect(planner).toContain('Start from a recent plan')
     expect(planner).toContain('selectedTopicId')
+    expect(planner).toContain('<TopicPickerDialog')
     expect(planner).toContain("activeBlockKey === block.key")
     expect(planner).toContain('Recently used')
     expect(planner).not.toContain('Build the next practice')
@@ -88,6 +89,43 @@ describe('interaction design-system contracts', () => {
     expect(detail).toContain('/library/topics/${nodeId}/pictures')
     expect(manager).toContain('<PictureAttachments parentNodeId={nodeId} />')
     expect(app).toContain('/pictures$')
-    expect(layout).toContain("backLabel: 'Back to Topic'")
+    expect(layout).toContain("backLabel: 'Back in Library'")
+  })
+
+  test('Topic selection is reusable and Topic management actions are contextual', async () => {
+    const [picker, organize, planner, library] = await Promise.all([
+      source('apps/web/src/components/TopicPickerDialog.tsx'),
+      source('apps/web/src/features/inbox/OrganizeInbox.tsx'),
+      source('apps/web/src/features/training/TrainingPlanner.tsx'),
+      source('apps/web/src/features/library/Library.tsx'),
+    ])
+
+    expect(picker).toContain('Search Topics')
+    expect(picker).toContain('multiple = true')
+    expect(organize).toContain('<TopicPickerDialog')
+    expect(planner).toContain('<TopicPickerDialog')
+    expect(library).toContain('<TopicPickerDialog')
+    expect(library).toContain('Show or hide Topics')
+    expect(library).toContain('Show {topic.name}')
+    expect(library).toContain('Hide {topic.name}')
+    expect(library).not.toContain('<SlidersHorizontal size={16} /> Manage')
+  })
+
+  test('Facebook capture keeps assignment parity and contains responsive media and URLs', async () => {
+    const [organize, embed, css] = await Promise.all([
+      source('apps/web/src/features/inbox/OrganizeInbox.tsx'),
+      source('apps/web/src/components/FacebookEmbed.tsx'),
+      source('apps/web/src/components/FacebookEmbed.css'),
+    ])
+
+    expect(organize).toContain("data?.sourcePlatform === 'facebook'")
+    expect(organize).toContain('topicIds: selectedTopicIds')
+    expect(organize).toContain('skillIds: selectedSkillIds')
+    expect(organize).toContain('capture-source-url')
+    expect(embed).toContain('Wide video')
+    expect(embed).toContain('Tall video')
+    expect(embed).toContain('allowFullScreen')
+    expect(css).toContain('.facebook-video-embed.portrait')
+    expect(css).toContain('.facebook-video-embed.landscape')
   })
 })
