@@ -193,6 +193,10 @@ export const TABLE_TENNIS_SKILLS = [
   { name: 'Adapting Coaching to Age and Ability', topic: 'Coaching' }
 ] as const
 
+export function tableTennisSkillDescription(skill: { name: string; topic: string }): string {
+  return `Build reliable ${skill.name.toLowerCase()} technique for ${skill.topic.toLowerCase()} situations in training and matches.`
+}
+
 export const TABLE_TENNIS_DRILLS = [
   { title: 'Forehand Crosscourt Consistency', skill: 'Forehand Drive', imageUrl: '/drills/forehand-crosscourt-consistency-v2.png', description: 'Cooperative crosscourt forehands with a consistency target.', durationMinutes: 8, steps: [
     { actor:'player', stroke:'forehand_drive', spin:'topspin', fromZone:'near_forehand', targetZone:'far_forehand' },
