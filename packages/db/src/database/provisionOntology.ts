@@ -1,11 +1,50 @@
 import { sql, type Kysely, type Transaction } from 'kysely'
-import { PLAYER_DEFAULT_TOPICS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS, tableTennisSkillDescription } from '@ttll/shared'
+import {
+  ADDITIONAL_TABLE_TENNIS_DRILLS,
+  PLAYER_DEFAULT_TOPICS,
+  TABLE_TENNIS_DRILLS,
+  TABLE_TENNIS_DRILL_INSTRUCTIONS,
+  TABLE_TENNIS_DRILL_RELATED_SKILLS,
+  TABLE_TENNIS_SKILLS,
+  TABLE_TENNIS_SKILL_LINKS,
+  TABLE_TENNIS_TOPICS,
+  TABLE_TENNIS_TOPIC_LINKS,
+  enrichedTableTennisSkillDescription,
+  tableTennisTopicDescription,
+} from '@ttll/shared'
 import { NoteDrillRepository } from '../repositories/noteDrillRepository'
 import type { Database } from '../schema/database'
 import { GraphRepository } from '../repositories/graphRepository'
 import { TopicSkillRepository } from '../repositories/topicSkillRepository'
+import { nowIso } from '../utils/time'
 
 type Conn = Kysely<Database> | Transaction<Database>
+
+type DrillDefinition = {
+  title: string
+  skill: string
+  imageUrl: string | null
+  description: string
+  instructions: string
+  durationMinutes: number
+  steps: ReadonlyArray<{
+    actor: string
+    stroke: string
+    spin: string
+    fromZone: string
+    targetZone: string
+    instruction?: string | null
+  }>
+}
+
+const DRILL_DEFINITIONS: DrillDefinition[] = [
+  ...TABLE_TENNIS_DRILLS.map((definition) => ({
+    ...definition,
+    imageUrl: definition.imageUrl as string | null,
+    instructions: TABLE_TENNIS_DRILL_INSTRUCTIONS[definition.title] ?? definition.description,
+  })),
+  ...ADDITIONAL_TABLE_TENNIS_DRILLS.map((definition) => ({ ...definition })),
+]
 
 export async function provisionOntology(db: Kysely<Database>, userId: string) {
   return db.transaction().execute((trx) => provisionOntologyInTransaction(trx, userId))
@@ -19,42 +58,107 @@ async function provisionOntologyInTransaction(conn: Conn, userId: string) {
   const topicsByName = new Map(existingTopics.map((topic) => [topic.name, topic]))
 
   for (const name of TABLE_TENNIS_TOPICS) {
-    if (topicsByName.has(name)) continue
-    const node = await graph.createNode({ userId, nodeType: 'topic', title: name })
-    const topic = await repository.createTopic({ userId, nodeId: node.id, name, isSystem: true, isHidden: !(PLAYER_DEFAULT_TOPICS as readonly string[]).includes(name) })
+    const description = tableTennisTopicDescription(name)
+    const existing = topicsByName.get(name)
+    if (existing) {
+      if (existing.description !== description) await repository.setTopicDescription(userId, existing.node_id, description)
+      const node = await graph.getNode(userId, existing.node_id)
+      if (node && node.summary !== description) await graph.updateNode(userId, node.id, { summary: description })
+      topicsByName.set(name, { ...existing, description })
+      continue
+    }
+    const node = await graph.createNode({ userId, nodeType: 'topic', title: name, summary: description })
+    const topic = await repository.createTopic({
+      userId,
+      nodeId: node.id,
+      name,
+      description,
+      isSystem: true,
+      isHidden: !(PLAYER_DEFAULT_TOPICS as readonly string[]).includes(name),
+    })
     topicsByName.set(name, topic)
+  }
+
+  for (const link of TABLE_TENNIS_TOPIC_LINKS) {
+    const source = topicsByName.get(link.source)
+    const target = topicsByName.get(link.target)
+    if (!source || !target) throw new Error(`Ontology topic link missing endpoint: ${link.source} -> ${link.target}`)
+    await graph.createEdge({ userId, sourceNodeId: source.node_id, targetNodeId: target.node_id, edgeType: link.edgeType })
   }
 
   const existingSkills = await repository.listSystemSkills(userId)
   const skillsByName = new Map(existingSkills.map((skill) => [skill.name, skill]))
   for (const definition of TABLE_TENNIS_SKILLS) {
-    const description = tableTennisSkillDescription(definition)
-    const existing = skillsByName.get(definition.name)
-    if (existing) {
-      if (!existing.description) await repository.setSkillDescription(userId, existing.node_id, description)
-      const node = await graph.getNode(userId, existing.node_id)
-      if (node && !node.summary) await graph.updateNode(userId, node.id, { summary: description })
-      continue
-    }
+    const description = enrichedTableTennisSkillDescription(definition)
     const topic = topicsByName.get(definition.topic)
     if (!topic) throw new Error(`Ontology topic missing: ${definition.topic}`)
+    const existing = skillsByName.get(definition.name)
+    if (existing) {
+      if (existing.description !== description) await repository.setSkillDescription(userId, existing.node_id, description)
+      const node = await graph.getNode(userId, existing.node_id)
+      if (node && node.summary !== description) await graph.updateNode(userId, node.id, { summary: description })
+      await graph.createEdge({ userId, sourceNodeId: existing.node_id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
+      skillsByName.set(definition.name, { ...existing, description })
+      continue
+    }
     const node = await graph.createNode({ userId, nodeType: 'skill', title: definition.name, summary: description })
-    await repository.createSkill({ userId, nodeId: node.id, name: definition.name, description, topicId: topic.id, isSystem: true })
+    const skill = await repository.createSkill({ userId, nodeId: node.id, name: definition.name, description, topicId: topic.id, isSystem: true })
     await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
+    skillsByName.set(definition.name, skill)
   }
 
-  const skills = await repository.listSystemSkills(userId)
-  const currentSkillsByName = new Map(skills.map((skill) => [skill.name, skill]))
-  const existingDrills = await new NoteDrillRepository(conn).listDrills(userId)
-  const systemDrillTitles = new Set(existingDrills.filter((drill) => drill.is_system === 1).map((drill) => drill.title))
-  for (const definition of TABLE_TENNIS_DRILLS) {
-    if (systemDrillTitles.has(definition.title)) continue
-    const skill = currentSkillsByName.get(definition.skill)
-    if (!skill) throw new Error(`Ontology drill skill missing: ${definition.skill}`)
-    const node = await graph.createNode({ userId, nodeType: 'drill', title: definition.title, summary: definition.description })
-    const drillRepository = new NoteDrillRepository(conn)
-    const drill = await drillRepository.createDrill({ userId, nodeId: node.id, title: definition.title, description: definition.description, diagramUrl: definition.imageUrl, durationMinutes: definition.durationMinutes, isSystem: true })
-    await drillRepository.createSteps(userId, drill.id, definition.steps.map((step) => ({ ...step })))
-    await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: skill.node_id, edgeType: 'practices' })
+  for (const link of TABLE_TENNIS_SKILL_LINKS) {
+    const source = skillsByName.get(link.source)
+    const target = skillsByName.get(link.target)
+    if (!source || !target) throw new Error(`Ontology skill link missing endpoint: ${link.source} -> ${link.target}`)
+    await graph.createEdge({ userId, sourceNodeId: source.node_id, targetNodeId: target.node_id, edgeType: link.edgeType })
+  }
+
+  const drillRepository = new NoteDrillRepository(conn)
+  const existingDrills = await drillRepository.listDrills(userId)
+  const systemDrillsByTitle = new Map(existingDrills.filter((drill) => drill.is_system === 1).map((drill) => [drill.title, drill]))
+
+  for (const definition of DRILL_DEFINITIONS) {
+    const primarySkill = skillsByName.get(definition.skill)
+    if (!primarySkill) throw new Error(`Ontology drill skill missing: ${definition.skill}`)
+    let drill = systemDrillsByTitle.get(definition.title)
+
+    if (!drill) {
+      const node = await graph.createNode({ userId, nodeType: 'drill', title: definition.title, summary: definition.description })
+      drill = await drillRepository.createDrill({
+        userId,
+        nodeId: node.id,
+        title: definition.title,
+        description: definition.description,
+        instructions: definition.instructions,
+        diagramUrl: definition.imageUrl,
+        durationMinutes: definition.durationMinutes,
+        isSystem: true,
+      })
+      await drillRepository.createSteps(userId, drill.id, definition.steps.map((step) => ({ ...step })))
+      systemDrillsByTitle.set(definition.title, drill)
+    } else {
+      const now = nowIso()
+      await conn.updateTable('drills').set({
+        description: definition.description,
+        instructions: definition.instructions,
+        diagram_url: definition.imageUrl,
+        duration_minutes: definition.durationMinutes,
+        updated_at: now,
+      }).where('user_id', '=', userId).where('id', '=', drill.id).where('deleted_at', 'is', null).execute()
+      const node = await graph.getNode(userId, drill.node_id)
+      if (node && node.summary !== definition.description) await graph.updateNode(userId, node.id, { summary: definition.description })
+      const steps = await drillRepository.listSteps(userId, drill.id)
+      if (!steps.length) await drillRepository.createSteps(userId, drill.id, definition.steps.map((step) => ({ ...step })))
+      drill = { ...drill, description: definition.description, instructions: definition.instructions, diagram_url: definition.imageUrl, duration_minutes: definition.durationMinutes, updated_at: now }
+      systemDrillsByTitle.set(definition.title, drill)
+    }
+
+    const relatedSkillNames = new Set([definition.skill, ...(TABLE_TENNIS_DRILL_RELATED_SKILLS[definition.title] ?? [])])
+    for (const skillName of relatedSkillNames) {
+      const skill = skillsByName.get(skillName)
+      if (!skill) throw new Error(`Ontology related drill skill missing: ${skillName}`)
+      await graph.createEdge({ userId, sourceNodeId: drill.node_id, targetNodeId: skill.node_id, edgeType: 'practices' })
+    }
   }
 }
