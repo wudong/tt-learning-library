@@ -50,7 +50,7 @@ test('knowledge graph explorer groups direct and nearby connections and resolves
   expect(notes?.items[0]?.href).toBeNull()
 
   expect(result.groups.some((group) => group.label.startsWith('Through '))).toBe(true)
-  expect(result.groups.flatMap((group) => group.items).some((item) => item.node.nodeType === 'skill' && item.node.id !== skill.node_id)).toBe(true)
+  expect(result.groups.flatMap((group) => group.items).some((item) => item.node.node_type === 'skill' && item.node.id !== skill.node_id)).toBe(true)
 
   const videoResult = await library.getNodeConnections(userId, video.node.id)
   expect(videoResult.centerHref).toBe(`/videos/${video.video.id}`)
@@ -80,7 +80,7 @@ test('Backhand Chop is connected to foundations, defence, spin, contrasting atta
 
   const resources = await library.getNodeResources(userId, backhandChop.node_id)
   expect(resources.node.summary).toContain('controlled backspin')
-  expect(resources.drills.some((drill) => drill.title === 'Backhand Chop Depth Control')).toBe(true)
+  expect(resources.drills.some((relatedDrill) => relatedDrill.title === 'Backhand Chop Depth Control')).toBe(true)
 
   await db.destroy()
 })
