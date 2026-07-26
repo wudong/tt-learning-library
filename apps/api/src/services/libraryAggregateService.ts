@@ -10,7 +10,8 @@ import {
   type NodeType,
 } from '@ttll/shared'
 
-const CONNECTION_LIMIT = 24
+const CONNECTION_LIMIT = 36
+const SECOND_HOP_ROOT_LIMIT = 14
 const EXPLORABLE_NODE_TYPES = new Set<NodeType>(['topic', 'skill', 'video', 'drill'])
 
 const CONNECTION_GROUP_ORDER: EdgeType[] = [
@@ -44,33 +45,21 @@ export class LibraryAggregateService {
   constructor(private readonly db: Kysely<Database>) {}
 
   async getOverview(userId: string) {
+    await provisionOntology(this.db, userId)
     const repository = new TopicSkillRepository(this.db)
     const drillRepository = new NoteDrillRepository(this.db)
-    let [systemTopics, systemSkills, drills] = await Promise.all([
+    const [systemTopics, systemSkills, drills] = await Promise.all([
       repository.listSystemTopics(userId),
       repository.listSystemSkills(userId),
       drillRepository.listDrills(userId),
     ])
-
-    const ontologyIsCurrent = TABLE_TENNIS_TOPICS.every((name) => systemTopics.some((topic) => topic.name === name))
-      && TABLE_TENNIS_SKILLS.every((definition) => systemSkills.some((skill) => skill.name === definition.name && skill.description))
-      && TABLE_TENNIS_DRILLS.every((definition) => drills.some((drill) => drill.is_system === 1 && drill.title === definition.title))
-
-    if (!ontologyIsCurrent) {
-      await provisionOntology(this.db, userId)
-      ;[systemTopics, systemSkills, drills] = await Promise.all([
-        repository.listSystemTopics(userId),
-        repository.listSystemSkills(userId),
-        drillRepository.listDrills(userId),
-      ])
-    }
 
     const topics = systemTopics.filter((topic) => (TABLE_TENNIS_TOPICS as readonly string[]).includes(topic.name))
     const skills = systemSkills.filter((skill) => TABLE_TENNIS_SKILLS.some((definition) => definition.name === skill.name))
     const graph = new GraphRepository(this.db)
     const [topicNodeCounts, skillNodeCounts] = await Promise.all([
       graph.countIncomingVideos(userId, topics.map((topic) => topic.node_id), ['belongs_to']),
-      graph.countIncomingVideos(userId, skills.map((skill) => skill.node_id), ['explains', 'demonstrates'])
+      graph.countIncomingVideos(userId, skills.map((skill) => skill.node_id), ['explains', 'demonstrates']),
     ])
     const topicCounts = topics.map((topic) => [topic.id, topicNodeCounts.get(topic.node_id) ?? 0] as const)
     const skillCounts = skills.map((skill) => [skill.id, skillNodeCounts.get(skill.node_id) ?? 0] as const)
@@ -78,6 +67,7 @@ export class LibraryAggregateService {
   }
 
   async getNodeResources(userId: string, nodeId: string) {
+    await provisionOntology(this.db, userId)
     const graph = new GraphRepository(this.db)
     const node = await graph.getNode(userId, nodeId)
     if (!node || !['topic', 'skill', 'drill'].includes(node.node_type)) throw new Error('NOT_FOUND: Library item not found')
@@ -101,16 +91,41 @@ export class LibraryAggregateService {
   }
 
   async getNodeConnections(userId: string, nodeId: string) {
+    await provisionOntology(this.db, userId)
     const graph = new GraphRepository(this.db)
     const center = await graph.getNode(userId, nodeId)
     if (!center || !EXPLORABLE_NODE_TYPES.has(center.node_type as NodeType)) throw new Error('NOT_FOUND: Explorable knowledge item not found')
 
-    const relationships = await graph.relationships(userId, nodeId)
-    const nodeIds = [...new Set([center.id, ...relationships.map((relationship) => relationship.node.id)])]
+    const direct = (await graph.relationships(userId, nodeId)).sort(compareRelationship)
+    type Relationship = typeof direct[number]
+    type Discovery = { relationship: Relationship; via: typeof center | null; depth: 1 | 2 }
+    const discoveries: Discovery[] = direct.map((relationship) => ({ relationship, via: null, depth: 1 }))
+    const directNodeIds = new Set(direct.map((relationship) => relationship.node.id))
+    const secondSeen = new Set<string>()
+
+    for (const first of direct.slice(0, SECOND_HOP_ROOT_LIMIT)) {
+      const nearby = (await graph.relationships(userId, first.node.id)).sort(compareRelationship)
+      for (const relationship of nearby) {
+        if (relationship.node.id === center.id || directNodeIds.has(relationship.node.id)) continue
+        const key = `${first.node.id}:${relationship.node.id}:${relationship.edge.edge_type}:${relationship.direction}`
+        if (secondSeen.has(key)) continue
+        secondSeen.add(key)
+        discoveries.push({ relationship, via: first.node, depth: 2 })
+      }
+    }
+
+    const ordered = discoveries.sort((left, right) => {
+      if (left.depth !== right.depth) return left.depth - right.depth
+      const viaDifference = (left.via?.title ?? '').localeCompare(right.via?.title ?? '')
+      return viaDifference || compareRelationship(left.relationship, right.relationship)
+    })
+    const shown = ordered.slice(0, CONNECTION_LIMIT)
+    const allNodes = [center, ...ordered.map((discovery) => discovery.relationship.node)]
+    const graphNodeIds = [...new Set(allNodes.map((node) => node.id))]
     const [videos, sessions] = await Promise.all([
-      new VideoRepository(this.db).listByNodeIds(userId, nodeIds),
+      new VideoRepository(this.db).listByNodeIds(userId, graphNodeIds),
       this.db.selectFrom('practice_sessions').select(['id', 'node_id'])
-        .where('user_id', '=', userId).where('node_id', 'in', nodeIds).where('deleted_at', 'is', null).execute(),
+        .where('user_id', '=', userId).where('node_id', 'in', graphNodeIds).where('deleted_at', 'is', null).execute(),
     ])
     const videoIds = new Map(videos.map((video) => [video.node_id, video.id]))
     const sessionIds = new Map(sessions.map((session) => [session.node_id, session.id]))
@@ -123,22 +138,11 @@ export class LibraryAggregateService {
       return null
     }
 
-    const ordered = [...relationships].sort((left, right) => {
-      const leftEdge = left.edge.edge_type as EdgeType
-      const rightEdge = right.edge.edge_type as EdgeType
-      const edgeDifference = CONNECTION_GROUP_ORDER.indexOf(leftEdge) - CONNECTION_GROUP_ORDER.indexOf(rightEdge)
-      if (edgeDifference) return edgeDifference
-      const directionDifference = left.direction.localeCompare(right.direction)
-      if (directionDifference) return directionDifference
-      const typeDifference = left.node.node_type.localeCompare(right.node.node_type)
-      if (typeDifference) return typeDifference
-      const titleDifference = left.node.title.localeCompare(right.node.title)
-      return titleDifference || left.edge.id.localeCompare(right.edge.id)
-    })
-    const shown = ordered.slice(0, CONNECTION_LIMIT)
     const totals = new Map<string, number>()
-    for (const relationship of ordered) {
-      const key = `${relationship.edge.edge_type}:${relationship.direction}`
+    for (const discovery of ordered) {
+      const edgeType = discovery.relationship.edge.edge_type as EdgeType
+      const direction = discovery.relationship.direction
+      const key = discovery.via ? `via:${discovery.via.id}:${edgeType}:${direction}` : `${edgeType}:${direction}`
       totals.set(key, (totals.get(key) ?? 0) + 1)
     }
 
@@ -148,17 +152,19 @@ export class LibraryAggregateService {
       direction: 'incoming'|'outgoing'
       label: string
       total: number
-      items: Array<{ node: typeof center; edge: typeof relationships[number]['edge']; href: string | null }>
+      items: Array<{ node: typeof center; edge: Relationship['edge']; href: string | null }>
     }>()
-    for (const relationship of shown) {
+    for (const discovery of shown) {
+      const relationship = discovery.relationship
       const edgeType = relationship.edge.edge_type as EdgeType
       const direction = relationship.direction
-      const key = `${edgeType}:${direction}`
+      const directLabel = CONNECTION_LABELS[edgeType][direction]
+      const key = discovery.via ? `via:${discovery.via.id}:${edgeType}:${direction}` : `${edgeType}:${direction}`
       const group = groups.get(key) ?? {
         key,
         edgeType,
         direction,
-        label: CONNECTION_LABELS[edgeType][direction],
+        label: discovery.via ? `Through ${discovery.via.title} · ${directLabel}` : directLabel,
         total: totals.get(key) ?? 0,
         items: [],
       }
@@ -227,9 +233,7 @@ export class LibraryAggregateService {
       if (input.topicId && !topic) throw new Error('NOT_FOUND: Topic not found')
       const node = await graph.createNode({ userId, nodeType: 'skill', title: input.name, summary: input.description ?? null })
       const skill = await new TopicSkillRepository(trx).createSkill({ userId, nodeId: node.id, name: input.name, description: input.description, topicId: input.topicId, difficulty: input.difficulty, status: input.status })
-      if (topic) {
-        await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
-      }
+      if (topic) await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
       return skill
     })
   }
@@ -264,4 +268,20 @@ export class LibraryAggregateService {
     const title = firstThought.length <= 80 ? firstThought : `${firstThought.slice(0, 77).trimEnd()}…`
     return this.createDrill(userId, { title, description: normalized })
   }
+}
+
+function compareRelationship(
+  left: Awaited<ReturnType<GraphRepository['relationships']>>[number],
+  right: Awaited<ReturnType<GraphRepository['relationships']>>[number],
+) {
+  const leftEdge = left.edge.edge_type as EdgeType
+  const rightEdge = right.edge.edge_type as EdgeType
+  const edgeDifference = CONNECTION_GROUP_ORDER.indexOf(leftEdge) - CONNECTION_GROUP_ORDER.indexOf(rightEdge)
+  if (edgeDifference) return edgeDifference
+  const directionDifference = left.direction.localeCompare(right.direction)
+  if (directionDifference) return directionDifference
+  const typeDifference = left.node.node_type.localeCompare(right.node.node_type)
+  if (typeDifference) return typeDifference
+  const titleDifference = left.node.title.localeCompare(right.node.title)
+  return titleDifference || left.edge.id.localeCompare(right.edge.id)
 }
