@@ -28,7 +28,7 @@ describe('mobile UI contracts', () => {
     expect((library.match(/<LibraryCatalogCard/g) ?? []).length).toBeGreaterThanOrEqual(3)
     expect(catalog).toContain('const visibleTags = tags.slice(0, 2)')
     expect(catalog).toContain('library-catalog-overflow')
-    expect(catalog).toContain('aria-label={`${openLabel}: ${title}`)')
+    expect(catalog).toContain('aria-label={`${openLabel}: ${title}`}')
     expect(catalog).toContain('library-catalog-chevron')
     expect(library).toContain('showOpenLabel={false}')
     expect(library).not.toContain('Show or hide Topics')
@@ -52,7 +52,7 @@ describe('mobile UI contracts', () => {
     }
 
     expect((files[0].match(/Manage pictures/g) ?? []).length).toBe(1)
-    expect((files[0].match(/Add note/g) ?? []).length).toBe(1)
+    expect((files[0].match(/Add note<\/button>/g) ?? []).length).toBe(1)
     expect(files[0]).toContain('detail-section relationship-section')
     expect(files[1]).toContain('detail-section relationship-section')
     expect(files[3]).toContain('detail-section relationship-section')
