@@ -20,12 +20,6 @@ export function Library({ navigate }: { navigate: (to: string) => void }) {
 
   const mobileActions = useMemo<MobilePageAction[]>(() => [
     {
-      id: 'search-library',
-      label: 'Search current Library section',
-      icon: <Search size={20} aria-hidden="true" />,
-      onPress: () => document.getElementById('library-search-input')?.focus(),
-    },
-    {
       id: 'manage-topics',
       label: 'Choose visible Topics',
       icon: <SlidersHorizontal size={20} aria-hidden="true" />,
@@ -65,7 +59,7 @@ export function Library({ navigate }: { navigate: (to: string) => void }) {
     {overview.isLoading && <div className="library-skeleton" role="status">Loading your learning library…</div>}
     {overview.isError && <div className="notice">We could not load your library. Check your connection and try again.</div>}
 
-    {tab === 'topics' && overview.data && <TopicSection topics={topics} skills={overview.data.skills} counts={overview.data.topicVideoCounts} onManage={() => setManagingTopics(true)} onOpen={(topic) => navigate(`/library/topics/${topic.nodeId}`)} />}
+    {tab === 'topics' && overview.data && <TopicSection topics={topics} skills={overview.data.skills} counts={overview.data.topicVideoCounts} onOpen={(topic) => navigate(`/library/topics/${topic.nodeId}`)} />}
     {tab === 'skills' && overview.data && <SkillSection query={query} skills={skills} topics={overview.data.topics.filter((topic) => !topic.isHidden)} counts={overview.data.skillVideoCounts} onNote={setNoteTarget} onOpen={(skill) => navigate(`/library/skills/${skill.nodeId}`)} />}
     {tab === 'drills' && overview.data && <DrillSection drills={drills} onNote={setNoteTarget} onOpen={(drill) => navigate(`/library/drills/${drill.nodeId}`)} />}
 
@@ -100,21 +94,25 @@ function TabButton({ active, icon, label, count, onClick }: { active: boolean; i
   return <button role="tab" aria-selected={active} className={active ? 'library-tab active' : 'library-tab'} onClick={onClick}>{icon}<span>{label}</span><small>{count}</small></button>
 }
 
-function TopicSection({ topics, skills, counts, onManage, onOpen }: { topics: Array<{ id: string; nodeId: string; name: string; description: string | null }>; skills: Array<{ id: string; topicId: string | null; name: string }>; counts: Record<string, number>; onManage: () => void; onOpen: (topic: { nodeId: string; name: string }) => void }) {
+function TopicSection({ topics, skills, counts, onOpen }: { topics: Array<{ id: string; nodeId: string; name: string; description: string | null }>; skills: Array<{ id: string; topicId: string | null; name: string }>; counts: Record<string, number>; onOpen: (topic: { nodeId: string; name: string }) => void }) {
   if (!topics.length) return <div className="empty">No topics match this search.</div>
-  return <div><div className="section-action-row"><div><h2>Topics</h2><p>Open a learning area or choose which Topics appear in your Library.</p></div><button className="button secondary" onClick={onManage}><SlidersHorizontal size={17} /> Show or hide Topics</button></div><div className="library-catalog-list">{topics.map((topic) => {
-    const topicSkills = skills.filter((skill) => skill.topicId === topic.id)
-    return <LibraryCatalogCard
-      key={topic.id}
-      icon={Layers3}
-      title={topic.name}
-      context={topic.description || `${topicSkills.length} ${topicSkills.length === 1 ? 'skill' : 'skills'} in this learning area`}
-      metadata={[`${counts[topic.id] ?? 0} videos`, `${topicSkills.length} skills`]}
-      tags={topicSkills.map((skill) => skill.name)}
-      openLabel="Open topic"
-      onOpen={() => onOpen(topic)}
-    />
-  })}</div></div>
+  return <div>
+    <div className="library-section-heading"><h2>Topics</h2></div>
+    <div className="library-catalog-list">{topics.map((topic) => {
+      const topicSkills = skills.filter((skill) => skill.topicId === topic.id)
+      return <LibraryCatalogCard
+        key={topic.id}
+        icon={Layers3}
+        title={topic.name}
+        context={topic.description || `${topicSkills.length} ${topicSkills.length === 1 ? 'skill' : 'skills'} in this learning area`}
+        metadata={[`${counts[topic.id] ?? 0} videos`, `${topicSkills.length} skills`]}
+        tags={topicSkills.map((skill) => skill.name)}
+        openLabel="Open topic"
+        showOpenLabel={false}
+        onOpen={() => onOpen(topic)}
+      />
+    })}</div>
+  </div>
 }
 
 function SkillSection({ query, skills, topics, counts, onNote, onOpen }: { query: string; skills: Array<{ id: string; nodeId: string; name: string; topicId: string | null; status: string; difficulty: string | null; isPinned: boolean }>; topics: Array<{ id: string; name: string }>; counts: Record<string, number>; onNote: (target: NoteTarget) => void; onOpen: (skill: { nodeId: string; name: string }) => void }) {
