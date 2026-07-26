@@ -7,7 +7,9 @@ describe('mobile UI contracts', () => {
   test('the shared toolbar owns contextual back navigation and page actions', async () => {
     const layout = await source('apps/web/src/components/Layout.tsx')
 
-    expect(layout).toContain("backLabel: 'Back to Library'")
+    expect(layout).toContain("backLabel: 'Back in Library'")
+    expect(layout).toContain("backScope: '/library'")
+    expect(layout).toContain('navigateBack(meta.back!, meta.backScope)')
     expect(layout).toContain('toolbar-leading')
     expect(layout).toContain('toolbar-trailing')
     expect(layout).toContain('toolbar-actions')
