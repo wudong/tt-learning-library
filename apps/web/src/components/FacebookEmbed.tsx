@@ -65,7 +65,7 @@ export function FacebookEmbed({ sourceUrl, title }: { sourceUrl: string | null; 
         <iframe
           src={src}
           title={`Facebook video player: ${title}`}
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture; web-share"
           allowFullScreen
           loading="lazy"
           referrerPolicy="strict-origin-when-cross-origin"
