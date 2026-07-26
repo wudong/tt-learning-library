@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { createMigratedTestDb, provisionOntology } from '../../packages/db/src'
+import { ProfiledTrainingService } from '../../apps/api/src/services/profiledTrainingService'
 import { TrainingService } from '../../apps/api/src/services/trainingService'
 import { VideoAggregateService } from '../../apps/api/src/services/videoAggregateService'
 import { LibraryAggregateService } from '../../apps/api/src/services/libraryAggregateService'
@@ -138,5 +139,76 @@ test('manual logs preserve actual time without inflating planned-session complet
     expect(insights.actualDurationSeconds).toBe(1200)
     expect(insights.plannedSessions).toBe(0)
     expect(insights.completedPlannedSessions).toBe(0)
+  } finally { await db.destroy() }
+})
+
+test('coach-managed player profiles isolate sessions and insights while preserving the personal default', async () => {
+  const { db, skill } = await setup('user_training_profiles')
+  try {
+    const service = new ProfiledTrainingService(db)
+    const initial = await service.listProfiles('user_training_profiles')
+    expect(initial).toHaveLength(1)
+    expect(initial[0]).toEqual(expect.objectContaining({ displayName: 'Training player', isSelf: true }))
+
+    const player = await service.createProfile('user_training_profiles', { displayName: 'Maya' })
+    const personal = await service.createSession('user_training_profiles', {
+      scheduledDate: '2026-07-20',
+      timeZone: 'Europe/London',
+      entryMode: 'manual',
+      blocks: [{ skillId: skill.id, actualDurationSeconds: 600, plannedDurationSeconds: null }],
+    })
+    const coached = await service.createSession('user_training_profiles', {
+      profileId: player.id,
+      scheduledDate: '2026-07-21',
+      timeZone: 'Europe/London',
+      entryMode: 'manual',
+      blocks: [{ skillId: skill.id, actualDurationSeconds: 900, plannedDurationSeconds: null }],
+      checkins: [{ skillId: skill.id, confidenceRating: 4 }],
+    })
+
+    expect(personal.session.profile?.isSelf).toBe(true)
+    expect(coached.session.profile).toEqual(expect.objectContaining({ id: player.id, displayName: 'Maya', isSelf: false }))
+
+    const personalSessions = await service.listSessions('user_training_profiles', '2026-07-01', '2026-07-31')
+    const playerSessions = await service.listSessions('user_training_profiles', '2026-07-01', '2026-07-31', player.id)
+    expect(personalSessions.map((session) => session.id)).toEqual([personal.session.id])
+    expect(playerSessions.map((session) => session.id)).toEqual([coached.session.id])
+
+    const personalInsights = await service.getInsights('user_training_profiles', '2026-07-01', '2026-07-31')
+    const playerInsights = await service.getInsights('user_training_profiles', '2026-07-01', '2026-07-31', player.id)
+    expect(personalInsights.actualDurationSeconds).toBe(600)
+    expect(playerInsights.actualDurationSeconds).toBe(900)
+    expect(playerInsights.profile).toEqual(expect.objectContaining({ id: player.id, displayName: 'Maya' }))
+
+    await expect(service.deleteProfile('user_training_profiles', player.id)).rejects.toThrow('training sessions')
+  } finally { await db.destroy() }
+})
+
+test('profile ownership is enforced and legacy unprofiled sessions remain personal', async () => {
+  const { db, skill } = await setup('user_training_profile_owner')
+  try {
+    const now = new Date().toISOString()
+    await db.insertInto('users').values({ id: 'user_training_profile_other', email: null, display_name: 'Other coach', created_at: now, updated_at: now, deleted_at: null }).execute()
+    await provisionOntology(db, 'user_training_profile_other')
+    const service = new ProfiledTrainingService(db)
+    const otherProfile = await service.createProfile('user_training_profile_other', { displayName: 'Other player' })
+
+    await expect(service.createSession('user_training_profile_owner', {
+      profileId: otherProfile.id,
+      scheduledDate: '2026-07-22',
+      timeZone: 'Europe/London',
+      entryMode: 'planned',
+      blocks: [{ skillId: skill.id, plannedDurationSeconds: 600 }],
+    })).rejects.toThrow('Training profile not found')
+
+    const legacy = await new TrainingService(db).createSession('user_training_profile_owner', {
+      scheduledDate: '2026-07-23',
+      timeZone: 'Europe/London',
+      entryMode: 'planned',
+      blocks: [{ skillId: skill.id, plannedDurationSeconds: 600 }],
+    })
+    const personal = await service.listSessions('user_training_profile_owner', '2026-07-01', '2026-07-31')
+    expect(personal.map((session) => session.id)).toContain(legacy.session.id)
+    expect(personal[0]?.profile?.isSelf).toBe(true)
   } finally { await db.destroy() }
 })

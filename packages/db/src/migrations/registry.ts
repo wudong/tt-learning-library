@@ -12,4 +12,5 @@ import * as ontologyPins from './011_ontology_pins'
 import * as starterDrills from './012_starter_drills'
 import * as drillSteps from './013_drill_steps'
 import * as drillDiagrams from './014_drill_diagrams'
-export const migrations = [initial, feedback, feedbackIssue, inboxMetadata, privateDataRls, feedbackRls, training, knowledgeAttachments, topicVisibility, pictureGraphNodes, ontologyPins, starterDrills, drillSteps, drillDiagrams]
+import * as trainingProfiles from './015_training_profiles'
+export const migrations = [initial, feedback, feedbackIssue, inboxMetadata, privateDataRls, feedbackRls, training, knowledgeAttachments, topicVisibility, pictureGraphNodes, ontologyPins, starterDrills, drillSteps, drillDiagrams, trainingProfiles]

@@ -12,6 +12,20 @@ export const trainingEntryModeSchema = z.enum(['planned', 'quick', 'manual'])
 export const trainingBlockStatusSchema = z.enum(['planned', 'active', 'paused', 'completed', 'skipped'])
 export const confidenceRatingSchema = z.number().int().min(1).max(5)
 
+export const TrainingProfileDtoSchema = z.object({
+  id: idSchema,
+  displayName: z.string(),
+  isSelf: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const CreateTrainingProfileRequestSchema = z.object({
+  displayName: z.string().trim().min(1).max(100),
+})
+
+export const UpdateTrainingProfileRequestSchema = CreateTrainingProfileRequestSchema
+
 export const TrainingReferenceDtoSchema = z.object({
   id: idSchema,
   nodeId: idSchema,
@@ -51,6 +65,8 @@ export const TrainingCheckinDtoSchema = z.object({
 export const TrainingSessionDtoSchema = z.object({
   id: idSchema,
   nodeId: idSchema,
+  profileId: idSchema.nullable().optional(),
+  profile: TrainingProfileDtoSchema.nullable().optional(),
   scheduledDate: localDateSchema,
   timeZone: timeZoneSchema,
   title: z.string(),
@@ -88,6 +104,7 @@ const trainingBlockInputSchema = z.object({
 })
 
 export const CreateTrainingSessionRequestSchema = z.object({
+  profileId: idSchema.optional(),
   scheduledDate: localDateSchema,
   timeZone: timeZoneSchema,
   title: z.string().trim().min(1).max(200).optional(),
@@ -124,6 +141,7 @@ export const ReplaceRemainingBlocksRequestSchema = z.object({
 })
 
 export const CopyTrainingSessionRequestSchema = z.object({
+  profileId: idSchema.optional(),
   scheduledDate: localDateSchema,
   timeZone: timeZoneSchema,
   title: z.string().trim().min(1).max(200).optional(),
@@ -151,8 +169,12 @@ export const CompleteTrainingSessionRequestSchema = z.object({
 export const TrainingRangeQuerySchema = z.object({
   from: localDateSchema,
   to: localDateSchema,
+  profileId: idSchema.optional(),
 })
 
+export const TrainingProfileResponseSchema = dataEnvelope(TrainingProfileDtoSchema)
+export const TrainingProfileListResponseSchema = dataEnvelope(z.array(TrainingProfileDtoSchema))
+export const DeleteTrainingProfileResponseSchema = dataEnvelope(z.object({ deleted: z.literal(true) }))
 export const TrainingSessionResponseSchema = dataEnvelope(TrainingSessionDetailDtoSchema)
 export const TrainingSessionListResponseSchema = dataEnvelope(z.array(TrainingSessionSummaryDtoSchema))
 export const DeleteTrainingSessionResponseSchema = dataEnvelope(z.object({ deleted: z.literal(true) }))
@@ -164,6 +186,7 @@ export const TrainingPracticeOptionsResponseSchema = dataEnvelope(z.object({
 }))
 
 export const TrainingInsightsResponseSchema = dataEnvelope(z.object({
+  profile: TrainingProfileDtoSchema.optional(),
   from: localDateSchema,
   to: localDateSchema,
   trainingDays: z.number().int().nonnegative(),
@@ -181,6 +204,7 @@ export const TrainingInsightsResponseSchema = dataEnvelope(z.object({
   })),
 }))
 
+export type TrainingProfileDto = z.infer<typeof TrainingProfileDtoSchema>
 export type CreateTrainingSessionRequest = z.infer<typeof CreateTrainingSessionRequestSchema>
 export type ReplaceRemainingBlocksRequest = z.infer<typeof ReplaceRemainingBlocksRequestSchema>
 export type CompleteTrainingSessionRequest = z.infer<typeof CompleteTrainingSessionRequestSchema>

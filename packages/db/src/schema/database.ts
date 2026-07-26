@@ -18,7 +18,8 @@ export interface CollectionItemsTable { id: string; collection_id: string; user_
 export interface InboxItemsTable { id: string; user_id: string; source_url: string | null; canonical_url: string | null; shared_title: string | null; shared_text: string | null; source_platform: string; thumbnail_url: string | null; creator_name: string | null; raw_payload_json: string | null; status: string; converted_node_id: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface ShareLinksTable { id: string; user_id: string; target_node_id: string; token_hash: string; token_prefix: string; visibility: string; expires_at: string | null; revoked_at: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface FeedbackTable { id: string; name: string | null; email: string | null; message_type: string; message: string; page_path: string | null; page_title: string | null; created_at: string; github_issue_number: number | null; issue_synced_at: string | null }
-export interface PracticeSessionsTable { id: string; node_id: string; user_id: string; scheduled_date: string; time_zone: string; title: string; status: string; entry_mode: string; overall_rating: number | null; reflection: string | null; started_at: string | null; completed_at: string | null; created_at: string; updated_at: string; deleted_at: string | null }
+export interface TrainingProfilesTable { id: string; user_id: string; display_name: string; profile_type: string; created_at: string; updated_at: string; deleted_at: string | null }
+export interface PracticeSessionsTable { id: string; node_id: string; user_id: string; profile_id: Generated<string | null>; scheduled_date: string; time_zone: string; title: string; status: string; entry_mode: string; overall_rating: number | null; reflection: string | null; started_at: string | null; completed_at: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface PracticeSessionBlocksTable { id: string; session_id: string; user_id: string; skill_id: string; drill_id: string | null; video_id: string | null; position: number; original_position: number | null; planned_duration_seconds: number | null; original_planned_duration_seconds: number | null; actual_duration_seconds: number; timer_started_at: string | null; status: string; focus_note: string | null; started_at: string | null; completed_at: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface PracticeSkillCheckinsTable { id: string; session_id: string; user_id: string; skill_id: string; confidence_rating: number | null; note: string | null; created_at: string; updated_at: string; deleted_at: string | null }
 export interface PicturesTable { id: string; node_id: string; user_id: string; parent_node_id: string; file_name: string; media_type: string; byte_size: number; width: number | null; height: number | null; content: Uint8Array; created_at: string; updated_at: string; deleted_at: string | null }
@@ -43,6 +44,7 @@ export interface Database {
   inbox_items: InboxItemsTable
   share_links: ShareLinksTable
   feedback: FeedbackTable
+  training_profiles: TrainingProfilesTable
   practice_sessions: PracticeSessionsTable
   practice_session_blocks: PracticeSessionBlocksTable
   practice_skill_checkins: PracticeSkillCheckinsTable

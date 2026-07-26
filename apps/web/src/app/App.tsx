@@ -13,7 +13,9 @@ import { PublicShare } from '../features/PublicShare'
 import { useAuth } from '../lib/auth/AuthProvider'
 import { TrainingHub } from '../features/training/TrainingHub'
 import { TrainingPlanner } from '../features/training/TrainingPlanner'
+import { TrainingProfileSwitcher } from '../features/training/TrainingProfileSwitcher'
 import { TrainingSessionPage } from '../features/training/TrainingSessionPage'
+import { TrainingSessionProfileLabel } from '../features/training/TrainingSessionProfileLabel'
 import { DrillDetail } from '../features/library/DrillDetail'
 import { KnowledgeGraphExplorer } from '../features/library/KnowledgeGraphExplorer'
 import { LibraryNodeDetail } from '../features/library/LibraryNodeDetail'
@@ -46,9 +48,9 @@ export function App() {
   else if (/^\/library\/skills\/[^/]+$/.test(base)) page = <LibraryNodeDetail type="skill" nodeId={base.split('/')[3]} navigate={navigate} />
   else if (/^\/library\/drills\/[^/]+$/.test(base)) page = <DrillDetail nodeId={base.split('/')[3]} navigate={navigate} />
   else if (base === '/training') page = <TrainingHub navigate={navigate} />
-  else if (base === '/training/new') page = <TrainingPlanner navigate={navigate} />
-  else if (/^\/training\/[^/]+\/run$/.test(base)) page = <TrainingSessionPage id={base.split('/')[2]} run navigate={navigate} />
-  else if (/^\/training\/[^/]+$/.test(base)) page = <TrainingSessionPage id={base.split('/')[2]} run={false} navigate={navigate} />
+  else if (base === '/training/new') page = <><TrainingProfileSwitcher /><TrainingPlanner navigate={navigate} /></>
+  else if (/^\/training\/[^/]+\/run$/.test(base)) page = <><TrainingSessionProfileLabel id={base.split('/')[2]} /><TrainingSessionPage id={base.split('/')[2]} run navigate={navigate} /></>
+  else if (/^\/training\/[^/]+$/.test(base)) page = <><TrainingSessionProfileLabel id={base.split('/')[2]} /><TrainingSessionPage id={base.split('/')[2]} run={false} navigate={navigate} /></>
   else if (base.startsWith('/videos/')) page = <VideoDetail id={base.split('/')[2]} navigate={navigate} />
   else if (base === '/search') page = <SearchPage navigate={navigate} />
   else if (base === '/settings') page = <Settings />
