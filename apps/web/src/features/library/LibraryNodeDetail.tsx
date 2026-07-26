@@ -40,23 +40,23 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
 
       <div className="library-detail-grid">
         {type === 'topic' && pictures.data && pictures.data.length > 0 && <section className="detail-section topic-picture-section" aria-labelledby="topic-pictures-title">
-          <div className="picture-heading"><div><h2 id="topic-pictures-title">Pictures</h2><p>Visual references attached to this Topic.</p></div><button className="button secondary" onClick={() => navigate(`/library/topics/${nodeId}/pictures`)}>Manage</button></div>
+          <div className="picture-heading"><div><h2 id="topic-pictures-title">Pictures</h2><p>Visual references attached to this Topic.</p></div></div>
           <PictureGallery pictures={pictures.data} />
         </section>}
 
         {type === 'skill' && <article className="card"><PictureAttachments parentNodeId={nodeId} /></article>}
 
         {type === 'skill' && <section className="detail-section relationship-section" aria-labelledby="skill-notes-title">
-          <div className="picture-heading"><div><h2 id="skill-notes-title">Notes</h2><p>Your takeaways, questions, and reminders for this Skill.</p></div><button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16} /> Add note</button></div>
+          <div className="picture-heading"><div><h2 id="skill-notes-title">Notes</h2><p>Your takeaways, questions, and reminders for this Skill.</p></div></div>
           {resources.data.notes.length ? <div className="skill-note-list">{resources.data.notes.map((note) => <article key={note.id}>
             <span>{note.noteType.replaceAll('_', ' ')}</span><p>{note.body}</p>
-          </article>)}</div> : <p className="muted">No notes yet. Add a takeaway or question to keep it with this Skill.</p>}
+          </article>)}</div> : <p className="muted">No notes yet. Use Add note above to keep a takeaway or question with this Skill.</p>}
         </section>}
 
         {type === 'topic' && <section className="detail-section relationship-section" aria-labelledby="topic-skills-title">
           <h2 id="topic-skills-title">Skills in this Topic</h2>
           {resources.data.skills.length ? <div className="detail-link-list">{resources.data.skills.map((skill) =>
-            <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18} /><span><strong>{skill.title}</strong></span><ChevronRight size={18} aria-hidden="true" /></button>
+            <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18} /><span><strong>{skill.title}</strong>{skill.summary && <small>{skill.summary}</small>}</span><ChevronRight size={18} aria-hidden="true" /></button>
           )}</div> : <p className="muted">No ontology Skills are attached to this Topic.</p>}
         </section>}
 
