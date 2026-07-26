@@ -1,0 +1,199 @@
+.main-content {
+  overflow-x: clip;
+}
+
+.main-content > section,
+.library-page,
+.library-detail-page,
+.picture-management-page,
+.graph-explorer-page,
+.training-page,
+.training-planner,
+.session-detail-page,
+.live-session {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.toolbar-page-action.has-text {
+  display: inline-flex;
+  width: auto;
+  max-width: 116px;
+  gap: 6px;
+  padding: 0 9px;
+}
+
+.toolbar-page-action-text {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-section-heading {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.library-section-heading h2 {
+  margin: 0;
+}
+
+.library-catalog-open {
+  width: 100%;
+}
+
+.library-catalog-chevron {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  color: var(--ink-soft);
+}
+
+.training-calendar-section,
+.training-calendar-content {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+}
+
+.training-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.training-section-heading > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.training-section-heading > div > svg {
+  flex: none;
+  color: var(--accent-strong);
+}
+
+.training-section-heading > div > span {
+  display: grid;
+  min-width: 0;
+}
+
+.training-section-heading small {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.training-section-heading h2 {
+  margin: 1px 0 0;
+}
+
+.calendar-visibility-toggle {
+  flex: none;
+  min-height: 44px;
+}
+
+.picture-management-surface,
+.picture-management-surface .picture-attachments,
+.library-detail-grid > *,
+.graph-explorer-page > *,
+.card {
+  min-width: 0;
+}
+
+.library-detail-title p,
+.picture-management-heading p,
+.graph-explorer-copy p,
+.card p {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+@media (max-width: 620px) {
+  .library-detail-hero,
+  .picture-management-heading {
+    display: block !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .library-detail-title,
+  .picture-management-heading > div {
+    grid-column: 1 / -1 !important;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .library-detail-title p,
+  .picture-management-heading p {
+    width: 100%;
+    margin-top: 0;
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+
+  .picture-management-heading {
+    margin-bottom: 2px;
+  }
+
+  .training-section-heading {
+    align-items: flex-start;
+  }
+
+  .calendar-visibility-toggle {
+    padding-inline: 10px;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 384px) {
+  .toolbar-page-action.has-text {
+    max-width: 92px;
+    padding-inline: 7px;
+  }
+
+  .toolbar-page-action-text {
+    font-size: 0.68rem;
+  }
+
+  .training-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendar-visibility-toggle {
+    width: 100%;
+  }
+
+  .library-catalog-open {
+    grid-template-columns: 38px minmax(0, 1fr) 22px;
+  }
+}
+
+@media (max-width: 320px) {
+  .toolbar-page-action.has-text {
+    max-width: 78px;
+    gap: 4px;
+    padding-inline: 5px;
+  }
+
+  .toolbar-page-action.has-text svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .toolbar-page-action-text {
+    font-size: 0.64rem;
+  }
+}

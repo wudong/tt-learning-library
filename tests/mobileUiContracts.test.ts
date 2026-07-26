@@ -4,8 +4,11 @@ import { readFile } from 'node:fs/promises'
 const source = (path: string) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 describe('mobile UI contracts', () => {
-  test('the shared toolbar owns contextual back navigation and page actions', async () => {
-    const layout = await source('apps/web/src/components/Layout.tsx')
+  test('the shared toolbar owns contextual navigation and labelled page actions', async () => {
+    const [layout, actions] = await Promise.all([
+      source('apps/web/src/components/Layout.tsx'),
+      source('apps/web/src/components/MobilePageActions.tsx'),
+    ])
 
     expect(layout).toContain("backLabel: 'Back in Library'")
     expect(layout).toContain("backScope: '/library'")
@@ -13,10 +16,12 @@ describe('mobile UI contracts', () => {
     expect(layout).toContain('toolbar-leading')
     expect(layout).toContain('toolbar-trailing')
     expect(layout).toContain('toolbar-actions')
+    expect(layout).toContain('toolbar-page-action-text')
     expect(layout).toContain('MobilePageActionsProvider')
+    expect(actions).toContain('text?: string')
   })
 
-  test('library catalog sections share one compact card pattern with explicit actions', async () => {
+  test('Library has one visible-topic control, an always-visible search field, and clean topic rows', async () => {
     const library = await source('apps/web/src/features/library/Library.tsx')
     const catalog = await source('apps/web/src/features/library/LibraryCatalogCard.tsx')
 
@@ -24,12 +29,15 @@ describe('mobile UI contracts', () => {
     expect(catalog).toContain('const visibleTags = tags.slice(0, 2)')
     expect(catalog).toContain('library-catalog-overflow')
     expect(catalog).toContain('aria-label={`${openLabel}: ${title}`}')
-    expect(catalog).toContain('library-catalog-open-label')
-    expect(library).toContain('openLabel="Open topic"')
-    expect(library).toContain('catalog-manage-action')
+    expect(catalog).toContain('library-catalog-chevron')
+    expect(library).toContain('showOpenLabel={false}')
+    expect(library).not.toContain('Show or hide Topics')
+    expect(library).not.toContain('Open a learning area or choose which Topics appear in your Library.')
+    expect(library).not.toContain("id: 'library-search'")
+    expect(library).toContain('className="library-search"')
   })
 
-  test('detail routes do not render duplicate back rows or nested relationship cards', async () => {
+  test('detail routes do not render duplicate actions or nested back rows', async () => {
     const paths = [
       'apps/web/src/features/library/LibraryNodeDetail.tsx',
       'apps/web/src/features/library/DrillDetail.tsx',
@@ -43,10 +51,43 @@ describe('mobile UI contracts', () => {
       expect(file).not.toContain('Open Skill')
     }
 
+    expect((files[0].match(/Manage pictures/g) ?? []).length).toBe(1)
+    expect((files[0].match(/Add note<\/button>/g) ?? []).length).toBe(1)
     expect(files[0]).toContain('detail-section relationship-section')
     expect(files[1]).toContain('detail-section relationship-section')
     expect(files[3]).toContain('detail-section relationship-section')
     for (const file of files) expect(file).toContain('detail-title-only')
+  })
+
+  test('Training uses one player drawer and a full showable calendar without compact mode', async () => {
+    const [hub, profiles] = await Promise.all([
+      source('apps/web/src/features/training/TrainingHub.tsx'),
+      source('apps/web/src/features/training/TrainingProfileSwitcher.tsx'),
+    ])
+
+    expect(hub).toContain('Hide calendar')
+    expect(hub).toContain('Show calendar')
+    expect(hub).toContain('ttll.trainingCalendarVisible')
+    expect(hub).not.toContain('Compact view')
+    expect(hub).not.toContain('training-calendar compact')
+    expect(hub).not.toContain('role="tablist"')
+    expect(profiles).toContain('Switch or manage players')
+    expect(profiles).toContain('Training players')
+    expect(profiles).toContain("id: 'training-profile'")
+    expect(profiles).not.toContain('<select')
+  })
+
+  test('knowledge graph supports filters, nearby paths, and progressive exploration', async () => {
+    const [explorer, service] = await Promise.all([
+      source('apps/web/src/features/library/KnowledgeGraphExplorer.tsx'),
+      source('apps/api/src/services/libraryAggregateService.ts'),
+    ])
+    expect(explorer).toContain('graph-type-filters')
+    expect(explorer).toContain('/library/connections/${item.node.id}')
+    expect(explorer).toContain('direct and nearby links')
+    expect(service).toContain('SECOND_HOP_ROOT_LIMIT')
+    expect(service).toContain('Through ${discovery.via.title}')
+    expect(service).toContain('CONNECTION_LIMIT = 36')
   })
 
   test('installed app stays portrait while explicit fullscreen video remains available', async () => {
@@ -62,14 +103,22 @@ describe('mobile UI contracts', () => {
     expect(facebook).toContain('fullscreen; picture-in-picture')
   })
 
-  test('responsive rules explicitly cover reported narrow widths and touch targets', async () => {
-    const css = await source('apps/web/src/mobile-audit.css')
+  test('responsive rules explicitly repair narrow detail layouts and touch targets', async () => {
+    const [auditCss, finalCss, main] = await Promise.all([
+      source('apps/web/src/mobile-audit.css'),
+      source('apps/web/src/feedback-round.css'),
+      source('apps/web/src/main.tsx'),
+    ])
 
-    expect(css).toContain('@media (max-width: 384px)')
-    expect(css).toContain('@media (max-width: 320px)')
-    expect(css).toContain('width: 44px')
-    expect(css).toContain('min-height: 44px')
-    expect(css).toContain('env(safe-area-inset-bottom)')
-    expect(css).toContain('overflow-wrap: anywhere')
+    expect(auditCss).toContain('@media (max-width: 384px)')
+    expect(auditCss).toContain('@media (max-width: 320px)')
+    expect(auditCss).toContain('width: 44px')
+    expect(auditCss).toContain('min-height: 44px')
+    expect(auditCss).toContain('env(safe-area-inset-bottom)')
+    expect(finalCss).toContain('.library-detail-hero,')
+    expect(finalCss).toContain('.picture-management-heading')
+    expect(finalCss).toContain('display: block !important')
+    expect(finalCss).toContain('grid-column: 1 / -1 !important')
+    expect(main.trimEnd()).toContain("import './feedback-round.css'")
   })
 })

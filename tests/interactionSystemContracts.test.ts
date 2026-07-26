@@ -58,14 +58,19 @@ describe('interaction design-system contracts', () => {
     expect(inbox).not.toContain('Messy captures land here first')
   })
 
-  test('Training uses progressive disclosure and safe plan editing', async () => {
+  test('Training uses progressive disclosure, one player drawer, and safe plan editing', async () => {
     const hub = await source('apps/web/src/features/training/TrainingHub.tsx')
+    const profiles = await source('apps/web/src/features/training/TrainingProfileSwitcher.tsx')
     const planner = await source('apps/web/src/features/training/TrainingPlanner.tsx')
     const session = await source('apps/web/src/features/training/TrainingSessionPage.tsx')
 
-    expect(hub.indexOf('training-tabs')).toBeLessThan(hub.indexOf('calendar-toolbar'))
+    expect(hub).toContain('training-calendar-section')
+    expect(hub).toContain('Hide calendar')
+    expect(hub).toContain('Show calendar')
+    expect(hub).not.toContain('Compact view')
     expect(hub).toContain('selected-day-card')
-    expect(hub).not.toContain('Practice with intent')
+    expect(profiles).toContain('Training players')
+    expect(profiles).toContain("id: 'training-profile'")
     expect(planner).toContain('Start from a recent plan')
     expect(planner).toContain('selectedTopicId')
     expect(planner).toContain('<TopicPickerDialog')
@@ -105,9 +110,10 @@ describe('interaction design-system contracts', () => {
     expect(organize).toContain('<TopicPickerDialog')
     expect(planner).toContain('<TopicPickerDialog')
     expect(library).toContain('<TopicPickerDialog')
-    expect(library).toContain('Show or hide Topics')
+    expect(library).toContain('Choose visible Topics')
     expect(library).toContain('Show {topic.name}')
     expect(library).toContain('Hide {topic.name}')
+    expect(library).not.toContain('Show or hide Topics')
     expect(library).not.toContain('<SlidersHorizontal size={16} /> Manage')
   })
 

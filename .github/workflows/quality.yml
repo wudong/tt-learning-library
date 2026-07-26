@@ -13,7 +13,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17
@@ -103,17 +103,35 @@ jobs:
           done
 
           OVERVIEW=$(curl -fsS http://localhost:3003/api/library/overview)
-          TOPIC_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.topics[0].nodeId // empty')
-          SKILL_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.skills[0].nodeId // empty')
-          DRILL_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.drills[0].nodeId // empty')
+          TOPIC_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.topics[] | select(.name == "Backhand") | .nodeId' | head -1)
+          SKILL_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.skills[] | select(.name == "Backhand Chop") | .nodeId' | head -1)
+          SKILL_ROW_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.skills[] | select(.name == "Backhand Chop") | .id' | head -1)
+          DRILL_ID=$(printf '%s' "$OVERVIEW" | jq -r '.data.drills[] | select(.title == "Backhand Chop Depth Control") | .nodeId' | head -1)
           test -n "$TOPIC_ID"
           test -n "$SKILL_ID"
+          test -n "$SKILL_ROW_ID"
           test -n "$DRILL_ID"
+
+          VIDEO_RESPONSE=$(curl -fsS -X POST http://localhost:3003/api/videos \
+            -H 'content-type: application/json' \
+            --data "{\"sourceUrl\":\"https://example.com/backhand-chop-technique\",\"title\":\"Backhand chop technique review\",\"topicIds\":[],\"skillIds\":[\"${SKILL_ROW_ID}\"],\"tagIds\":[],\"progress\":\"watched\",\"learningState\":\"practicing\"}")
+          VIDEO_ID=$(printf '%s' "$VIDEO_RESPONSE" | jq -r '.data.video.id // empty')
+          test -n "$VIDEO_ID"
+          curl -fsS "http://localhost:3003/api/videos/${VIDEO_ID}" | jq -e '.data.video.id' >/dev/null
+
+          TODAY=$(date +%F)
+          TRAINING_RESPONSE=$(curl -fsS -X POST http://localhost:3003/api/training/sessions \
+            -H 'content-type: application/json' \
+            --data "{\"scheduledDate\":\"${TODAY}\",\"timeZone\":\"Europe/London\",\"title\":\"Backhand chop focus\",\"entryMode\":\"planned\",\"blocks\":[{\"skillId\":\"${SKILL_ROW_ID}\",\"plannedDurationSeconds\":600}]}")
+          SESSION_ID=$(printf '%s' "$TRAINING_RESPONSE" | jq -r '.data.session.id // empty')
+          test -n "$SESSION_ID"
+          RECENT_FROM=$(date -u -d '90 days ago' +%F)
+          curl -fsS "http://localhost:3003/api/training/sessions?from=${RECENT_FROM}&to=${TODAY}" | jq -e '.data | arrays' >/dev/null
+          curl -fsS "http://localhost:3003/api/library/nodes/${SKILL_ID}/connections" | jq -e '.data.totalConnections >= 8' >/dev/null
 
           CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
           test -n "$CHROME"
           mkdir -p mobile-ui-screenshots
-          TODAY=$(date +%F)
 
           capture() {
             width=$1
@@ -127,24 +145,37 @@ jobs:
               --disable-gpu \
               --hide-scrollbars \
               --run-all-compositor-stages-before-draw \
-              --virtual-time-budget=5000 \
+              --virtual-time-budget=10000 \
               --window-size="${width},${height}" \
               --screenshot="mobile-ui-screenshots/${name}.png" \
               "http://localhost:5174${route}"
           }
 
-          capture 384 900 library-384 /library
-          capture 384 900 topic-detail-384 "/library/topics/${TOPIC_ID}"
-          capture 384 900 topic-pictures-384 "/library/topics/${TOPIC_ID}/pictures"
-          capture 384 900 drill-detail-384 "/library/drills/${DRILL_ID}"
-          capture 384 900 inbox-384 /inbox
-          capture 384 900 training-384 /training
-          capture 384 900 plan-training-384 "/training/new?date=${TODAY}&mode=planned"
-          capture 320 800 library-320 /library
-          capture 320 800 topic-pictures-320 "/library/topics/${TOPIC_ID}/pictures"
-          capture 320 800 skill-detail-320 "/library/skills/${SKILL_ID}"
-          capture 320 800 training-320 /training
-          capture 320 800 plan-training-320 "/training/new?date=${TODAY}&mode=planned"
+          capture_routes() {
+            width=$1
+            height=$2
+            suffix=$3
+            capture "$width" "$height" "home-${suffix}" /
+            capture "$width" "$height" "inbox-${suffix}" /inbox
+            capture "$width" "$height" "library-${suffix}" /library
+            capture "$width" "$height" "topic-detail-${suffix}" "/library/topics/${TOPIC_ID}"
+            capture "$width" "$height" "topic-pictures-${suffix}" "/library/topics/${TOPIC_ID}/pictures"
+            capture "$width" "$height" "skill-detail-${suffix}" "/library/skills/${SKILL_ID}"
+            capture "$width" "$height" "drill-detail-${suffix}" "/library/drills/${DRILL_ID}"
+            capture "$width" "$height" "connections-${suffix}" "/library/connections/${SKILL_ID}"
+            capture "$width" "$height" "video-detail-${suffix}" "/videos/${VIDEO_ID}"
+            capture "$width" "$height" "add-video-${suffix}" /videos/new
+            capture "$width" "$height" "training-${suffix}" /training
+            capture "$width" "$height" "plan-training-${suffix}" "/training/new?date=${TODAY}&mode=planned"
+            capture "$width" "$height" "log-training-${suffix}" "/training/new?date=${TODAY}&mode=manual"
+            capture "$width" "$height" "training-detail-${suffix}" "/training/${SESSION_ID}"
+            capture "$width" "$height" "training-live-${suffix}" "/training/${SESSION_ID}/run"
+            capture "$width" "$height" "search-${suffix}" "/search?q=backhand"
+            capture "$width" "$height" "settings-${suffix}" /settings
+          }
+
+          capture_routes 384 900 384
+          capture_routes 320 800 320
 
       - name: Upload mobile UI screenshots
         if: always()

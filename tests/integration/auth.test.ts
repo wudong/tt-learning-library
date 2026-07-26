@@ -79,6 +79,9 @@ describe('hosted authentication', () => {
     const payload = { title: 'Serve tutorial', text: 'Useful', url: 'https://youtu.be/abc12345' }
     const token = await signPendingShare(payload)
     expect(await verifyPendingShare(token)).toEqual(payload)
-    expect(await verifyPendingShare(`${token.slice(0, -1)}x`)).toBeNull()
+    const [encodedPayload, signature] = token.split('.')
+    const replacement = encodedPayload?.startsWith('A') ? 'B' : 'A'
+    const tampered = `${replacement}${encodedPayload?.slice(1)}.${signature}`
+    expect(await verifyPendingShare(tampered)).toBeNull()
   })
 })

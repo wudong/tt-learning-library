@@ -5,7 +5,7 @@ import { VideoAggregateService } from '../../apps/api/src/services/videoAggregat
 import type { VideoMetadataProvider } from '../../apps/api/src/services/youtubeMetadataService'
 import { AttachmentRepository, GraphRepository, ShareRepository, TopicSkillRepository, createId, provisionOntology } from '../../packages/db/src'
 import { LibraryAggregateService } from '../../apps/api/src/services/libraryAggregateService'
-import { PLAYER_DEFAULT_TOPICS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
+import { ADDITIONAL_TABLE_TENNIS_DRILLS, PLAYER_DEFAULT_TOPICS, TABLE_TENNIS_DRILLS, TABLE_TENNIS_SKILLS, TABLE_TENNIS_TOPICS } from '@ttll/shared'
 import { AttachmentService } from '../../apps/api/src/services/attachmentService'
 
 test('picture attachment is stored on an owned knowledge node and isolated by owner', async () => {
@@ -60,7 +60,7 @@ test('Library organizes drills under ontology skills and exposes videos contextu
   const skillResources = await library.getNodeResources(userId, skill.node_id)
   expect(skill.description).not.toBeNull()
   expect(skillResources.node.summary).toBe(skill.description)
-  expect(skillResources.drills.map((item) => item.id)).toEqual([drill.id])
+  expect(skillResources.drills.some((item) => item.id === drill.id)).toBe(true)
   expect(skillResources.videos.map((item) => item.id)).toEqual([video.video.id])
   const note = await library.createNote(userId, { parentNodeId: skill.node_id, body: 'Keep the contact fine and low', noteType: 'takeaway' })
   expect((await library.getNodeResources(userId, skill.node_id)).notes.map((item) => item.id)).toEqual([note.id])
@@ -240,8 +240,10 @@ test('curated ontology provisioning is complete, protected, and idempotent per o
   expect((await new TopicSkillRepository(db).setTopicHidden('user_ontology', coaching.id, false)).is_hidden).toBe(0)
   expect(skills.every((skill) => skill.is_system === 1)).toBe(true)
   expect(edges).toHaveLength(TABLE_TENNIS_SKILLS.length)
-  expect(drills).toHaveLength(TABLE_TENNIS_DRILLS.length)
-  expect(drillSteps).toHaveLength(TABLE_TENNIS_DRILLS.reduce((count, drill) => count + drill.steps.length, 0))
+  expect(drills).toHaveLength(TABLE_TENNIS_DRILLS.length + ADDITIONAL_TABLE_TENNIS_DRILLS.length)
+  expect(drillSteps).toHaveLength(
+    [...TABLE_TENNIS_DRILLS, ...ADDITIONAL_TABLE_TENNIS_DRILLS].reduce((count, ontologyDrill) => count + ontologyDrill.steps.length, 0),
+  )
   const serve = topics.find((topic) => topic.name === 'Serve')!
   const reversePendulum = skills.find((skill) => skill.name === 'Reverse Pendulum Serve')!
   expect((await new LibraryAggregateService(db).setPinned('user_ontology', reversePendulum.node_id, true)).pinned).toBe(true)

@@ -6,6 +6,7 @@ export type MobilePageAction = {
   icon: ReactNode
   onPress: () => void
   tone?: 'default' | 'accent'
+  text?: string
 }
 
 type RegisterMobilePageActions = (actions: MobilePageAction[]) => () => void

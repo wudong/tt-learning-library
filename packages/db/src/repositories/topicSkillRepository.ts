@@ -41,6 +41,10 @@ export class TopicSkillRepository {
     return this.db.updateTable('skills').set({ is_pinned: pinned ? 1 : 0, updated_at: nowIso() }).where('user_id', '=', userId).where('node_id', '=', nodeId).where('deleted_at', 'is', null).returning('is_pinned').executeTakeFirstOrThrow()
   }
   async getSkill(userId: string, id: string) { return this.db.selectFrom('skills').selectAll().where('user_id','=',userId).where('id','=',id).where('deleted_at','is',null).executeTakeFirst() }
+  async setTopicDescription(userId: string, nodeId: string, description: string) {
+    return this.db.updateTable('topics').set({ description, updated_at: nowIso() })
+      .where('user_id', '=', userId).where('node_id', '=', nodeId).where('deleted_at', 'is', null).execute()
+  }
   async setSkillDescription(userId: string, nodeId: string, description: string) {
     return this.db.updateTable('skills').set({ description, updated_at: nowIso() })
       .where('user_id', '=', userId).where('node_id', '=', nodeId).where('deleted_at', 'is', null).execute()

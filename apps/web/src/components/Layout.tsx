@@ -108,15 +108,13 @@ export function Layout({
 
   const defaultToolbarAction = () => {
     if (meta.back) return null
-    if (path === '/library') {
-      return <button className="toolbar-icon" onClick={() => go('/search')} aria-label="Search library"><Search size={22} /></button>
-    }
     if (path === '/training') {
       return <button className="toolbar-icon toolbar-add" onClick={() => go('/training/new')} aria-label="Plan training"><Plus size={22} /></button>
     }
     if (path === '/settings') {
       return <button className="toolbar-icon" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback"><MessageSquare size={22} /></button>
     }
+    if (path === '/library') return <span className="toolbar-spacer" aria-hidden="true" />
     return <button className="toolbar-icon toolbar-add" onClick={() => go('/videos/new')} aria-label="Add video"><Plus size={22} /></button>
   }
 
@@ -200,11 +198,12 @@ export function Layout({
                     {pageActions.map((action) => (
                       <button
                         key={action.id}
-                        className={`toolbar-icon toolbar-page-action ${action.tone === 'accent' ? 'toolbar-add' : ''}`}
+                        className={`toolbar-icon toolbar-page-action ${action.tone === 'accent' ? 'toolbar-add' : ''} ${action.text ? 'has-text' : ''}`}
                         onClick={action.onPress}
                         aria-label={action.label}
                       >
                         {action.icon}
+                        {action.text && <span className="toolbar-page-action-text">{action.text}</span>}
                       </button>
                     ))}
                   </div>

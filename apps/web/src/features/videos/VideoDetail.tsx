@@ -9,6 +9,10 @@ export function VideoDetail({ id, navigate }: { id:string; navigate: (to: string
   const video = useVideo(id)
   const data = video.data
   const title = data?.video.title || data?.node.title || 'Video'
+  const topics = data?.topics ?? []
+  const skills = data?.skills ?? []
+  const related = data?.related ?? []
+  const skillRelationships = data?.skillRelationships ?? {}
 
   return (
     <section className="video-detail-page">
@@ -40,19 +44,19 @@ export function VideoDetail({ id, navigate }: { id:string; navigate: (to: string
 
         <section className="detail-section relationship-section" aria-labelledby="video-context-title">
           <h2 id="video-context-title">Learning context</h2>
-          {data.topics.length === 0 && data.skills.length === 0
+          {topics.length === 0 && skills.length === 0
             ? <p className="muted">No topics or skills linked yet. Organize this video from the Library.</p>
             : <div className="detail-link-list">
-                {data.topics.map((topic) => <button key={topic.id} onClick={() => navigate(`/library/topics/${topic.id}`)}><Layers3 size={18}/><span><strong>{topic.title}</strong><small>Topic</small></span><ChevronRight size={18} aria-hidden="true"/></button>)}
-                {data.skills.map((skill) => <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18}/><span><strong>{skill.title}</strong><small>{data.skillRelationships[skill.id] === 'demonstrates' ? 'Demonstrates this Skill' : 'Explains this Skill'}</small></span><ChevronRight size={18} aria-hidden="true"/></button>)}
+                {topics.map((topic) => <button key={topic.id} onClick={() => navigate(`/library/topics/${topic.id}`)}><Layers3 size={18}/><span><strong>{topic.title}</strong><small>Topic</small></span><ChevronRight size={18} aria-hidden="true"/></button>)}
+                {skills.map((skill) => <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18}/><span><strong>{skill.title}</strong><small>{skillRelationships[skill.id] === 'demonstrates' ? 'Demonstrates this Skill' : 'Explains this Skill'}</small></span><ChevronRight size={18} aria-hidden="true"/></button>)}
               </div>}
         </section>
 
         <section className="detail-section relationship-section" aria-labelledby="video-related-title">
           <h2 id="video-related-title">Related items</h2>
-          {data.related.length === 0
+          {related.length === 0
             ? <p className="muted">No other related items yet.</p>
-            : <div className="detail-static-list">{data.related.map((node) => <div className="detail-static-row" key={node.id}><strong>{node.title}</strong><small>{node.nodeType.replaceAll('_', ' ')}</small></div>)}</div>}
+            : <div className="detail-static-list">{related.map((node) => <div className="detail-static-row" key={node.id}><strong>{node.title}</strong><small>{node.nodeType.replaceAll('_', ' ')}</small></div>)}</div>}
         </section>
       </>}
     </section>
