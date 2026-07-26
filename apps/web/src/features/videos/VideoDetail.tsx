@@ -12,7 +12,7 @@ export function VideoDetail({ id, navigate }: { id:string; navigate: (to: string
 
   return (
     <section className="video-detail-page">
-      <header className="video-detail-hero">
+      <header className="video-detail-hero detail-title-only">
         <span className="eyebrow">Video</span>
         <h1>{title}</h1>
       </header>
