@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { facebookEmbedUrl } from '../apps/web/src/components/FacebookEmbed'
+import { facebookEmbedUrl, isFacebookVideoUrl, preferredFacebookFrame } from '../apps/web/src/components/FacebookEmbed'
 
 test('builds the official Facebook video plugin URL for public videos', () => {
   const source = 'https://www.facebook.com/watch/?v=123456789012345'
@@ -9,12 +9,22 @@ test('builds the official Facebook video plugin URL for public videos', () => {
   expect(embed.origin + embed.pathname).toBe('https://www.facebook.com/plugins/video.php')
   expect(embed.searchParams.get('href')).toBe(source)
   expect(embed.searchParams.get('show_text')).toBe('false')
+  expect(embed.searchParams.get('adapt_container_width')).toBe('true')
 })
 
 test('uses the video plugin for Reels and share-video links', () => {
   expect(new URL(facebookEmbedUrl('https://www.facebook.com/reel/123456789012345')!).pathname).toBe('/plugins/video.php')
   expect(new URL(facebookEmbedUrl('https://www.facebook.com/share/v/AbCdEf')!).pathname).toBe('/plugins/video.php')
   expect(new URL(facebookEmbedUrl('https://fb.watch/AbCdEf')!).pathname).toBe('/plugins/video.php')
+})
+
+test('chooses a video frame that matches common Facebook URL shapes', () => {
+  expect(preferredFacebookFrame('https://www.facebook.com/reel/123456789012345')).toBe('portrait')
+  expect(preferredFacebookFrame('https://www.facebook.com/share/r/AbCdEf')).toBe('portrait')
+  expect(preferredFacebookFrame('https://www.facebook.com/watch/?v=123456789012345')).toBe('landscape')
+  expect(preferredFacebookFrame(null)).toBe('landscape')
+  expect(isFacebookVideoUrl('https://www.facebook.com/reel/123456789012345')).toBe(true)
+  expect(isFacebookVideoUrl('https://www.facebook.com/tabletennis/posts/123456789012345')).toBe(false)
 })
 
 test('falls back to the post plugin for other public Facebook posts', () => {

@@ -37,17 +37,18 @@ type PageMeta = {
   eyebrow: string
   back?: string
   backLabel?: string
+  backScope?: string
 }
 
 const pageMeta = (path: string): PageMeta => {
   if (path === '/') return { title: 'Home', eyebrow: 'Your learning today' }
   if (path === '/inbox') return { title: 'Inbox', eyebrow: 'Captured for later' }
   if (path === '/library') return { title: 'Library', eyebrow: 'Skills, videos and practice' }
-  if (path.startsWith('/library/connections/')) return { title: 'Connections', eyebrow: 'Knowledge graph', back: '/library', backLabel: 'Back to Library' }
-  if (/^\/library\/topics\/[^/]+\/pictures$/.test(path)) return { title: 'Pictures', eyebrow: 'Topic management', back: path.replace(/\/pictures$/, ''), backLabel: 'Back to Topic' }
-  if (path.startsWith('/library/topics/')) return { title: 'Topic', eyebrow: 'Learning area', back: '/library', backLabel: 'Back to Library' }
-  if (path.startsWith('/library/skills/')) return { title: 'Skill', eyebrow: 'Learning detail', back: '/library', backLabel: 'Back to Library' }
-  if (path.startsWith('/library/drills/')) return { title: 'Drill', eyebrow: 'Practice detail', back: '/library', backLabel: 'Back to Library' }
+  if (path.startsWith('/library/connections/')) return { title: 'Connections', eyebrow: 'Knowledge graph', back: '/library', backLabel: 'Back in Library', backScope: '/library' }
+  if (/^\/library\/topics\/[^/]+\/pictures$/.test(path)) return { title: 'Pictures', eyebrow: 'Topic management', back: path.replace(/\/pictures$/, ''), backLabel: 'Back in Library', backScope: '/library' }
+  if (path.startsWith('/library/topics/')) return { title: 'Topic', eyebrow: 'Learning area', back: '/library', backLabel: 'Back in Library', backScope: '/library' }
+  if (path.startsWith('/library/skills/')) return { title: 'Skill', eyebrow: 'Learning detail', back: '/library', backLabel: 'Back in Library', backScope: '/library' }
+  if (path.startsWith('/library/drills/')) return { title: 'Drill', eyebrow: 'Practice detail', back: '/library', backLabel: 'Back in Library', backScope: '/library' }
   if (path === '/training') return { title: 'Training', eyebrow: 'Plan, practice, reflect' }
   if (path === '/training/new') return { title: 'Plan training', eyebrow: 'Build a focused session', back: '/training', backLabel: 'Back to Training' }
   if (path.startsWith('/training/')) return { title: 'Training session', eyebrow: 'One skill at a time', back: '/training', backLabel: 'Back to Training' }
@@ -56,17 +57,19 @@ const pageMeta = (path: string): PageMeta => {
   if (path === '/videos/new') return { title: 'Add video', eyebrow: 'Save now, organize later', back: '/', backLabel: 'Back to Home' }
   if (path.startsWith('/quick-save/')) return { title: 'Quick save', eyebrow: 'Capture received', back: '/inbox', backLabel: 'Back to Inbox' }
   if (path.startsWith('/inbox/')) return { title: 'Organize', eyebrow: 'Turn capture into learning', back: '/inbox', backLabel: 'Back to Inbox' }
-  if (path.startsWith('/videos/')) return { title: 'Video', eyebrow: 'Learning detail', back: '/library', backLabel: 'Back to Library' }
+  if (path.startsWith('/videos/')) return { title: 'Video', eyebrow: 'Learning detail', back: '/library', backLabel: 'Back in Library', backScope: '/library' }
   return { title: 'TT Learn', eyebrow: 'Table tennis learning' }
 }
 
 export function Layout({
   path,
   navigate,
+  navigateBack,
   children,
 }: {
   path: string
   navigate: (to: string) => void
+  navigateBack: (fallback: string, scope: string) => void
   children: React.ReactNode
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -180,7 +183,11 @@ export function Layout({
           <header className="mobile-toolbar">
             <div className="toolbar-leading">
               {meta.back
-                ? <button className="toolbar-icon" onClick={() => go(meta.back!)} aria-label={meta.backLabel ?? 'Go back'}><ArrowLeft size={22} /></button>
+                ? <button
+                    className="toolbar-icon"
+                    onClick={() => meta.backScope ? navigateBack(meta.back!, meta.backScope) : go(meta.back!)}
+                    aria-label={meta.backLabel ?? 'Go back'}
+                  ><ArrowLeft size={22} /></button>
                 : <button className="toolbar-icon" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={22} /></button>}
             </div>
             <div className="toolbar-title">

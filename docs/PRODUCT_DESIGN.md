@@ -329,6 +329,11 @@ Video progress
 Video learning state
 ```
 
+YouTube and Facebook captures use the same organization fields. Facebook links
+and embedded players remain contained within the phone viewport. The player
+chooses a sensible wide/tall frame from the URL shape and lets the user switch
+that frame before using the provider's fullscreen control.
+
 Design rules:
 
 > The fastest successful capture must not require classification.

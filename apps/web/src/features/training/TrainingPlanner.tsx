@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, CalendarDays, Check, ChevronRight, Edit3, Layers3, 
 import { toast } from 'sonner'
 import type { CreateTrainingSessionRequest, TrainingSessionDetailDto } from '@ttll/shared'
 import { Dialog } from '../../components/Dialog'
+import { TopicPickerDialog } from '../../components/TopicPickerDialog'
 import { useCreateTrainingSession, useLibraryOverview, useTrainingPracticeOptions, useTrainingSession, useTrainingSessions } from '../../lib/api/hooks'
 
 type Mode = 'planned'|'quick'|'manual'
@@ -224,7 +225,15 @@ export function TrainingPlanner({ navigate }: { navigate: (to: string) => void }
 
     <div className="planner-footer"><button className="button secondary" onClick={() => mode === 'planned' ? setStage('entry') : navigate('/training')}>Cancel</button><button className="button" disabled={!blocks.length} onClick={() => setStage('review')}>Review plan</button></div>
 
-    {picker === 'topic' && <TopicPicker topics={topics} selectedTopicId={selectedTopicId} onChoose={chooseTopic} onClose={() => setPicker(null)} />}
+    {picker === 'topic' && <TopicPickerDialog
+      title="Choose a Topic"
+      eyebrow="Practice area"
+      topics={topics}
+      selectedIds={selectedTopicId ? [selectedTopicId] : []}
+      multiple={false}
+      onChange={(ids) => ids[0] && chooseTopic(ids[0])}
+      onClose={() => setPicker(null)}
+    />}
     {picker === 'skill' && <SkillPicker
       topicName={selectedTopic?.name ?? 'Selected Topic'}
       skills={availableSkills}
@@ -281,12 +290,6 @@ function PlanBlock({
       <button className="button secondary" onClick={() => onExpand()}><Edit3 size={16} /> Editing {skillName}</button>
     </div>}
   </article>
-}
-
-function TopicPicker({ topics, selectedTopicId, onChoose, onClose }: { topics: Array<{ id: string; name: string; description: string | null }>; selectedTopicId: string; onChoose: (id: string) => void; onClose: () => void }) {
-  return <Dialog title="Choose a Topic" eyebrow="Practice area" variant="sheet" onClose={onClose}>
-    <div className="choice-list">{topics.map((topic) => <button key={topic.id} className={`choice-option ${topic.id === selectedTopicId ? 'selected' : ''}`} aria-pressed={topic.id === selectedTopicId} onClick={() => onChoose(topic.id)}><span className="choice-check"><Check size={17} /></span><span><strong>{topic.name}</strong>{topic.description && <small>{topic.description}</small>}</span><small>{topic.id === selectedTopicId ? 'Selected' : 'Choose'}</small></button>)}</div>
-  </Dialog>
 }
 
 function SkillPicker({ topicName, skills, selectedSkillIds, recentNames, onChoose, onClose }: { topicName: string; skills: Array<{ id: string; name: string }>; selectedSkillIds: string[]; recentNames: Map<string, number>; onChoose: (id: string) => void; onClose: () => void }) {

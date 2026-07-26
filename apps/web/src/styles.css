@@ -614,6 +614,8 @@ small { color: var(--ink-soft); font-weight: 500; }
 .topic-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
 .topic-toggle > span { font-weight: 700; }
 .topic-toggle small { display: block; margin-top: 3px; color: var(--ink-soft); font-weight: 400; }
+.topic-visibility-action { max-width: min(52%, 300px); justify-content: flex-start; text-align: left; }
+.topic-filter-trigger { max-width: min(100%, 320px); }
 .library-detail-page { max-width: 1040px; margin: 0 auto; }
 .back-link { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 18px; border: 0; background: transparent; color: var(--ink-soft); cursor: pointer; font-weight: 700; }
 .library-detail-hero { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 22px; }
@@ -702,6 +704,7 @@ small { color: var(--ink-soft); font-weight: 500; }
   .calendar-day { min-height: 68px; padding: 6px 4px; }
   .calendar-day .day-state { font-size: 0.52rem; }
   .calendar-day > strong { font-size: 0.62rem; }
+  .topic-visibility-action { max-width: 100%; }
   .detail-title-only { display: none !important; }
   .library-detail-hero { display: block; margin-bottom: 4px; }
   .selected-day-head { align-items: start; }

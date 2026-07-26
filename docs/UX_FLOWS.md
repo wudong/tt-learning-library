@@ -907,12 +907,13 @@ Fast capture selects existing ontology entries and never creates new ones.
 
 ### Manage Topic Visibility
 
-1. User opens `Manage Topics` from Library.
+1. User opens `Choose visible Topics` from Library.
 2. The default player set is shown; optional Topics remain listed as hidden.
-3. User chooses `Add` or `Hide`.
+3. Each control names both its action and Topic, for example `Show Coaching` or
+   `Hide Serve`.
 4. Library immediately updates Topic and Skill browsing.
 5. Hidden Topics, Skills, and attached Videos, Drills, Notes, and Pictures
-   remain stored and can be restored by choosing `Add`.
+   remain stored and can be restored by choosing `Show`.
 
 ### Skill Detail and Drill Creation
 

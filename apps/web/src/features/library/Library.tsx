@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Dialog } from '../../components/Dialog'
 import { useMobilePageActions, type MobilePageAction } from '../../components/MobilePageActions'
 import { NodeNoteComposer } from '../../components/NodeNoteComposer'
+import { TopicPickerDialog } from '../../components/TopicPickerDialog'
 import { useCreateLibraryDrill, useLibraryOverview, useSetLibraryPin, useSetTopicVisibility } from '../../lib/api/hooks'
 import { LibraryCatalogCard } from './LibraryCatalogCard'
 
@@ -26,7 +27,7 @@ export function Library({ navigate }: { navigate: (to: string) => void }) {
     },
     {
       id: 'manage-topics',
-      label: 'Manage Topics',
+      label: 'Choose visible Topics',
       icon: <SlidersHorizontal size={20} aria-hidden="true" />,
       onPress: () => setManagingTopics(true),
     },
@@ -45,7 +46,7 @@ export function Library({ navigate }: { navigate: (to: string) => void }) {
         <h1>Your learning library</h1>
         <p className="muted">Connect tutorials to the areas and abilities you want to improve.</p>
       </div>
-      <div className="row"><button className="button secondary" onClick={() => setManagingTopics(true)}><SlidersHorizontal size={18} /> Manage Topics</button><button className="button library-add" onClick={() => navigate('/videos/new')}><CirclePlus size={18} /> Add video</button></div>
+      <div className="row"><button className="button secondary" onClick={() => setManagingTopics(true)}><SlidersHorizontal size={18} /> Choose visible Topics</button><button className="button library-add" onClick={() => navigate('/videos/new')}><CirclePlus size={18} /> Add video</button></div>
     </header>
 
     <div className="library-tabs" role="tablist" aria-label="Library sections">
@@ -84,14 +85,14 @@ function ManageTopics({ topics, onClose }: { topics: Array<{ id: string; name: s
     }
   }
   return <Dialog
-    title="Manage Topics"
+    title="Choose visible Topics"
     eyebrow="Library preferences"
     variant="sheet"
     onClose={onClose}
     footer={<><span className="muted">{topics.filter((topic) => !topic.isHidden).length} of {topics.length} Topics shown</span><button className="button" onClick={onClose}>Done</button></>}
   >
     <p className="muted">Hidden Topics and all attached learning material remain safely stored.</p>
-    <div className="topic-manager">{topics.map((topic) => <div className="topic-toggle" key={topic.id}><span>{topic.name}<small>{topic.isHidden ? 'Hidden from Library' : 'Shown in Library'}</small></span><button className="button secondary" disabled={update.isPending} onClick={() => void toggle(topic)}>{topic.isHidden ? <><Eye size={16} /> Add</> : <><EyeOff size={16} /> Hide</>}</button></div>)}</div>
+    <div className="topic-manager">{topics.map((topic) => <div className="topic-toggle" key={topic.id}><span>{topic.name}<small>{topic.isHidden ? 'Hidden from Library' : 'Shown in Library'}</small></span><button className="button secondary topic-visibility-action" disabled={update.isPending} onClick={() => void toggle(topic)}>{topic.isHidden ? <><Eye size={16} /> Show {topic.name}</> : <><EyeOff size={16} /> Hide {topic.name}</>}</button></div>)}</div>
   </Dialog>
 }
 
@@ -101,7 +102,7 @@ function TabButton({ active, icon, label, count, onClick }: { active: boolean; i
 
 function TopicSection({ topics, skills, counts, onManage, onOpen }: { topics: Array<{ id: string; nodeId: string; name: string; description: string | null }>; skills: Array<{ id: string; topicId: string | null; name: string }>; counts: Record<string, number>; onManage: () => void; onOpen: (topic: { nodeId: string; name: string }) => void }) {
   if (!topics.length) return <div className="empty">No topics match this search.</div>
-  return <div className="library-catalog-list">{topics.map((topic) => {
+  return <div><div className="section-action-row"><div><h2>Topics</h2><p>Open a learning area or choose which Topics appear in your Library.</p></div><button className="button secondary" onClick={onManage}><SlidersHorizontal size={17} /> Show or hide Topics</button></div><div className="library-catalog-list">{topics.map((topic) => {
     const topicSkills = skills.filter((skill) => skill.topicId === topic.id)
     return <LibraryCatalogCard
       key={topic.id}
@@ -112,20 +113,20 @@ function TopicSection({ topics, skills, counts, onManage, onOpen }: { topics: Ar
       tags={topicSkills.map((skill) => skill.name)}
       openLabel="Open topic"
       onOpen={() => onOpen(topic)}
-      secondaryActions={<button className="catalog-manage-action" onClick={onManage}><SlidersHorizontal size={16} /> Manage</button>}
     />
-  })}</div>
+  })}</div></div>
 }
 
 function SkillSection({ query, skills, topics, counts, onNote, onOpen }: { query: string; skills: Array<{ id: string; nodeId: string; name: string; topicId: string | null; status: string; difficulty: string | null; isPinned: boolean }>; topics: Array<{ id: string; name: string }>; counts: Record<string, number>; onNote: (target: NoteTarget) => void; onOpen: (skill: { nodeId: string; name: string }) => void }) {
   const [topicFilter, setTopicFilter] = useState('')
+  const [choosingTopic, setChoosingTopic] = useState(false)
   const [visibleLimit, setVisibleLimit] = useState(50)
   const normalized = query.trim().toLocaleLowerCase()
   const visibleSkills = skills.filter((skill) => (topicFilter ? skill.topicId === topicFilter : normalized ? true : skill.isPinned) && (!normalized || skill.name.toLocaleLowerCase().includes(normalized)))
   useEffect(() => setVisibleLimit(50), [skills, topicFilter, normalized])
   const displayedSkills = visibleSkills.slice(0, visibleLimit)
   return <div>
-    <div className="section-action-row"><div><h2>Skills</h2><p>{!topicFilter && !normalized ? 'Pinned Skills are shown first. Choose a Topic or search to browse all Skills.' : 'Curated abilities for organizing your learning material.'}</p></div><label className="compact-filter"><span className="sr-only">Filter skills by topic</span><select value={topicFilter} onChange={(event) => setTopicFilter(event.currentTarget.value)}><option value="">Choose a Topic</option>{topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}</select></label></div>
+    <div className="section-action-row"><div><h2>Skills</h2><p>{!topicFilter && !normalized ? 'Pinned Skills are shown first. Choose a Topic or search to browse all Skills.' : 'Curated abilities for organizing your learning material.'}</p></div><button className="button secondary topic-filter-trigger" onClick={() => setChoosingTopic(true)}><Layers3 size={17} /> {topics.find((topic) => topic.id === topicFilter)?.name ?? 'Choose a Topic'}</button></div>
     {!visibleSkills.length ? <div className="empty">{!topicFilter && !normalized ? 'Pin frequently used Skills, choose a Topic, or search by name.' : 'No Skills match this search and Topic.'}</div> : <><div className="library-catalog-list">{displayedSkills.map((skill) => {
       const topicName = topics.find((topic) => topic.id === skill.topicId)?.name ?? 'No primary topic'
       return <LibraryCatalogCard
@@ -140,6 +141,7 @@ function SkillSection({ query, skills, topics, counts, onNote, onOpen }: { query
         secondaryActions={<button className="catalog-manage-action" onClick={() => onNote({ nodeId: skill.nodeId, title: skill.name, type: 'skill' })}><NotebookPen size={16} /> Add note</button>}
       />
     })}</div>{displayedSkills.length < visibleSkills.length && <button className="button secondary load-more" onClick={() => setVisibleLimit((value) => value + 50)}>Load more skills <small>{displayedSkills.length} of {visibleSkills.length}</small></button>}</>}
+    {choosingTopic && <TopicPickerDialog title="Filter Skills by Topic" eyebrow="Library Skills" topics={topics} selectedIds={topicFilter ? [topicFilter] : []} multiple={false} clearLabel="Show pinned Skills" onChange={(ids) => setTopicFilter(ids[0] ?? '')} onClose={() => setChoosingTopic(false)} />}
   </div>
 }
 
