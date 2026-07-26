@@ -12,7 +12,7 @@ import {
 } from '../../lib/api/hooks'
 import { setActiveTrainingProfileId, useActiveTrainingProfileId } from '../../lib/trainingProfileSelection'
 
-export function TrainingProfileSwitcher({ onPlan }: { onPlan: () => void }) {
+export function TrainingProfileSwitcher({ onPlan }: { onPlan?: () => void }) {
   const profiles = useTrainingProfiles()
   const activeProfileId = useActiveTrainingProfileId()
   const [open, setOpen] = useState(false)
@@ -25,22 +25,23 @@ export function TrainingProfileSwitcher({ onPlan }: { onPlan: () => void }) {
     if (fallback) setActiveTrainingProfileId(fallback.id)
   }, [profiles.data, activeProfile, selfProfile])
 
-  const mobileActions = useMemo<MobilePageAction[]>(() => [
-    {
+  const mobileActions = useMemo<MobilePageAction[]>(() => {
+    const actions: MobilePageAction[] = [{
       id: 'training-profile',
       label: `Switch or manage training player${activeProfile ? `, currently ${activeProfile.displayName}` : ''}`,
       icon: <Users size={18} aria-hidden="true" />,
       text: activeProfile?.isSelf ? 'Me' : activeProfile?.displayName ?? 'Player',
       onPress: () => setOpen(true),
-    },
-    {
+    }]
+    if (onPlan) actions.push({
       id: 'plan-training',
       label: 'Plan training',
       icon: <Plus size={21} aria-hidden="true" />,
       tone: 'accent',
       onPress: onPlan,
-    },
-  ], [activeProfile?.displayName, activeProfile?.isSelf, onPlan])
+    })
+    return actions
+  }, [activeProfile?.displayName, activeProfile?.isSelf, onPlan])
   useMobilePageActions(mobileActions)
 
   if (profiles.isLoading) return <div className="training-profile-control loading">Loading player…</div>
