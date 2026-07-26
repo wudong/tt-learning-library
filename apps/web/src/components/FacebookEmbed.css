@@ -31,7 +31,33 @@
 .facebook-embed-actions { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
 .facebook-embed-actions .button { min-height: 44px; }
 .facebook-embed-loaded { margin-bottom: 15px; }
-.facebook-embed-loaded .video-embed { margin-bottom: 9px; }
+.facebook-embed-loaded .video-embed { margin: 0 auto 9px; }
+.facebook-video-embed.landscape { width: 100%; aspect-ratio: 16 / 9; }
+.facebook-video-embed.portrait { width: min(100%, 430px); max-height: 72dvh; aspect-ratio: 9 / 16; }
+.facebook-video-embed.post { width: 100%; min-height: min(680px, 75dvh); aspect-ratio: auto; }
+.facebook-frame-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: min(100%, 430px);
+  margin: 0 auto 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--panel);
+}
+.facebook-frame-controls button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--ink-soft);
+  background: transparent;
+  font-weight: 750;
+}
+.facebook-frame-controls button.active {
+  color: var(--accent-strong);
+  background: var(--surface);
+  box-shadow: 0 2px 8px oklch(0.3 0.02 150 / 0.08);
+}
 .facebook-open-link { width: 100%; min-height: 44px; }
 
 @media (max-width: 480px) {
