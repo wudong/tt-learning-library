@@ -32,7 +32,9 @@ export default defineConfig({
       scope: '/',
       launch_handler: { client_mode: 'navigate-existing' },
       display: 'standalone',
-      orientation: 'any',
+      // Keep the installed app shell stable; native fullscreen video players can
+      // still adopt landscape when the viewer explicitly enters fullscreen.
+      orientation: 'portrait-primary',
       background_color: '#f7f8f3',
       theme_color: '#f7f8f3',
       categories: ['education', 'sports', 'productivity'],

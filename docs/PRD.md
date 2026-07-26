@@ -891,7 +891,8 @@ Release only when:
 - critical flows remain usable with the software keyboard visible;
 - bottom navigation, sticky actions, sheets, and floating quick actions respect safe-area insets;
 - critical controls meet the project mobile hit-area rule;
-- portrait is primary, landscape remains functional, and no non-essential flow requires one orientation;
+- the installed app shell remains portrait-primary; an explicitly fullscreen
+  video may use the provider/browser's native landscape playback;
 - WCAG 2.2 AA acceptance target is tested for critical flows, including screen-reader smoke tests, keyboard operation, reduced motion, and 200% zoom/narrow reflow;
 - hosted sign-in, session-expiry recovery, sign-out cache clearing, and unauthenticated share-target behavior pass;
 - Inbox conversion is transactional/idempotent;
@@ -954,8 +955,10 @@ library into table-side practice.
 ### 17.2 Calendar and insights
 
 - The Training destination opens a mobile month calendar.
-- Each day cell shows planned/completed state and total actual minutes; selecting
-  a date opens its session list and skill details.
+- Each day cell distinguishes planned, completed, missed, and mixed
+  completed/missed states without relying on color alone. A compact presentation
+  is the default and can be toggled; selecting a date opens its session list and
+  skill details.
 - Week and month insights show training days, actual time, planned-session
   completion, planned versus actual time, time by Skill, and confidence trends.
 - Plans, actual time, ratings, confidence, and reflections remain private and

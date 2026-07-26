@@ -17,7 +17,7 @@ export function libraryRoutes(db: Kysely<Database>) {
   })
   app.get('/nodes/:nodeId/resources', async (c) => {
     const result = await new LibraryAggregateService(db).getNodeResources(getPrincipal(c).userId, c.req.param('nodeId'))
-    return c.json({ data: { node: presentNode(result.node), videos: result.videos.map(presentVideo), skills: result.skills.map(presentNode), drills: result.drills.map(presentDrill), drill: result.drill ? presentDrill(result.drill) : null, drillSteps: result.drillSteps.map(presentDrillStep), isPinned: result.isPinned } })
+    return c.json({ data: { node: presentNode(result.node), videos: result.videos.map(presentVideo), skills: result.skills.map(presentNode), drills: result.drills.map(presentDrill), drill: result.drill ? presentDrill(result.drill) : null, drillSteps: result.drillSteps.map(presentDrillStep), notes: result.notes.map(presentNote), isPinned: result.isPinned } })
   })
   app.get('/nodes/:nodeId/connections', async (c) => {
     const result = await new LibraryAggregateService(db).getNodeConnections(getPrincipal(c).userId, c.req.param('nodeId'))

@@ -53,7 +53,7 @@ export class LibraryAggregateService {
     ])
 
     const ontologyIsCurrent = TABLE_TENNIS_TOPICS.every((name) => systemTopics.some((topic) => topic.name === name))
-      && TABLE_TENNIS_SKILLS.every((definition) => systemSkills.some((skill) => skill.name === definition.name))
+      && TABLE_TENNIS_SKILLS.every((definition) => systemSkills.some((skill) => skill.name === definition.name && skill.description))
       && TABLE_TENNIS_DRILLS.every((definition) => drills.some((drill) => drill.is_system === 1 && drill.title === definition.title))
 
     if (!ontologyIsCurrent) {
@@ -85,10 +85,11 @@ export class LibraryAggregateService {
     const videoNodeIds = related.filter((item) => item.node_type === 'video').map((item) => item.id)
     const drillNodeIds = related.filter((item) => item.node_type === 'drill').map((item) => item.id)
     const drillRepository = new NoteDrillRepository(this.db)
-    const [videos, drillRows, selectedDrill] = await Promise.all([
+    const [videos, drillRows, selectedDrill, notes] = await Promise.all([
       new VideoRepository(this.db).listByNodeIds(userId, videoNodeIds),
       drillRepository.listDrillsByNodeIds(userId, drillNodeIds),
       node.node_type === 'drill' ? drillRepository.getDrillByNodeId(userId, nodeId) : Promise.resolve(undefined),
+      drillRepository.listNotesByParent(userId, nodeId),
     ])
     const preference = node.node_type === 'topic'
       ? await this.db.selectFrom('topics').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
@@ -96,7 +97,7 @@ export class LibraryAggregateService {
         ? await this.db.selectFrom('skills').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
         : await this.db.selectFrom('drills').select('is_pinned').where('user_id', '=', userId).where('node_id', '=', nodeId).executeTakeFirst()
     const drillSteps = selectedDrill ? await drillRepository.listSteps(userId, selectedDrill.id) : []
-    return { node, videos, skills: related.filter((item) => item.node_type === 'skill'), drills: drillRows, drill: selectedDrill, drillSteps, isPinned: preference?.is_pinned === 1 }
+    return { node, videos, skills: related.filter((item) => item.node_type === 'skill'), drills: drillRows, drill: selectedDrill, drillSteps, notes, isPinned: preference?.is_pinned === 1 }
   }
 
   async getNodeConnections(userId: string, nodeId: string) {
@@ -219,13 +220,13 @@ export class LibraryAggregateService {
     })
   }
 
-  async createSkill(userId: string, input: { name: string; topicId?: string; difficulty?: string; status?: string }) {
+  async createSkill(userId: string, input: { name: string; description?: string; topicId?: string; difficulty?: string; status?: string }) {
     return this.db.transaction().execute(async (trx) => {
       const graph = new GraphRepository(trx)
       const topic = input.topicId ? await new TopicSkillRepository(trx).getTopic(userId, input.topicId) : undefined
       if (input.topicId && !topic) throw new Error('NOT_FOUND: Topic not found')
-      const node = await graph.createNode({ userId, nodeType: 'skill', title: input.name })
-      const skill = await new TopicSkillRepository(trx).createSkill({ userId, nodeId: node.id, name: input.name, topicId: input.topicId, difficulty: input.difficulty, status: input.status })
+      const node = await graph.createNode({ userId, nodeType: 'skill', title: input.name, summary: input.description ?? null })
+      const skill = await new TopicSkillRepository(trx).createSkill({ userId, nodeId: node.id, name: input.name, description: input.description, topicId: input.topicId, difficulty: input.difficulty, status: input.status })
       if (topic) {
         await graph.createEdge({ userId, sourceNodeId: node.id, targetNodeId: topic.node_id, edgeType: 'belongs_to' })
       }

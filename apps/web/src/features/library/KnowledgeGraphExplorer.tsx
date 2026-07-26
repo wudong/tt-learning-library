@@ -47,9 +47,9 @@ export function KnowledgeGraphExplorer({ nodeId, navigate }: { nodeId: string; n
 
       {data && <>
         <header className="graph-explorer-hero">
-          <div>
-            <span className="eyebrow">Knowledge graph</span>
-            <h1>Explore connections</h1>
+          <div className="graph-explorer-copy">
+            <span className="eyebrow detail-title-only">Knowledge graph</span>
+            <h1 className="detail-title-only">Explore connections</h1>
             <p>See how this {nodeTypeLabel(data.center.nodeType).toLowerCase()} connects to your learning and practice.</p>
           </div>
           <div className="graph-view-switch" role="group" aria-label="Connection view">

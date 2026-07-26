@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subDays, subMonths } from 'date-fns'
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Clock3, Zap } from 'lucide-react'
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Clock3, Rows3, Zap } from 'lucide-react'
 import { useTrainingInsights, useTrainingSessions } from '../../lib/api/hooks'
+import { isMissedTrainingSession, trainingDayState, trainingDayStateLabel } from './calendarState'
 
 const isoDate = (date: Date) => format(date, 'yyyy-MM-dd')
 const minutes = (seconds: number) => seconds < 60 ? '<1m' : `${Math.round(seconds / 60)}m`
@@ -11,6 +12,8 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
   const [month, setMonth] = useState(startOfMonth(new Date()))
   const [selected, setSelected] = useState(new Date())
   const [tab, setTab] = useState<'calendar'|'insights'>('calendar')
+  const [compactCalendar, setCompactCalendar] = useState(true)
+  const today = isoDate(new Date())
   const calendarStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
   const calendarEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 })
   const sessions = useTrainingSessions(isoDate(calendarStart), isoDate(calendarEnd))
@@ -40,24 +43,27 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
         <h2>{format(month, 'MMMM yyyy')}</h2>
         <button className="toolbar-icon" onClick={() => moveMonth(1)} aria-label="Next month"><ChevronRight /></button>
       </div>
-      <div className="training-calendar" aria-label={`${format(month, 'MMMM yyyy')} training calendar`}>
+      <div className="calendar-display-options">
+        <button className="button secondary" type="button" aria-pressed={compactCalendar} onClick={() => setCompactCalendar((value) => !value)}>
+          <Rows3 size={16} /> Compact view
+        </button>
+      </div>
+      <div className={`training-calendar ${compactCalendar ? 'compact' : ''}`} aria-label={`${format(month, 'MMMM yyyy')} training calendar`}>
         <div className="weekday-row" aria-hidden="true">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day) => <span key={day}>{day}</span>)}</div>
         <div className="month-grid">
           {days.map((day) => {
             const daySessions = byDay.get(isoDate(day)) ?? []
             const actual = daySessions.reduce((total, session) => total + session.actualDurationSeconds, 0)
-            const hasComplete = daySessions.some((session) => session.status === 'completed')
-            const hasPlan = daySessions.some((session) => session.status === 'planned' || session.status === 'in_progress')
-            const state = hasComplete ? 'trained' : hasPlan ? 'planned' : 'empty'
+            const state = trainingDayState(daySessions, today)
             return <button
               key={isoDate(day)}
               className={`calendar-day ${state} ${isSameMonth(day, month) ? '' : 'outside'} ${isSameDay(day, selected) ? 'selected' : ''}`}
-              aria-label={`${format(day, 'EEEE d MMMM')}${daySessions.length ? `, ${daySessions.length} sessions, ${minutes(actual)}` : ', no training'}`}
+              aria-label={`${format(day, 'EEEE d MMMM')}${daySessions.length ? `, ${daySessions.length} sessions, ${trainingDayStateLabel(state)}, ${minutes(actual)}` : ', no training'}`}
               aria-pressed={isSameDay(day, selected)}
               onClick={() => setSelected(day)}
             >
               <span className="day-number">{format(day, 'd')}</span>
-              {daySessions.length > 0 && <span className="day-state">{state === 'trained' ? 'Done' : 'Plan'}</span>}
+              {daySessions.length > 0 && <span className="day-state">{trainingDayStateLabel(state)}</span>}
               {actual > 0 && <strong>{minutes(actual)}</strong>}
             </button>
           })}
@@ -83,9 +89,9 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
 
         {selectedSessions.length > 0 && <div className="day-session-list">
           {selectedSessions.map((session) => <button key={session.id} className="session-row" onClick={() => navigate(session.status === 'in_progress' ? `/training/${session.id}/run` : `/training/${session.id}`)}>
-            <span className={`session-symbol ${session.status}`}><Clock3 size={19} /></span>
+            <span className={`session-symbol ${isMissedTrainingSession(session, today) ? 'missed' : session.status}`}><Clock3 size={19} /></span>
             <span className="session-copy"><strong>{session.title}</strong><small>{session.skillNames.join(' · ') || 'Training session'}</small></span>
-            <span className="session-meta"><strong>{session.actualDurationSeconds ? minutes(session.actualDurationSeconds) : minutes(session.plannedDurationSeconds)}</strong><small>{session.entryMode === 'manual' ? 'Manual log' : statusLabel[session.status]}</small></span>
+            <span className="session-meta"><strong>{session.actualDurationSeconds ? minutes(session.actualDurationSeconds) : minutes(session.plannedDurationSeconds)}</strong><small>{session.entryMode === 'manual' ? 'Manual log' : isMissedTrainingSession(session, today) ? 'Missed' : statusLabel[session.status]}</small></span>
             <ChevronRight size={18} />
           </button>)}
         </div>}

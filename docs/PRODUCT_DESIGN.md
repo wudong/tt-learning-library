@@ -1078,7 +1078,8 @@ and Library. Search remains available from Library and the app menu.
 
 The Training surface uses three task-focused views:
 
-- a month calendar with explicit `Plan`, `Done`, and actual-minute labels;
+- a compact-by-default month calendar with explicit `Plan`, `Done`, `Missed`,
+  mixed-state, and actual-minute labels plus a density toggle;
 - a selected-day agenda supporting multiple sessions;
 - an Insights tab for week/month consistency, plan completion, Skill time, and
   confidence trend.
@@ -1115,7 +1116,8 @@ Minimum product requirements:
 - no color-only status or error meaning;
 - text and non-text contrast meet the target;
 - 200% zoom and narrow reflow remain usable;
-- orientation is not restricted unless essential;
+- the installed shell is portrait-primary, while explicit fullscreen video
+  delegates landscape playback to the native provider/browser player;
 - reduced-motion preference is respected;
 - dialogs/sheets manage focus and restore it on close;
 - reorder alternatives include Move Up, Move Down, and Move to Position;
