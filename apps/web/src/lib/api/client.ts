@@ -10,7 +10,13 @@ export async function apiRequest<T>(input: RequestInfo | URL, init: RequestInit 
   const res = await fetch(input, { credentials: 'include', ...init, headers })
   const payload: unknown = await res.json().catch(() => ({}))
   if (!res.ok) { const parsed = ApiErrorResponseSchema.safeParse(payload); throw new ApiClientError(res.status, parsed.success ? parsed.data.error.code : 'INTERNAL_ERROR', parsed.success ? parsed.data.error.message : 'Request failed') }
-  return schema.parse(payload)
+  const parsed = schema.safeParse(payload)
+  if (!parsed.success) {
+    const summary = parsed.error.issues.slice(0, 3).map((issue) => `${issue.path.join('.') || 'response'}: ${issue.message}`).join('; ')
+    console.error('API response validation failed', { input: String(input), issues: parsed.error.issues })
+    throw new ApiClientError(res.status, 'INVALID_RESPONSE', `Invalid API response: ${summary}`)
+  }
+  return parsed.data
 }
 
 export async function authenticatedBlob(input: RequestInfo | URL): Promise<Blob> {
