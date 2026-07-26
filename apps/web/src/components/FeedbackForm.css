@@ -1,0 +1,17 @@
+.feedback-contact-memory {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.feedback-contact-memory p {
+  margin: 0;
+}
+
+.feedback-contact-memory .button {
+  min-height: 36px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
