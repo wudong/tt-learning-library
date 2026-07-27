@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#07111f" />
+  <title>Table Tennis Drill Physics Lab</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --panel: #0d1a2a;
+      --panel-2: #122238;
+      --text: #f7fbff;
+      --muted: #9eb0c6;
+      --line: rgba(255,255,255,.12);
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --warn: #f59e0b;
+      --danger: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { background: radial-gradient(circle at 30% -10%, #17375a 0, var(--bg) 38rem); }
+    button, input, select { font: inherit; }
+    button, select, input[type="range"] { accent-color: var(--accent); }
+    button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid rgba(56,189,248,.35); outline-offset: 2px; }
+    .app { width: min(1500px, 100%); margin: 0 auto; padding: 18px; }
+    .hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 4px 0 16px; }
+    .hero h1 { margin: 0; font-size: clamp(1.45rem, 3vw, 2.25rem); letter-spacing: -.03em; }
+    .hero p { color: var(--muted); margin: 6px 0 0; max-width: 760px; line-height: 1.5; }
+    .badge { flex: none; border: 1px solid rgba(56,189,248,.38); background: rgba(56,189,248,.1); color: #b9eaff; padding: 7px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .panel { background: rgba(13,26,42,.94); border: 1px solid var(--line); border-radius: 18px; }
+    .viewer { overflow: hidden; }
+    .stage { position: relative; min-height: 590px; background: linear-gradient(#0b1830, #07111f); }
+    #viewport { width: 100%; height: 590px; display: block; touch-action: none; }
+    .overlay { position: absolute; inset: 14px 14px auto 14px; display: flex; justify-content: space-between; gap: 12px; pointer-events: none; }
+    .overlay-card { min-width: 0; padding: 10px 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(4,10,20,.74); backdrop-filter: blur(8px); }
+    .overlay-title { font-size: .76rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .overlay-value { margin-top: 2px; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .status-good { color: #86efac; }
+    .status-warn { color: #fcd34d; }
+    .status-bad { color: #fda4af; }
+    .transport { display: grid; grid-template-columns: auto auto auto minmax(110px, 1fr) auto; gap: 9px; align-items: center; padding: 12px; border-top: 1px solid var(--line); }
+    .button { border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--panel-2); padding: 9px 12px; cursor: pointer; font-weight: 650; }
+    .button:hover { border-color: rgba(56,189,248,.55); }
+    .button.primary { color: #001019; background: var(--accent); border-color: transparent; }
+    .button.active { border-color: var(--accent); background: rgba(56,189,248,.13); color: #c9f0ff; }
+    .time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .84rem; text-align: right; }
+    .camera-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 12px 12px; }
+    .camera-row .button { padding: 7px 10px; font-size: .84rem; }
+    .side { display: grid; gap: 12px; }
+    .section { padding: 14px; }
+    .section h2 { margin: 0 0 11px; font-size: 1rem; }
+    .field { display: grid; gap: 7px; margin-top: 12px; }
+    .field:first-of-type { margin-top: 0; }
+    .field-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+    .field label { font-size: .88rem; font-weight: 650; }
+    .field output { color: #b9eaff; font-size: .84rem; font-variant-numeric: tabular-nums; }
+    select { width: 100%; border-radius: 11px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); padding: 10px; }
+    input[type="range"] { width: 100%; }
+    .hint { margin: 8px 0 0; color: var(--muted); font-size: .8rem; line-height: 1.45; }
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .metric { background: var(--panel-2); border: 1px solid var(--line); border-radius: 13px; padding: 10px; min-width: 0; }
+    .metric span { display: block; color: var(--muted); font-size: .73rem; text-transform: uppercase; letter-spacing: .06em; }
+    .metric strong { display: block; margin-top: 4px; font-size: 1.1rem; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+    .events { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .event { display: grid; grid-template-columns: 10px minmax(0,1fr) auto; gap: 9px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    .event:last-child { border-bottom: 0; padding-bottom: 0; }
+    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--accent); }
+    .event-title { font-size: .86rem; }
+    .event-sub { color: var(--muted); font-size: .75rem; margin-top: 2px; }
+    .event-time { color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; }
+    .note { padding: 13px 14px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+    .note strong { color: var(--text); }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side .panel:first-child { grid-row: span 2; }
+    }
+    @media (max-width: 680px) {
+      .app { padding: 10px; }
+      .hero { display: block; }
+      .badge { display: inline-block; margin-top: 10px; }
+      .stage, #viewport { min-height: 480px; height: 480px; }
+      .transport { grid-template-columns: repeat(3, auto); }
+      .transport input { grid-column: 1 / -1; grid-row: 2; }
+      .time { grid-column: 1 / -1; text-align: left; }
+      .side { grid-template-columns: 1fr; }
+      .side .panel:first-child { grid-row: auto; }
+      .overlay { inset: 10px 10px auto 10px; }
+      .overlay-card:last-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div>
+        <h1>Table Tennis Drill Physics Lab</h1>
+        <p>Explore how launch speed, racket angle and spin change ball flight, net clearance, table contact and rebound. Switch to the four-ball drill to see each simulated shot feed the next.</p>
+      </div>
+      <span class="badge">WebGL physics prototype</span>
+    </header>
+
+    <div class="layout">
+      <section class="panel viewer" aria-label="3D table tennis simulation">
+        <div class="stage">
+          <canvas id="viewport"></canvas>
+          <div class="overlay">
+            <div class="overlay-card">
+              <div class="overlay-title">Current phase</div>
+              <div class="overlay-value" id="phaseLabel">Preparing simulation</div>
+            </div>
+            <div class="overlay-card">
+              <div class="overlay-title">Outcome</div>
+              <div class="overlay-value" id="outcomeLabel">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="transport">
+          <button class="button primary" id="playButton" type="button">Play</button>
+          <button class="button" id="restartButton" type="button">Restart</button>
+          <button class="button" id="slowButton" type="button">½ speed</button>
+          <input id="timeline" type="range" min="0" max="1000" value="0" aria-label="Simulation timeline" />
+          <div class="time" id="timeLabel">0.00 / 0.00 s</div>
+        </div>
+        <div class="camera-row" aria-label="Camera choices">
+          <button class="button active" type="button" data-camera="player">Player view</button>
+          <button class="button" type="button" data-camera="side">Side view</button>
+          <button class="button" type="button" data-camera="top">Top view</button>
+          <button class="button" type="button" data-camera="free">Free orbit</button>
+        </div>
+      </section>
+
+      <aside class="side">
+        <section class="panel section">
+          <h2>Shot setup</h2>
+          <div class="field">
+            <label for="preset">Scenario</label>
+            <select id="preset">
+              <option value="loop">Forehand loop vs backspin</option>
+              <option value="push">Backspin push</option>
+              <option value="block">Controlled block</option>
+              <option value="serve">Sidespin-topspin serve</option>
+              <option value="drill">Four-ball drill sequence</option>
+            </select>
+          </div>
+          <div id="singleControls">
+            <div class="field">
+              <div class="field-head"><label for="speed">Launch speed</label><output id="speedValue">12.0 m/s</output></div>
+              <input id="speed" type="range" min="4" max="20" step="0.1" value="12" />
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="elevation">Vertical angle</label><output id="elevationValue">10°</output></div>
+              <input id="elevation" type="range" min="-5" max="28" step="1" value="10" />
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="direction">Left / right aim</label><output id="directionValue">4°</output></div>
+              <input id="direction" type="range" min="-18" max="18" step="1" value="4" />
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="topspin">Topspin</label><output id="topspinValue">85 rps</output></div>
+              <input id="topspin" type="range" min="-90" max="140" step="5" value="85" />
+            </div>
+            <div class="field">
+              <div class="field-head"><label for="sidespin">Sidespin</label><output id="sidespinValue">0 rps</output></div>
+              <input id="sidespin" type="range" min="-90" max="90" step="5" value="0" />
+            </div>
+          </div>
+          <p class="hint" id="scenarioHint">A brushing contact creates heavy topspin, making the ball dip onto the far side and kick forward after the bounce.</p>
+        </section>
+
+        <section class="panel section">
+          <h2>Live measurements</h2>
+          <div class="metrics" aria-live="polite">
+            <div class="metric"><span>Ball speed</span><strong id="metricSpeed">0.0 m/s</strong></div>
+            <div class="metric"><span>Spin</span><strong id="metricSpin">0 rps</strong></div>
+            <div class="metric"><span>Height</span><strong id="metricHeight">0 cm</strong></div>
+            <div class="metric"><span>Net clearance</span><strong id="metricNet">—</strong></div>
+          </div>
+        </section>
+
+        <section class="panel section">
+          <h2>Contact timeline</h2>
+          <ol class="events" id="eventList"></ol>
+        </section>
+
+        <section class="panel note">
+          <strong>Prototype model:</strong> gravity, quadratic drag, Magnus force, spin decay, net collision, and a simplified friction/restitution table bounce. The values are educational estimates rather than calibrated measurements for a specific ball, table or rubber.
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script type="module" src="./simulator.js"></script>
+</body>
+</html>
