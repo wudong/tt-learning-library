@@ -16,7 +16,7 @@ Browser
   |       /         PWA (apps/web)
   |       /share-target → API proxy (preserves POST body)
   |
-  +-- https://api.ttlearn.tourneypilot.com
+  +-- https://ttlearn-api.tourneypilot.com
         Cloudflare Tunnel
           |
           +-- http://127.0.0.1:3004
@@ -31,7 +31,7 @@ Browser
 
 Supabase is not the application database. The frontend uses the Supabase client
 only for Auth, and sends the resulting bearer token to the Bun API. All
-application data and commands go through `https://api.ttlearn.tourneypilot.com`
+application data and commands go through `https://ttlearn-api.tourneypilot.com`
 and are stored in PostgreSQL on the VPS. There should be no production
 dependency on Supabase Database, RPC, Realtime, or Storage.
 
@@ -40,8 +40,8 @@ dependency on Supabase Database, RPC, Realtime, or Storage.
 | Endpoint | Purpose | Origin |
 | --- | --- | --- |
 | `https://ttlearn.tourneypilot.com/` | PWA | Netlify |
-| `https://api.ttlearn.tourneypilot.com/api/health` | API health check | VPS through Cloudflare Tunnel |
-| `https://api.ttlearn.tourneypilot.com/api/ready` | Readiness check | VPS through Cloudflare Tunnel |
+| `https://ttlearn-api.tourneypilot.com/api/health` | API health check | VPS through Cloudflare Tunnel |
+| `https://ttlearn-api.tourneypilot.com/api/ready` | Readiness check | VPS through Cloudflare Tunnel |
 | `vps.ttlearn.tourneypilot.com` | SSH through Cloudflare Tunnel | VPS SSH on port 22 |
 
 ## Hetzner VPS
@@ -142,7 +142,7 @@ are proxied (Cloudflare handles SSL); the frontend Netlify hostname is unproxied
 | Hostname | Type | Target | Proxied | SSL |
 | --- | --- | --- | --- | --- |
 | `ttlearn.tourneypilot.com` | CNAME | `tt-learning-library.netlify.app` | No | Netlify |
-| `api.ttlearn.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
+| `ttlearn-api.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
 | `vps.ttlearn.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
 
 ### Tunnel
@@ -158,7 +158,7 @@ routes are:
 
 | Public hostname | Tunnel origin |
 | --- | --- |
-| `api.ttlearn.tourneypilot.com` | `http://127.0.0.1:3004` |
+| `ttlearn-api.tourneypilot.com` | `http://127.0.0.1:3004` |
 | `vps.ttlearn.tourneypilot.com` | `ssh://localhost:22` |
 
 Cloudflare terminates public HTTPS for the API and sends the request through the
@@ -168,7 +168,7 @@ to be opened on the VPS. The API process intentionally binds only to loopback.
 Useful checks:
 
 ```bash
-curl --fail https://api.ttlearn.tourneypilot.com/api/health
+curl --fail https://ttlearn-api.tourneypilot.com/api/health
 ssh tt-learn 'systemctl is-active cloudflared ttlearn-api'
 ssh tt-learn 'ss -lntp'
 ```
@@ -200,10 +200,10 @@ CNAME (`ttlearn.tourneypilot.com` → `tt-learning-library.netlify.app`) must
 remain unproxied so Netlify can provision and renew its Let's Encrypt
 certificate.
 
-Browser API calls should use same-origin `/api/*` unless the API HTTPS hostname
-has been verified healthy. Netlify proxies those requests to the API. Some
-frontend flows intentionally use plain `fetch('/api/...')`, so the same-origin
-proxy remains required even if direct CORS is enabled later.
+Browser API calls should use same-origin `/api/*`. Netlify proxies those
+requests to `https://ttlearn-api.tourneypilot.com`. Some frontend flows
+intentionally use plain `fetch('/api/...')`, so the same-origin proxy remains
+required even if direct CORS is enabled later.
 
 The production frontend build receives:
 
@@ -313,7 +313,7 @@ The production job:
 6. applies PostgreSQL migrations;
 7. restarts `ttlearn-api`;
 8. checks the systemd service;
-9. verifies `https://api.ttlearn.tourneypilot.com/api/health`.
+9. verifies `https://ttlearn-api.tourneypilot.com/api/health`.
 
 The job uses the protected GitHub environment `production`, with deployments
 serialized by the `vps-production` concurrency group.
@@ -392,8 +392,8 @@ then update the corresponding GitHub secret and/or `/etc/ttlearn/api.env`.
 6. Verify production:
 
    ```bash
-   curl --fail https://api.ttlearn.tourneypilot.com/api/health
-   curl --fail https://api.ttlearn.tourneypilot.com/api/ready
+   curl --fail https://ttlearn-api.tourneypilot.com/api/health
+   curl --fail https://ttlearn-api.tourneypilot.com/api/ready
    curl --fail --head https://ttlearn.tourneypilot.com/
    ```
 

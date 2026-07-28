@@ -14,7 +14,7 @@
 # hosting, so Netlify proxies it to the Hono API handler.
 [[redirects]]
   from = "/share-target"
-  to = "http://api.ttlearn.tourneypilot.com/share-target"
+  to = "https://ttlearn-api.tourneypilot.com/share-target"
   status = 200
   force = true
 
@@ -23,7 +23,7 @@
 # reads continue to work through Netlify.
 [[redirects]]
   from = "/api/*"
-  to = "http://api.ttlearn.tourneypilot.com/api/:splat"
+  to = "https://ttlearn-api.tourneypilot.com/api/:splat"
   status = 200
   force = true
 

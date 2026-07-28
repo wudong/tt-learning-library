@@ -107,5 +107,4 @@ jobs:
           '
 
       - name: Verify production health
-        # Use HTTP while SSL cert provisions (API is behind Cloudflare Tunnel)
-        run: curl --fail --retry 10 --retry-delay 3 http://api.ttlearn.tourneypilot.com/api/health
+        run: curl --fail --retry 10 --retry-delay 3 https://ttlearn-api.tourneypilot.com/api/health
