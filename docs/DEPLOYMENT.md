@@ -40,7 +40,7 @@ dependency on Supabase Database, RPC, Realtime, or Storage.
 | Endpoint | Purpose | Origin |
 | --- | --- | --- |
 | `https://ttlearn.tourneypilot.com/` | PWA | Netlify |
-| `https://api.ttlearn.tourneypilot.com/health` | API health check | VPS through Cloudflare Tunnel |
+| `https://api.ttlearn.tourneypilot.com/api/health` | API health check | VPS through Cloudflare Tunnel |
 | `https://api.ttlearn.tourneypilot.com/api/ready` | Readiness check | VPS through Cloudflare Tunnel |
 | `vps.ttlearn.tourneypilot.com` | SSH through Cloudflare Tunnel | VPS SSH on port 22 |
 
@@ -168,7 +168,7 @@ to be opened on the VPS. The API process intentionally binds only to loopback.
 Useful checks:
 
 ```bash
-curl --fail https://api.ttlearn.tourneypilot.com/health
+curl --fail https://api.ttlearn.tourneypilot.com/api/health
 ssh tt-learn 'systemctl is-active cloudflared ttlearn-api'
 ssh tt-learn 'ss -lntp'
 ```
@@ -181,10 +181,16 @@ Netlify serves the PWA built from `apps/web`. The build is handled by
 [`netlify.toml`](netlify.toml) provides:
 
 - `/share-target` proxy to the API (preserves POST body for native share capture)
+- `/api/*` proxy to the API for same-origin browser calls
 - SPA fallback for `/*` → `/index.html`
 - Immutable caching for hashed assets
 - No-cache headers for service worker and manifest
 - Security headers
+
+The GitHub Actions deployment publishes `apps/web/dist` directly. Keep
+`apps/web/public/_redirects` and `apps/web/public/_headers` aligned with
+`netlify.toml`; Vite copies those files into `dist`, which ensures Netlify
+applies the proxy rules for action-based deploys.
 
 **Custom domain note:** When setting `custom_domain` via the Netlify API, Netlify
 automatically sets `managed_dns: true` and creates an internal DNS zone.
@@ -194,16 +200,16 @@ CNAME (`ttlearn.tourneypilot.com` → `tt-learning-library.netlify.app`) must
 remain unproxied so Netlify can provision and renew its Let's Encrypt
 certificate.
 
-All other API calls go directly from the browser to
-`https://api.ttlearn.tourneypilot.com` via CORS (configured through
-`VITE_API_BASE_URL`).
+Browser API calls should use same-origin `/api/*` unless the API HTTPS hostname
+has been verified healthy. Netlify proxies those requests to the API. Some
+frontend flows intentionally use plain `fetch('/api/...')`, so the same-origin
+proxy remains required even if direct CORS is enabled later.
 
 The production frontend build receives:
 
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
-VITE_API_BASE_URL=https://api.ttlearn.tourneypilot.com
 ```
 
 `VITE_SUPABASE_PUBLISHABLE_KEY` contains the Supabase publishable key. It is
@@ -307,7 +313,7 @@ The production job:
 6. applies PostgreSQL migrations;
 7. restarts `ttlearn-api`;
 8. checks the systemd service;
-9. verifies `https://api.ttlearn.tourneypilot.com/health`.
+9. verifies `https://api.ttlearn.tourneypilot.com/api/health`.
 
 The job uses the protected GitHub environment `production`, with deployments
 serialized by the `vps-production` concurrency group.
@@ -386,7 +392,7 @@ then update the corresponding GitHub secret and/or `/etc/ttlearn/api.env`.
 6. Verify production:
 
    ```bash
-   curl --fail https://api.ttlearn.tourneypilot.com/health
+   curl --fail https://api.ttlearn.tourneypilot.com/api/health
    curl --fail https://api.ttlearn.tourneypilot.com/api/ready
    curl --fail --head https://ttlearn.tourneypilot.com/
    ```

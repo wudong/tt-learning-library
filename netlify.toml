@@ -1,5 +1,8 @@
-# Netlify configuration for TT Learning Library
-# Deploys the PWA at root with SPA fallback and API proxy for /share-target.
+# Netlify configuration for TT Learning Library.
+#
+# GitHub Actions deploys apps/web/dist directly. Mirror routing/header changes in
+# apps/web/public/_redirects and apps/web/public/_headers so they are copied into
+# that published artifact.
 
 [build]
   command = "echo 'Build handled by GitHub Actions'"
@@ -11,16 +14,16 @@
 # hosting, so Netlify proxies it to the Hono API handler.
 [[redirects]]
   from = "/share-target"
-  to = "https://api.ttlearn.tourneypilot.com/share-target"
+  to = "http://api.ttlearn.tourneypilot.com/share-target"
   status = 200
   force = true
 
-# Proxy /api/* to the backend API. Uses HTTPS so Netlify accepts the proxy target.
-# Works once Cloudflare SSL provisions for api.ttlearn.tourneypilot.com.
-# REMOVE proxy once working — switch to direct CORS with VITE_API_BASE_URL.
+# Proxy /api/* to the backend API. Keep this even when direct CORS is available:
+# some browser flows use same-origin fetch() so auth cookies and public-share
+# reads continue to work through Netlify.
 [[redirects]]
   from = "/api/*"
-  to = "https://api.ttlearn.tourneypilot.com/api/:splat"
+  to = "http://api.ttlearn.tourneypilot.com/api/:splat"
   status = 200
   force = true
 

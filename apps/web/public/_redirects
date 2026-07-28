@@ -1,0 +1,13 @@
+# Netlify deploys apps/web/dist from GitHub Actions. Files in public/ are copied
+# into that publish directory, so these redirects are applied even when the
+# deploy action does not upload the root netlify.toml.
+
+# Native PWA share capture must stay same-origin and preserve the POST body.
+/share-target  http://api.ttlearn.tourneypilot.com/share-target  200!
+
+# Keep same-origin API calls working for app code paths that use plain fetch()
+# and for production while the API HTTPS hostname is being fixed.
+/api/*  http://api.ttlearn.tourneypilot.com/api/:splat  200!
+
+# SPA fallback.
+/*  /index.html  200
