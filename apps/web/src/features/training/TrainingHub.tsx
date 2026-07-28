@@ -1,19 +1,21 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subDays, subMonths } from 'date-fns'
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Clock3, Eye, EyeOff, Zap } from 'lucide-react'
-import { useTrainingInsights, useTrainingSessions } from '../../lib/api/hooks'
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Clock3, Users, Zap } from 'lucide-react'
+import { useTrainingInsights, useTrainingProfiles, useTrainingSessions } from '../../lib/api/hooks'
 import { isMissedTrainingSession, trainingDayState, trainingDayStateLabel } from './calendarState'
-import { TrainingProfileSwitcher } from './TrainingProfileSwitcher'
+import { TrainingProfileDrawer } from './TrainingProfileSwitcher'
+import { useMobilePageActions } from '../../components/MobilePageActions'
+import { setActiveTrainingProfileId, useActiveTrainingProfileId } from '../../lib/trainingProfileSelection'
 
-const CALENDAR_VISIBILITY_KEY = 'ttll.trainingCalendarVisible'
 const isoDate = (date: Date) => format(date, 'yyyy-MM-dd')
 const minutes = (seconds: number) => seconds < 60 ? '<1m' : `${Math.round(seconds / 60)}m`
 const statusLabel: Record<string, string> = { planned: 'Planned', in_progress: 'In progress', completed: 'Complete', cancelled: 'Cancelled' }
 
 export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
+  const [view, setView] = useState<'calendar' | 'insights'>('calendar')
   const [month, setMonth] = useState(startOfMonth(new Date()))
   const [selected, setSelected] = useState(new Date())
-  const [calendarVisible, setCalendarVisible] = useState(() => typeof window === 'undefined' || window.localStorage.getItem(CALENDAR_VISIBILITY_KEY) !== 'false')
+  const [profileDrawerOpen, setProfileDrawerOpen] = useState(false)
   const today = isoDate(new Date())
   const calendarStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
   const calendarEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 })
@@ -25,7 +27,34 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
     for (const session of sessions.data ?? []) map.set(session.scheduledDate, [...(map.get(session.scheduledDate) ?? []), session])
     return map
   }, [sessions.data])
-  const planTraining = useCallback(() => navigate('/training/new'), [navigate])
+  const profiles = useTrainingProfiles()
+  const activeProfileId = useActiveTrainingProfileId()
+  const selfProfile = profiles.data?.find((profile) => profile.isSelf)
+  const activeProfile = profiles.data?.find((profile) => profile.id === activeProfileId) ?? selfProfile
+
+  useEffect(() => {
+    if (!profiles.data?.length || activeProfile) return
+    const fallback = selfProfile ?? profiles.data[0]
+    if (fallback) setActiveTrainingProfileId(fallback.id)
+  }, [profiles.data, activeProfile, selfProfile])
+
+  const toggleInsights = useCallback(() => setView((v) => v === 'insights' ? 'calendar' : 'insights'), [])
+
+  const pageActions = useMemo(() => [
+    {
+      id: 'training-profile',
+      label: `Switch or manage training player${activeProfile ? `, currently ${activeProfile.displayName}` : ''}`,
+      icon: <Users size={18} aria-hidden="true" />,
+      onPress: () => setProfileDrawerOpen(true),
+    },
+    {
+      id: 'training-insights',
+      label: view === 'insights' ? 'Back to calendar' : 'Show insights',
+      icon: <BarChart3 size={18} aria-hidden="true" />,
+      onPress: toggleInsights,
+    },
+  ], [activeProfile?.displayName, activeProfile?.isSelf, view, toggleInsights])
+  useMobilePageActions(pageActions)
 
   const moveMonth = (direction: -1|1) => {
     const next = direction === 1 ? addMonths(month, 1) : subMonths(month, 1)
@@ -33,26 +62,19 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
     setSelected(startOfMonth(next))
   }
 
-  function toggleCalendar() {
-    setCalendarVisible((visible) => {
-      const next = !visible
-      window.localStorage.setItem(CALENDAR_VISIBILITY_KEY, String(next))
-      return next
-    })
-  }
-
   return <section className="training-page">
-    <TrainingProfileSwitcher onPlan={planTraining} />
+    {profileDrawerOpen && <TrainingProfileDrawer
+      profiles={profiles.data ?? []}
+      activeProfileId={activeProfile?.id ?? ''}
+      onClose={() => setProfileDrawerOpen(false)}
+    />}
 
-    <section className="training-calendar-section" aria-labelledby="training-calendar-title">
+    {view === 'calendar' && <section className="training-calendar-section" aria-labelledby="training-calendar-title">
       <header className="training-section-heading">
-        <div><CalendarDays size={21} aria-hidden="true" /><span><small>Schedule and history</small><h2 id="training-calendar-title">Calendar</h2></span></div>
-        <button className="button secondary calendar-visibility-toggle" type="button" aria-expanded={calendarVisible} onClick={toggleCalendar}>
-          {calendarVisible ? <><EyeOff size={17} /> Hide calendar</> : <><Eye size={17} /> Show calendar</>}
-        </button>
+        <div><CalendarDays size={21} aria-hidden="true" /><span><h2 id="training-calendar-title">Calendar</h2></span></div>
       </header>
 
-      {calendarVisible && <div className="training-calendar-content">
+      <div className="training-calendar-content">
         <div className="calendar-toolbar">
           <button className="toolbar-icon" onClick={() => moveMonth(-1)} aria-label="Previous month"><ChevronLeft /></button>
           <h2>{format(month, 'MMMM yyyy')}</h2>
@@ -106,10 +128,10 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
             </button>)}
           </div>}
         </section>
-      </div>}
-    </section>
+      </div>
+    </section>}
 
-    <TrainingInsights month={month} />
+    {view === 'insights' && <TrainingInsights month={month} />}
   </section>
 }
 

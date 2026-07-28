@@ -1,23 +1,12 @@
-import { sql, type Kysely } from 'kysely'
+import type { Kysely } from 'kysely'
 import type { Database } from '../schema/database'
 
 export const id = '20260722_005'
 export const name = 'private_application_tables_rls'
 
-const PRIVATE_TABLES = [
-  'users', 'graph_nodes', 'graph_edges', 'videos', 'topics', 'skills', 'notes',
-  'drills', 'mistakes', 'tags', 'learning_paths', 'learning_path_items',
-  'collections', 'collection_items', 'inbox_items', 'share_links',
-] as const
+// RLS removed — application-layer user_id scoping is sufficient.
+// This migration is a deliberate no-op. It was applied in production
+// and the RLS was subsequently disabled on the server.
+export async function up(_db: Kysely<Database>) {}
 
-export async function up(db: Kysely<Database>) {
-  for (const table of PRIVATE_TABLES) {
-    await sql.raw(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY`).execute(db)
-  }
-}
-
-export async function down(db: Kysely<Database>) {
-  for (const table of [...PRIVATE_TABLES].reverse()) {
-    await sql.raw(`ALTER TABLE ${table} DISABLE ROW LEVEL SECURITY`).execute(db)
-  }
-}
+export async function down(_db: Kysely<Database>) {}

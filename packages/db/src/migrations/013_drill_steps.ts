@@ -23,7 +23,6 @@ export async function up(db: Kysely<Database>) {
     .addCheckConstraint('drill_steps_spin_check', sql`spin IN ('topspin', 'backspin', 'sidespin', 'no_spin', 'variable')`)
     .execute()
   await db.schema.createIndex('uniq_drill_steps_active_position').unique().on('drill_steps').columns(['user_id', 'drill_id', 'position']).where('deleted_at' as never, 'is', null).execute()
-  await sql`ALTER TABLE drill_steps ENABLE ROW LEVEL SECURITY`.execute(db)
 }
 
 export async function down(db: Kysely<Database>) {

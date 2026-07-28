@@ -37,7 +37,7 @@ export function TrainingProfileSwitcher({ onPlan }: { onPlan?: () => void }) {
       id: 'plan-training',
       label: 'Plan training',
       icon: <Plus size={21} aria-hidden="true" />,
-      tone: 'accent',
+      tone: 'accent' as const,
       onPress: onPlan,
     })
     return actions
@@ -65,7 +65,7 @@ export function TrainingProfileSwitcher({ onPlan }: { onPlan?: () => void }) {
   </>
 }
 
-function TrainingProfileDrawer({
+export function TrainingProfileDrawer({
   profiles,
   activeProfileId,
   onClose,

@@ -62,7 +62,6 @@ export async function up(db: Kysely<Database>) {
     .columns(['user_id', 'profile_id', 'scheduled_date', 'deleted_at'])
     .execute()
 
-  await sql.raw('ALTER TABLE training_profiles ENABLE ROW LEVEL SECURITY').execute(db)
 }
 
 export async function down(db: Kysely<Database>) {

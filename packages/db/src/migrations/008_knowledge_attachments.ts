@@ -23,7 +23,6 @@ export async function up(db: Kysely<Database>) {
     .execute()
   await db.schema.createIndex('idx_knowledge_attachments_parent')
     .on('knowledge_attachments').columns(['user_id', 'parent_node_id', 'created_at']).execute()
-  await sql`ALTER TABLE knowledge_attachments ENABLE ROW LEVEL SECURITY`.execute(db)
 }
 
 export async function down(db: Kysely<Database>) {

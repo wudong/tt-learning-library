@@ -67,9 +67,6 @@ export async function up(db: Kysely<Database>) {
   await db.schema.createIndex('uniq_practice_checkins_active').unique().on('practice_skill_checkins').columns(['user_id', 'session_id', 'skill_id']).where('deleted_at' as never, 'is', null).execute()
   await db.schema.createIndex('idx_practice_checkins_skill').on('practice_skill_checkins').columns(['user_id', 'skill_id', 'deleted_at']).execute()
 
-  for (const table of ['practice_sessions', 'practice_session_blocks', 'practice_skill_checkins']) {
-    await sql.raw(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY`).execute(db)
-  }
 }
 
 export async function down(db: Kysely<Database>) {
