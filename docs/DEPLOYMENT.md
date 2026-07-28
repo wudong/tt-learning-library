@@ -11,12 +11,12 @@ the GitHub Actions release process.
 ```text
 Browser
   |
-  +-- https://tt-learning.tourneypilot.com
+  +-- https://ttlearn.tourneypilot.com
   |     Netlify
   |       /         PWA (apps/web)
   |       /share-target → API proxy (preserves POST body)
   |
-  +-- https://api.tt-learning.tourneypilot.com
+  +-- https://api.ttlearn.tourneypilot.com
         Cloudflare Tunnel
           |
           +-- http://127.0.0.1:3004
@@ -31,7 +31,7 @@ Browser
 
 Supabase is not the application database. The frontend uses the Supabase client
 only for Auth, and sends the resulting bearer token to the Bun API. All
-application data and commands go through `https://api.tt-learning.tourneypilot.com`
+application data and commands go through `https://api.ttlearn.tourneypilot.com`
 and are stored in PostgreSQL on the VPS. There should be no production
 dependency on Supabase Database, RPC, Realtime, or Storage.
 
@@ -39,10 +39,10 @@ dependency on Supabase Database, RPC, Realtime, or Storage.
 
 | Endpoint | Purpose | Origin |
 | --- | --- | --- |
-| `https://tt-learning.tourneypilot.com/` | PWA | Netlify |
-| `https://api.tt-learning.tourneypilot.com/health` | API health check | VPS through Cloudflare Tunnel |
-| `https://api.tt-learning.tourneypilot.com/api/ready` | Readiness check | VPS through Cloudflare Tunnel |
-| `vps.tt-learning.tourneypilot.com` | SSH through Cloudflare Tunnel | VPS SSH on port 22 |
+| `https://ttlearn.tourneypilot.com/` | PWA | Netlify |
+| `https://api.ttlearn.tourneypilot.com/health` | API health check | VPS through Cloudflare Tunnel |
+| `https://api.ttlearn.tourneypilot.com/api/ready` | Readiness check | VPS through Cloudflare Tunnel |
+| `vps.ttlearn.tourneypilot.com` | SSH through Cloudflare Tunnel | VPS SSH on port 22 |
 
 ## Hetzner VPS
 
@@ -94,8 +94,8 @@ PORT=3004
 SUPABASE_URL=<supabase-project-url>
 SUPABASE_PUBLISHABLE_KEY=<publishable-key>
 SUPABASE_SERVICE_ROLE_KEY=<server-only-secret>
-WEB_ORIGIN=https://tt-learning.tourneypilot.com
-PUBLIC_APP_ORIGIN=https://tt-learning.tourneypilot.com
+WEB_ORIGIN=https://ttlearn.tourneypilot.com
+PUBLIC_APP_ORIGIN=https://ttlearn.tourneypilot.com
 HOSTED_AUTH_REQUIRED=true
 AUTO_MIGRATE=false
 AUTH_COOKIE_SECRET=<random-secret>
@@ -109,8 +109,8 @@ Supabase Auth. It must never be included in a frontend build.
 The normal operator path uses the Cloudflare Tunnel:
 
 ```sshconfig
-Host tt-learn vps.tt-learning.tourneypilot.com
-    HostName vps.tt-learning.tourneypilot.com
+Host tt-learn vps.ttlearn.tourneypilot.com
+    HostName vps.ttlearn.tourneypilot.com
     User root
     IdentityFile ~/.ssh/tt-learn-rescue
     IdentitiesOnly yes
@@ -141,9 +141,9 @@ are proxied (Cloudflare handles SSL); the frontend Netlify hostname is unproxied
 
 | Hostname | Type | Target | Proxied | SSL |
 | --- | --- | --- | --- | --- |
-| `tt-learning.tourneypilot.com` | CNAME | `tt-learning-library.netlify.app` | No | Netlify |
-| `api.tt-learning.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
-| `vps.tt-learning.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
+| `ttlearn.tourneypilot.com` | CNAME | `tt-learning-library.netlify.app` | No | Netlify |
+| `api.ttlearn.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
+| `vps.ttlearn.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
 
 ### Tunnel
 `cloudflared` as a systemd service:
@@ -158,8 +158,8 @@ routes are:
 
 | Public hostname | Tunnel origin |
 | --- | --- |
-| `api.tt-learning.tourneypilot.com` | `http://127.0.0.1:3004` |
-| `vps.tt-learning.tourneypilot.com` | `ssh://localhost:22` |
+| `api.ttlearn.tourneypilot.com` | `http://127.0.0.1:3004` |
+| `vps.ttlearn.tourneypilot.com` | `ssh://localhost:22` |
 
 Cloudflare terminates public HTTPS for the API and sends the request through the
 outbound tunnel connection to the local Bun listener. No inbound API port needs
@@ -168,7 +168,7 @@ to be opened on the VPS. The API process intentionally binds only to loopback.
 Useful checks:
 
 ```bash
-curl --fail https://api.tt-learning.tourneypilot.com/health
+curl --fail https://api.ttlearn.tourneypilot.com/health
 ssh tt-learn 'systemctl is-active cloudflared ttlearn-api'
 ssh tt-learn 'ss -lntp'
 ```
@@ -190,12 +190,12 @@ Netlify serves the PWA built from `apps/web`. The build is handled by
 automatically sets `managed_dns: true` and creates an internal DNS zone.
 `domain_aliases` cannot be added until a primary `custom_domain` is set. If the
 site is recreated, update the `NETLIFY_SITE_ID` GitHub secret. The Cloudflare
-CNAME (`tt-learning.tourneypilot.com` → `tt-learning-library.netlify.app`) must
+CNAME (`ttlearn.tourneypilot.com` → `tt-learning-library.netlify.app`) must
 remain unproxied so Netlify can provision and renew its Let's Encrypt
 certificate.
 
 All other API calls go directly from the browser to
-`https://api.tt-learning.tourneypilot.com` via CORS (configured through
+`https://api.ttlearn.tourneypilot.com` via CORS (configured through
 `VITE_API_BASE_URL`).
 
 The production frontend build receives:
@@ -203,7 +203,7 @@ The production frontend build receives:
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
-VITE_API_BASE_URL=https://api.tt-learning.tourneypilot.com
+VITE_API_BASE_URL=https://api.ttlearn.tourneypilot.com
 ```
 
 `VITE_SUPABASE_PUBLISHABLE_KEY` contains the Supabase publishable key. It is
@@ -220,13 +220,13 @@ Production Auth uses a dedicated Supabase project:
 | Setting | Value |
 | --- | --- |
 | Project name | `tt-learning-library` |
-| Site URL | `https://tt-learning.tourneypilot.com` |
+| Site URL | `https://ttlearn.tourneypilot.com` |
 | Google provider | Enabled |
 
 Allowed redirect URLs:
 
 ```text
-https://tt-learning.tourneypilot.com/**
+https://ttlearn.tourneypilot.com/**
 http://localhost:5174/**
 ```
 
@@ -234,13 +234,13 @@ The Google OAuth web client must be configured with:
 
 ```text
 Authorized JavaScript origin:
-https://tt-learning.tourneypilot.com
+https://ttlearn.tourneypilot.com
 
 Authorized redirect URI:
 https://<project-ref>.supabase.co/auth/v1/callback
 ```
 
-The application supplies `https://tt-learning.tourneypilot.com/library` as the
+The application supplies `https://ttlearn.tourneypilot.com/library` as the
 post-auth redirect. Supabase must allow that URL, while Google must use
 Supabase's `/auth/v1/callback` URL. These are two different hops in the OAuth
 flow.
@@ -307,7 +307,7 @@ The production job:
 6. applies PostgreSQL migrations;
 7. restarts `ttlearn-api`;
 8. checks the systemd service;
-9. verifies `https://api.tt-learning.tourneypilot.com/health`.
+9. verifies `https://api.ttlearn.tourneypilot.com/health`.
 
 The job uses the protected GitHub environment `production`, with deployments
 serialized by the `vps-production` concurrency group.
@@ -386,14 +386,14 @@ then update the corresponding GitHub secret and/or `/etc/ttlearn/api.env`.
 6. Verify production:
 
    ```bash
-   curl --fail https://api.tt-learning.tourneypilot.com/health
-   curl --fail https://api.tt-learning.tourneypilot.com/api/ready
-   curl --fail --head https://tt-learning.tourneypilot.com/
+   curl --fail https://api.ttlearn.tourneypilot.com/health
+   curl --fail https://api.ttlearn.tourneypilot.com/api/ready
+   curl --fail --head https://ttlearn.tourneypilot.com/
    ```
 
 7. For an Auth change, verify that Google OAuth starts on the correct Supabase
    project and that the application redirect is
-   `https://tt-learning.tourneypilot.com/library`.
+   `https://ttlearn.tourneypilot.com/library`.
 
 ## Troubleshooting
 
