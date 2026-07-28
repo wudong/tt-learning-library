@@ -45,7 +45,10 @@ export default defineConfig({
       ],
       share_target: { action: '/share-target', method: 'POST', enctype: 'application/x-www-form-urlencoded', params: { title: 'title', text: 'text', url: 'url' } }
     },
-    workbox: { navigateFallback: '/index.html', runtimeCaching: [
+    workbox: {
+      navigateFallback: '/index.html',
+      navigateFallbackDenylist: [/^\/api\//, /^\/share-target$/],
+      runtimeCaching: [
       { urlPattern: ({url}) => url.pathname.startsWith('/api/'), handler: 'NetworkOnly' },
       { urlPattern: ({url}) => url.pathname === '/share-target', handler: 'NetworkOnly', method: 'POST' },
       { urlPattern: ({request}) => request.mode === 'navigate', handler: 'NetworkFirst', options: { cacheName: 'navigation' } }

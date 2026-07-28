@@ -43,6 +43,7 @@ check(manifest.share_target?.method === 'POST', 'share target must use POST')
 check(manifest.share_target?.params?.url === 'url', 'share target must accept a URL')
 
 check(serviceWorker.includes('createHandlerBoundToURL("/index.html")'), 'app shell navigation fallback is missing')
+check(serviceWorker.includes('denylist:[/^\\/api\\//,/^\\/share-target$/]'), 'app shell fallback must exclude API routes and share-target')
 check(serviceWorker.includes('pathname.startsWith("/api/")'), 'private API NetworkOnly route is missing')
 check(serviceWorker.includes('"/share-target"===e.pathname'), 'share-target route is missing')
 check(serviceWorker.includes('NetworkOnly,"POST"'), 'share-target POST must be NetworkOnly')
