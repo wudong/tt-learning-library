@@ -1,0 +1,108 @@
+name: Deploy API and Database to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'infra/**'
+      - 'scripts/migrate-vps-postgres.sh'
+      - 'packages/db/**'
+      - 'packages/shared/**'
+      - 'package.json'
+      - 'bun.lock'
+      - '.github/workflows/vps-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: vps-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ttlearn
+          POSTGRES_PASSWORD: ttlearn_test
+          POSTGRES_DB: tt_learning
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ttlearn -d tt_learning"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        env:
+          DATABASE_URL: postgres://ttlearn:ttlearn_test@localhost:5432/tt_learning?sslmode=disable
+          TEST_DATABASE_URL: postgres://ttlearn:ttlearn_test@localhost:5432/tt_learning?sslmode=disable
+          TEST_SCHEMA: tt_test
+          HOSTED_AUTH_REQUIRED: "false"
+          WEB_ORIGIN: http://localhost:5174
+          PUBLIC_APP_ORIGIN: http://localhost:5174
+        run: bun test
+
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          rsync -az --delete \
+            --exclude .git \
+            --exclude node_modules \
+            --exclude dist \
+            --exclude test-results \
+            --exclude .env \
+            --exclude docker-compose.yml \
+            ./ "$VPS_USER@$VPS_HOST:/opt/tt-learning-library/"
+
+      - name: Migrate and restart
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh "$VPS_USER@$VPS_HOST" '
+            set -eu
+            cd /opt/tt-learning-library
+            bun install --frozen-lockfile
+            chown -R ttlearn:ttlearn /opt/tt-learning-library
+            chmod -R u+rwX,go+rX /opt/tt-learning-library
+            sudo -u postgres env DATABASE_URL=postgresql:///tt_learning?host=/var/run/postgresql ./scripts/migrate-vps-postgres.sh
+            systemctl restart ttlearn-api
+            systemctl is-active --quiet ttlearn-api
+          '
+
+      - name: Verify production health
+        run: curl --fail --retry 10 --retry-delay 3 https://api.tt-learning.tourneypilot.com/health

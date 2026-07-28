@@ -1,0 +1,55 @@
+# Netlify configuration for TT Learning Library
+# Deploys the PWA at root with SPA fallback and API proxy for /share-target.
+
+[build]
+  command = "echo 'Build handled by GitHub Actions'"
+  publish = "apps/web/dist"
+
+# /share-target must be proxied to the API (preserve POST body) before the SPA fallback.
+# The PWA manifest registers share_target.action = "/share-target" as a same-origin
+# POST. A client-side SPA route cannot reliably receive a navigation POST on static
+# hosting, so Netlify proxies it to the Hono API handler.
+[[redirects]]
+  from = "/share-target"
+  to = "https://api.tt-learning.tourneypilot.com/share-target"
+  status = 200
+  force = true
+
+# SPA fallback for all other routes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security headers.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Immutable caching for hashed assets.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Service worker must not be cached.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Content-Type = "application/javascript"
+
+# Keep the install manifest fresh so install metadata updates promptly.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# PWA icons can be cached long-term.
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
