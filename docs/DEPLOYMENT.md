@@ -186,6 +186,14 @@ Netlify serves the PWA built from `apps/web`. The build is handled by
 - No-cache headers for service worker and manifest
 - Security headers
 
+**Custom domain note:** When setting `custom_domain` via the Netlify API, Netlify
+automatically sets `managed_dns: true` and creates an internal DNS zone.
+`domain_aliases` cannot be added until a primary `custom_domain` is set. If the
+site is recreated, update the `NETLIFY_SITE_ID` GitHub secret. The Cloudflare
+CNAME (`tt-learning.tourneypilot.com` → `tt-learning-library.netlify.app`) must
+remain unproxied so Netlify can provision and renew its Let's Encrypt
+certificate.
+
 All other API calls go directly from the browser to
 `https://api.tt-learning.tourneypilot.com` via CORS (configured through
 `VITE_API_BASE_URL`).
