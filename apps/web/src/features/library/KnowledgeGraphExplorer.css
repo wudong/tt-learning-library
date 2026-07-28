@@ -1,5 +1,7 @@
 .graph-explorer-page { display: grid; gap: 18px; }
 .graph-explorer-hero { display: grid; gap: 16px; }
+.graph-explorer-embedded-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.graph-explorer-embedded-head h2 { margin: 0; font-size: 1rem; }
 .graph-explorer-hero p { margin: 0; color: var(--ink-soft); }
 .graph-view-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
 .graph-view-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border: 0; border-radius: 10px; color: var(--ink-soft); background: transparent; font-weight: 760; }

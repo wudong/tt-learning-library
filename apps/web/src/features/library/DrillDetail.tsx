@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, CirclePlus, Dumbbell, Network, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
+import { CirclePlus, Dumbbell, NotebookPen, Pin, PinOff, Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { NodeNoteComposer } from '../../components/NodeNoteComposer'
 import { PictureAttachments } from '../../components/PictureAttachments'
@@ -12,6 +12,8 @@ import {
   useSetLibraryPin,
   useVideos,
 } from '../../lib/api/hooks'
+import { usePageTitle } from '../../components/MobilePageActions'
+import { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer'
 
 export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (to: string) => void }) {
   const resources = useLibraryNodeResources(nodeId)
@@ -31,6 +33,11 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
   const availableSkills = (overview.data?.skills ?? [])
     .filter((skill) => !linkedSkillIds.has(skill.nodeId) && skill.name.toLocaleLowerCase().includes(skillQuery.trim().toLocaleLowerCase()))
     .slice(0, 12)
+
+  usePageTitle(drill?.title ?? null, {
+    eyebrow: 'Drill',
+    icon: <Dumbbell size={13} aria-hidden="true" />,
+  })
 
   async function attachVideo(videoId: string) {
     try {
@@ -62,7 +69,6 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
           <div className="library-detail-title">
             <span className="eyebrow detail-title-only">{drill.isSystem ? 'Starter drill' : 'Personal drill'}</span>
             <h1 className="detail-title-only">{drill.title}</h1>
-            {drill.description && <p>{drill.description}</p>}
             <div className="mini-chips">
               <span>{drill.status.replaceAll('_', ' ')}</span>
               {drill.difficulty && <span>{drill.difficulty}</span>}
@@ -73,12 +79,13 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
         </header>
 
         <div className="detail-action-bar" aria-label={`${drill.title} actions`}>
-          <button className="button secondary" onClick={() => navigate(`/library/connections/${nodeId}`)}><Network size={16} /> Explore connections</button>
           <button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16} /> Add note</button>
           <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!data.isPinned)}>
             {data.isPinned ? <><PinOff size={16} /> Unpin</> : <><Pin size={16} /> Pin to top</>}
           </button>
         </div>
+
+        <KnowledgeGraphExplorer nodeId={nodeId} navigate={navigate} embedded />
 
         <div className="library-detail-grid">
           {drill.diagramUrl && <article className="card">
@@ -103,22 +110,15 @@ export function DrillDetail({ nodeId, navigate }: { nodeId: string; navigate: (t
             </li>)}</ol>
           </article>}
 
-          <section className="detail-section relationship-section" aria-labelledby="drill-skills-title">
-            <h2 id="drill-skills-title">Skills practised</h2>
-            {data.skills.length > 0 ? <div className="detail-link-list">{data.skills.map((skill) =>
-              <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18} /><span><strong>{skill.title}</strong></span><ChevronRight size={18} aria-hidden="true" /></button>
-            )}</div> : <p className="muted">This drill is not linked to a Skill yet.</p>}
-
-            {!drill.isSystem && <div className="stack relationship-editor">
-              <h3>Link a Skill</h3>
-              <p className="muted">Search for the main table-tennis Skill this drill practises.</p>
-              <input value={skillQuery} onChange={(event) => setSkillQuery(event.currentTarget.value)} placeholder="Search Skills" />
-              {skillQuery.trim() && <div className="resource-picker">
-                {availableSkills.map((skill) => <button className="resource-link" key={skill.nodeId} disabled={linkSkill.isPending} onClick={() => addSkill(skill.nodeId, skill.name)}>{skill.name}<small>Link Skill</small></button>)}
-                {availableSkills.length === 0 && <p className="muted">No unlinked Skills match.</p>}
-              </div>}
+          {!drill.isSystem && <div className="stack relationship-editor">
+            <h3>Link a Skill</h3>
+            <p className="muted">Search for the main table-tennis Skill this drill practises.</p>
+            <input value={skillQuery} onChange={(event) => setSkillQuery(event.currentTarget.value)} placeholder="Search Skills" />
+            {skillQuery.trim() && <div className="resource-picker">
+              {availableSkills.map((skill) => <button className="resource-link" key={skill.nodeId} disabled={linkSkill.isPending} onClick={() => addSkill(skill.nodeId, skill.name)}>{skill.name}<small>Link Skill</small></button>)}
+              {availableSkills.length === 0 && <p className="muted">No unlinked Skills match.</p>}
             </div>}
-          </section>
+          </div>}
 
           <article className="card">
             <PictureAttachments parentNodeId={nodeId} />

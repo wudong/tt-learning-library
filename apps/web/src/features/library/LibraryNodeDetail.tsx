@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { ChevronRight, CirclePlus, Dumbbell, ImagePlus, Images, Layers3, Network, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
+import { CirclePlus, ImagePlus, Images, Layers3, NotebookPen, Pin, PinOff, Play, Target } from 'lucide-react'
 import { toast } from 'sonner'
 import { NodeNoteComposer } from '../../components/NodeNoteComposer'
-import { PictureAttachments } from '../../components/PictureAttachments'
 import { PictureGallery } from '../../components/PictureGallery'
 import { VideoThumbnail } from '../../components/VideoThumbnail'
+import { usePageTitle } from '../../components/MobilePageActions'
 import { useAttachLibraryVideo, useAttachments, useLibraryNodeResources, useSetLibraryPin, useVideos } from '../../lib/api/hooks'
+import { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer'
 
 export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; type:'topic'|'skill'; navigate:(to:string)=>void }) {
   const resources = useLibraryNodeResources(nodeId)
@@ -16,6 +17,10 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
   const [choosingVideo, setChoosingVideo] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const linkedIds = new Set(resources.data?.videos.map((video) => video.id) ?? [])
+  usePageTitle(resources.data?.node.title ?? null, {
+    eyebrow: type === 'topic' ? 'Topic' : 'Skill',
+    icon: type === 'topic' ? <Layers3 size={13} aria-hidden="true" /> : <Target size={13} aria-hidden="true" />,
+  })
 
   async function attachVideo(videoId: string) {
     try { await attach.mutateAsync(videoId); toast.success('Video attached') }
@@ -28,15 +33,16 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
     {resources.data && <>
       <header className="library-detail-hero">
         <div className="ontology-symbol detail-title-only">{type === 'topic' ? <Layers3 size={22} /> : <Target size={22} />}</div>
-        <div className="library-detail-title"><span className="eyebrow detail-title-only">{type}</span><h1 className="detail-title-only">{resources.data.node.title}</h1>{resources.data.node.summary && <p>{resources.data.node.summary}</p>}</div>
+        <div className="library-detail-title"><span className="eyebrow detail-title-only">{type}</span><h1 className="detail-title-only">{resources.data.node.title}</h1></div>
       </header>
 
       <div className="detail-action-bar" aria-label={`${resources.data.node.title} actions`}>
-        <button className="button secondary" onClick={() => navigate(`/library/connections/${nodeId}`)}><Network size={16} /> Explore connections</button>
         <button className="button secondary" onClick={() => setNoteOpen(true)}><NotebookPen size={16} /> Add note</button>
         {type === 'topic' && <button className="button secondary" onClick={() => navigate(`/library/topics/${nodeId}/pictures`)}>{pictures.data?.length ? <Images size={16} /> : <ImagePlus size={16} />} {pictures.data?.length ? 'Manage pictures' : 'Add picture'}</button>}
         <button className="button secondary detail-pin" disabled={pin.isPending} onClick={() => pin.mutate(!resources.data.isPinned)}>{resources.data.isPinned ? <><PinOff size={16} /> Unpin</> : <><Pin size={16} /> Pin to top</>}</button>
       </div>
+
+      <KnowledgeGraphExplorer nodeId={nodeId} navigate={navigate} embedded />
 
       <div className="library-detail-grid">
         {type === 'topic' && pictures.data && pictures.data.length > 0 && <section className="detail-section topic-picture-section" aria-labelledby="topic-pictures-title">
@@ -44,25 +50,11 @@ export function LibraryNodeDetail({ nodeId, type, navigate }: { nodeId:string; t
           <PictureGallery pictures={pictures.data} />
         </section>}
 
-        {type === 'skill' && <article className="card"><PictureAttachments parentNodeId={nodeId} /></article>}
-
         {type === 'skill' && <section className="detail-section relationship-section" aria-labelledby="skill-notes-title">
           <div className="picture-heading"><div><h2 id="skill-notes-title">Notes</h2><p>Your takeaways, questions, and reminders for this Skill.</p></div></div>
           {resources.data.notes.length ? <div className="skill-note-list">{resources.data.notes.map((note) => <article key={note.id}>
             <span>{note.noteType.replaceAll('_', ' ')}</span><p>{note.body}</p>
           </article>)}</div> : <p className="muted">No notes yet. Use Add note above to keep a takeaway or question with this Skill.</p>}
-        </section>}
-
-        {type === 'topic' && <section className="detail-section relationship-section" aria-labelledby="topic-skills-title">
-          <h2 id="topic-skills-title">Skills in this Topic</h2>
-          {resources.data.skills.length ? <div className="detail-link-list">{resources.data.skills.map((skill) =>
-            <button key={skill.id} onClick={() => navigate(`/library/skills/${skill.id}`)}><Target size={18} /><span><strong>{skill.title}</strong>{skill.summary && <small>{skill.summary}</small>}</span><ChevronRight size={18} aria-hidden="true" /></button>
-          )}</div> : <p className="muted">No ontology Skills are attached to this Topic.</p>}
-        </section>}
-
-        {type === 'skill' && resources.data.drills.length > 0 && <section className="detail-section relationship-section" aria-labelledby="skill-drills-title">
-          <h2 id="skill-drills-title">Drills</h2>
-          <div className="detail-link-list">{resources.data.drills.map((drill) => <button key={drill.id} onClick={() => navigate(`/library/drills/${drill.nodeId}`)}>{drill.diagramUrl ? <img className="drill-link-image" src={drill.diagramUrl} alt="" /> : <Dumbbell size={18} />}<span><strong>{drill.title}</strong><small>{drill.description || `${drill.isSystem ? 'Starter drill' : 'Personal idea'} · ${drill.status.replaceAll('_', ' ')}`}</small></span><ChevronRight size={18} aria-hidden="true" /></button>)}</div>
         </section>}
 
         {type === 'skill' && <article className="card">

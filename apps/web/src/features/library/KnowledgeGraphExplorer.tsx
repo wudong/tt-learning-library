@@ -19,7 +19,7 @@ import './KnowledgeGraphExplorer.css'
 
 const EXPLORABLE_TYPES = new Set<NodeType>(['topic', 'skill', 'video', 'drill'])
 
-export function KnowledgeGraphExplorer({ nodeId, navigate }: { nodeId: string; navigate: (to: string) => void }) {
+export function KnowledgeGraphExplorer({ nodeId, navigate, embedded = false }: { nodeId: string; navigate: (to: string) => void; embedded?: boolean }) {
   const connections = useLibraryConnections(nodeId)
   const feedback = useSubmitFeedback()
   const [view, setView] = useState<'map'|'list'>('map')
@@ -74,17 +74,25 @@ export function KnowledgeGraphExplorer({ nodeId, navigate }: { nodeId: string; n
       {connections.isError && <div className="notice">These connections could not be loaded.</div>}
 
       {data && <>
-        <header className="graph-explorer-hero">
-          <div className="graph-explorer-copy">
-            <span className="eyebrow detail-title-only">Knowledge graph</span>
-            <h1 className="detail-title-only">Explore connections</h1>
-            <p>Follow direct and nearby links across Topics, Skills, Drills, videos, notes, and training. Tap a connected learning item to explore from there.</p>
-          </div>
-          <div className="graph-view-switch" role="group" aria-label="Connection view">
-            <button className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => setView('map')}><Network size={17} /> Map</button>
-            <button className={view === 'list' ? 'active' : ''} aria-pressed={view === 'list'} onClick={() => setView('list')}><ListTree size={17} /> List</button>
-          </div>
-        </header>
+        {embedded
+          ? <div className="graph-explorer-embedded-head">
+              <h2>Connections</h2>
+              <div className="graph-view-switch" role="group" aria-label="Connection view">
+                <button className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => setView('map')}><Network size={17} /> Map</button>
+                <button className={view === 'list' ? 'active' : ''} aria-pressed={view === 'list'} onClick={() => setView('list')}><ListTree size={17} /> List</button>
+              </div>
+            </div>
+          : <header className="graph-explorer-hero">
+              <div className="graph-explorer-copy">
+                <span className="eyebrow detail-title-only">Knowledge graph</span>
+                <h1 className="detail-title-only">Explore connections</h1>
+                <p>Follow direct and nearby links across Topics, Skills, Drills, videos, notes, and training. Tap a connected learning item to explore from there.</p>
+              </div>
+              <div className="graph-view-switch" role="group" aria-label="Connection view">
+                <button className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => setView('map')}><Network size={17} /> Map</button>
+                <button className={view === 'list' ? 'active' : ''} aria-pressed={view === 'list'} onClick={() => setView('list')}><ListTree size={17} /> List</button>
+              </div>
+            </header>}
 
         {availableTypes.length > 1 && <div className="graph-type-filters" aria-label="Filter connections by item type">
           <button className={visibleTypes.length === 0 ? 'active' : ''} aria-pressed={visibleTypes.length === 0} onClick={() => setVisibleTypes([])}>All</button>
@@ -113,7 +121,7 @@ export function KnowledgeGraphExplorer({ nodeId, navigate }: { nodeId: string; n
           {data.truncated && `This view is capped at ${data.maxNodes} paths to keep it readable.`}
         </p>
 
-        <aside className="graph-feedback card" aria-labelledby="graph-feedback-title">
+        {!embedded && <aside className="graph-feedback card" aria-labelledby="graph-feedback-title">
           {feedback.submitSuccess ? <p className="graph-feedback-thanks" role="status">Thanks — this helps us improve discovery.</p> : <>
             <div>
               <h2 id="graph-feedback-title">Did this reveal something useful?</h2>
@@ -125,7 +133,7 @@ export function KnowledgeGraphExplorer({ nodeId, navigate }: { nodeId: string; n
             </div>
             {feedback.submitError && <p className="form-error" role="alert">{feedback.submitError}</p>}
           </>}
-        </aside>
+        </aside>}
       </>}
     </section>
   )

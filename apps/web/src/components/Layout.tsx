@@ -21,7 +21,9 @@ import { FeedbackSheet } from './FeedbackSheet'
 import { BuildIdentity } from './BuildIdentity'
 import {
   MobilePageActionsProvider,
+  PageTitleProvider,
   type MobilePageAction,
+  type PageTitleState,
 } from './MobilePageActions'
 
 const primaryItems = [
@@ -75,6 +77,7 @@ export function Layout({
   const [menuOpen, setMenuOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [pageActions, setPageActions] = useState<MobilePageAction[]>([])
+  const [pageTitle, setPageTitle] = useState<PageTitleState | null>(null)
   const { canInstall, isInstalled, install } = usePwa()
   const meta = pageMeta(path)
   const isActive = (href: string) => href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`)
@@ -160,6 +163,7 @@ export function Layout({
 
   return (
     <MobilePageActionsProvider register={registerPageActions}>
+      <PageTitleProvider register={setPageTitle}>
       <div className="app-shell">
         <aside className="desktop-sidebar">
           <button className="brand-lockup" onClick={() => go('/')} aria-label="TT Learn home">
@@ -189,8 +193,12 @@ export function Layout({
                 : <button className="toolbar-icon" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={22} /></button>}
             </div>
             <div className="toolbar-title">
-              <span>{meta.eyebrow}</span>
-              <strong>{meta.title}</strong>
+              {pageTitle
+                ? <>
+                    <span className="toolbar-title-kicker">{pageTitle.icon && <span className="toolbar-title-icon" aria-hidden="true">{pageTitle.icon}</span>}<span>{pageTitle.eyebrow ?? meta.eyebrow}</span></span>
+                    <strong>{pageTitle.title}</strong>
+                  </>
+                : <><span>{meta.eyebrow}</span><strong>{meta.title}</strong></>}
             </div>
             <div className="toolbar-trailing">
               {pageActions.length > 0
@@ -256,6 +264,7 @@ export function Layout({
 
         {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
       </div>
+      </PageTitleProvider>
     </MobilePageActionsProvider>
   )
 }

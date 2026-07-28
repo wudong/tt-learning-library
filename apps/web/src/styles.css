@@ -92,8 +92,11 @@ p { max-width: 70ch; line-height: 1.55; }
 }
 .toolbar-icon:active { background: var(--panel); transform: scale(0.96); }
 .toolbar-add { color: var(--accent-strong); background: var(--accent-soft); }
-.toolbar-title { min-width: 0; text-align: center; }
-.toolbar-title span { display: block; overflow: hidden; color: var(--ink-soft); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.toolbar-title { display: grid; min-width: 0; text-align: center; }
+.toolbar-title span { display: inline-flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; color: var(--ink-soft); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.toolbar-title-kicker { display: inline-flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; }
+.toolbar-title-icon { display: inline-grid; flex: none; place-items: center; color: var(--accent-strong); }
+.toolbar-title-icon svg { width: 13px; height: 13px; }
 .toolbar-title strong { display: block; overflow: hidden; margin-top: 1px; font-size: 1rem; letter-spacing: -0.015em; text-overflow: ellipsis; white-space: nowrap; }
 
 .main-content {
@@ -307,6 +310,7 @@ small { color: var(--ink-soft); font-weight: 500; }
 .mini-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
 .mini-chips span { padding: 4px 7px; border-radius: 7px; color: var(--ink-soft); background: var(--panel); font-size: 0.68rem; }
 .section-action-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 2px 0 13px; }
+.section-action-row-end { justify-content: end; }
 .section-action-row h2, .section-action-row p { margin: 0; }
 .section-action-row p { margin-top: 3px; color: var(--ink-soft); font-size: 0.82rem; }
 .compact-filter { width: min(190px, 42vw); flex: none; }
@@ -626,7 +630,10 @@ small { color: var(--ink-soft); font-weight: 500; }
 .skill-note-list article { padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .skill-note-list article span { color: var(--accent-strong); font-size: .68rem; font-weight: 800; text-transform: uppercase; }
 .skill-note-list article p { margin: 5px 0 0; white-space: pre-wrap; }
-.detail-pin { margin-left: auto; }
+.detail-action-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.detail-action-bar .button { width: 100%; min-width: 0; }
+.detail-action-bar .button:first-child:last-child { grid-column: 1 / -1; }
+.detail-action-bar .detail-pin:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .library-detail-grid { display: grid; gap: 16px; }
 .library-detail-grid .card h2 { margin-top: 0; }
 .detail-link-list { display: grid; gap: 8px; }

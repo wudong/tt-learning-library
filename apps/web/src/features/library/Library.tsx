@@ -96,23 +96,20 @@ function TabButton({ active, icon, label, count, onClick }: { active: boolean; i
 
 function TopicSection({ topics, skills, counts, onOpen }: { topics: Array<{ id: string; nodeId: string; name: string; description: string | null }>; skills: Array<{ id: string; topicId: string | null; name: string }>; counts: Record<string, number>; onOpen: (topic: { nodeId: string; name: string }) => void }) {
   if (!topics.length) return <div className="empty">No topics match this search.</div>
-  return <div>
-    <div className="library-section-heading"><h2>Topics</h2></div>
-    <div className="library-catalog-list">{topics.map((topic) => {
-      const topicSkills = skills.filter((skill) => skill.topicId === topic.id)
-      return <LibraryCatalogCard
-        key={topic.id}
-        icon={Layers3}
-        title={topic.name}
-        context={topic.description || `${topicSkills.length} ${topicSkills.length === 1 ? 'skill' : 'skills'} in this learning area`}
-        metadata={[`${counts[topic.id] ?? 0} videos`, `${topicSkills.length} skills`]}
-        tags={topicSkills.map((skill) => skill.name)}
-        openLabel="Open topic"
-        showOpenLabel={false}
-        onOpen={() => onOpen(topic)}
-      />
-    })}</div>
-  </div>
+  return <div className="library-catalog-list">{topics.map((topic) => {
+    const topicSkills = skills.filter((skill) => skill.topicId === topic.id)
+    return <LibraryCatalogCard
+      key={topic.id}
+      icon={Layers3}
+      title={topic.name}
+      context={topic.description || `${topicSkills.length} ${topicSkills.length === 1 ? 'skill' : 'skills'} in this learning area`}
+      metadata={[`${counts[topic.id] ?? 0} videos`, `${topicSkills.length} skills`]}
+      tags={topicSkills.map((skill) => skill.name)}
+      openLabel="Open topic"
+      showOpenLabel={false}
+      onOpen={() => onOpen(topic)}
+    />
+  })}</div>
 }
 
 function SkillSection({ query, skills, topics, counts, onNote, onOpen }: { query: string; skills: Array<{ id: string; nodeId: string; name: string; topicId: string | null; status: string; difficulty: string | null; isPinned: boolean }>; topics: Array<{ id: string; name: string }>; counts: Record<string, number>; onNote: (target: NoteTarget) => void; onOpen: (skill: { nodeId: string; name: string }) => void }) {
@@ -124,7 +121,7 @@ function SkillSection({ query, skills, topics, counts, onNote, onOpen }: { query
   useEffect(() => setVisibleLimit(50), [skills, topicFilter, normalized])
   const displayedSkills = visibleSkills.slice(0, visibleLimit)
   return <div>
-    <div className="section-action-row"><div><h2>Skills</h2><p>{!topicFilter && !normalized ? 'Pinned Skills are shown first. Choose a Topic or search to browse all Skills.' : 'Curated abilities for organizing your learning material.'}</p></div><button className="button secondary topic-filter-trigger" onClick={() => setChoosingTopic(true)}><Layers3 size={17} /> {topics.find((topic) => topic.id === topicFilter)?.name ?? 'Choose a Topic'}</button></div>
+    <div className="section-action-row section-action-row-end"><button className="button secondary topic-filter-trigger" onClick={() => setChoosingTopic(true)}><Layers3 size={17} /> {topics.find((topic) => topic.id === topicFilter)?.name ?? 'Choose a Topic'}</button></div>
     {!visibleSkills.length ? <div className="empty">{!topicFilter && !normalized ? 'Pin frequently used Skills, choose a Topic, or search by name.' : 'No Skills match this search and Topic.'}</div> : <><div className="library-catalog-list">{displayedSkills.map((skill) => {
       const topicName = topics.find((topic) => topic.id === skill.topicId)?.name ?? 'No primary topic'
       return <LibraryCatalogCard
@@ -145,7 +142,7 @@ function SkillSection({ query, skills, topics, counts, onNote, onOpen }: { query
 
 function DrillSection({ drills, onNote, onOpen }: { drills: Array<{ id: string; nodeId: string; title: string; description: string | null; diagramUrl: string | null; status: string; durationMinutes: number | null; isPinned: boolean; isSystem: boolean }>; onNote: (target: NoteTarget) => void; onOpen: (drill: { nodeId: string; title: string }) => void }) {
   const [creating, setCreating] = useState(false)
-  return <div><div className="section-action-row"><div><h2>Drills</h2><p>Use a starter Drill or quickly save your own practice idea.</p></div><button className="button" onClick={() => setCreating(true)}><CirclePlus size={17} /> Add Drill</button></div>
+  return <div><div className="section-action-row section-action-row-end"><button className="button" onClick={() => setCreating(true)}><CirclePlus size={17} /> Add Drill</button></div>
     {!drills.length ? <div className="empty"><Dumbbell size={28} /><p>No drills match this search.</p></div> : <div className="library-catalog-list">{drills.map((drill) => <DrillLibraryCard key={drill.id} drill={drill} onNote={onNote} onOpen={onOpen} />)}</div>}
     {creating && <CreateDrillDialog onClose={() => setCreating(false)} />}</div>
 }
