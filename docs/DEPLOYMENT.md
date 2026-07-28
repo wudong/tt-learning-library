@@ -133,7 +133,19 @@ not normal application configuration.
 
 ## Cloudflare
 
-A named Cloudflare tunnel connects the VPS to the public internet. The VPS runs
+### DNS records
+
+All DNS is managed in the `tourneypilot.com` Cloudflare zone. Tunnel hostnames
+are proxied (Cloudflare handles SSL); the frontend Netlify hostname is unproxied
+(Netlify handles its own SSL via Let's Encrypt).
+
+| Hostname | Type | Target | Proxied | SSL |
+| --- | --- | --- | --- | --- |
+| `tt-learning.tourneypilot.com` | CNAME | `tt-learning-library.netlify.app` | No | Netlify |
+| `api.tt-learning.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
+| `vps.tt-learning.tourneypilot.com` | CNAME | `e0b3147c….cfargotunnel.com` | Yes | Cloudflare |
+
+### Tunnel
 `cloudflared` as a systemd service:
 
 ```text
