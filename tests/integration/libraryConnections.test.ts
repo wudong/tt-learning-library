@@ -27,7 +27,7 @@ function presentConnections(result: Awaited<ReturnType<LibraryAggregateService['
   }
 }
 
-test('knowledge graph explorer groups direct and nearby connections and resolves detail links', async () => {
+test('knowledge graph explorer groups direct connections and resolves detail links', async () => {
   const { db } = await createMigratedTestDb()
   const userId = 'user_graph_explorer'
   await createUser(db, userId)
@@ -69,13 +69,43 @@ test('knowledge graph explorer groups direct and nearby connections and resolves
   expect(notes?.items[0]?.node.id).toBe(note.node_id)
   expect(notes?.items[0]?.href).toBeNull()
 
-  expect(result.groups.some((group) => group.label.startsWith('Through '))).toBe(true)
-  expect(result.groups.flatMap((group) => group.items).some((item) => item.node.node_type === 'skill' && item.node.id !== skill.node_id)).toBe(true)
+  expect(result.groups.some((group) => group.label === 'Notes and mentions')).toBe(true)
+  expect(result.groups.every((group) => !group.label.startsWith('Through '))).toBe(true)
 
   const videoResult = await library.getNodeConnections(userId, video.node.id)
   expect(() => LibraryConnectionsResponseSchema.parse(presentConnections(videoResult))).not.toThrow()
   expect(videoResult.centerHref).toBe(`/videos/${video.video.id}`)
   expect(videoResult.groups.some((group) => group.label === 'Explains' && group.items.some((item) => item.node.id === skill.node_id))).toBe(true)
+
+  await db.destroy()
+})
+
+test('symmetric related_to edges from both directions collapse into one Related items group', async () => {
+  const { db } = await createMigratedTestDb()
+  const userId = 'user_graph_related_merge'
+  await createUser(db, userId)
+  const now = new Date().toISOString()
+  // Insert nodes with deterministic ids so we can control storage normalisation
+  // (symmetric edges are stored with source < target). Center is 'node_b', so an edge
+  // to 'node_a' reads as incoming and an edge to 'node_c' reads as outgoing.
+  for (const id of ['node_a', 'node_b', 'node_c']) {
+    await db.insertInto('graph_nodes').values({
+      id, user_id: userId, node_type: 'skill', title: id, summary: null, visibility: 'private',
+      created_at: now, updated_at: now, deleted_at: null,
+    }).execute()
+  }
+  const graph = new GraphRepository(db)
+  const library = new LibraryAggregateService(db)
+  await graph.createEdge({ userId, sourceNodeId: 'node_b', targetNodeId: 'node_a', edgeType: 'related_to' })
+  await graph.createEdge({ userId, sourceNodeId: 'node_b', targetNodeId: 'node_c', edgeType: 'related_to' })
+
+  const result = await library.getNodeConnections(userId, 'node_b')
+  expect(() => LibraryConnectionsResponseSchema.parse(presentConnections(result))).not.toThrow()
+  const relatedGroups = result.groups.filter((group) => group.label === 'Related items')
+  expect(relatedGroups.length).toBe(1)
+  expect(relatedGroups[0]?.items.length).toBe(2)
+  expect(relatedGroups[0]?.total).toBe(2)
+  expect(result.groups.every((group) => !group.label.startsWith('Through '))).toBe(true)
 
   await db.destroy()
 })

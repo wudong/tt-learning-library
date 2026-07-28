@@ -3,6 +3,7 @@ import type { Database } from '@ttll/db'
 import { GraphRepository, NoteDrillRepository, TopicSkillRepository, VideoRepository, provisionOntology } from '@ttll/db'
 import {
   NOTE_PARENT_NODE_TYPES,
+  SYMMETRIC_EDGE_TYPES,
   TABLE_TENNIS_DRILLS,
   TABLE_TENNIS_SKILLS,
   TABLE_TENNIS_TOPICS,
@@ -11,8 +12,16 @@ import {
 } from '@ttll/shared'
 
 const CONNECTION_LIMIT = 36
-const SECOND_HOP_ROOT_LIMIT = 14
 const EXPLORABLE_NODE_TYPES = new Set<NodeType>(['topic', 'skill', 'video', 'drill'])
+
+// Symmetric edges (e.g. related_to, contrasts_with) are stored with source < target,
+// so a single center node can see the same edge type as both incoming and outgoing.
+// Their labels read identically in both directions, so merge them into one group to
+// avoid duplicate "Related items" / "Contrasts with" sections.
+const SYMMETRIC_EDGE_SET = new Set<string>((SYMMETRIC_EDGE_TYPES as readonly string[]))
+function groupKeyFor(edgeType: EdgeType, direction: 'incoming'|'outgoing') {
+  return SYMMETRIC_EDGE_SET.has(edgeType) ? edgeType : `${edgeType}:${direction}`
+}
 
 const CONNECTION_GROUP_ORDER: EdgeType[] = [
   'belongs_to', 'contains', 'prerequisite_of', 'requires', 'explains', 'demonstrates',
@@ -97,34 +106,8 @@ export class LibraryAggregateService {
     if (!center || !EXPLORABLE_NODE_TYPES.has(center.node_type as NodeType)) throw new Error('NOT_FOUND: Explorable knowledge item not found')
 
     const direct = (await graph.relationships(userId, nodeId)).sort(compareRelationship)
-    type Relationship = typeof direct[number]
-    type Discovery = { relationship: Relationship; via: typeof center | null; depth: 1 | 2 }
-    const discoveries: Discovery[] = direct.map((relationship) => ({ relationship, via: null, depth: 1 }))
-    const directNodeIds = new Set(direct.map((relationship) => relationship.node.id))
-    const secondSeen = new Set<string>()
-    const nearbyByRoot = await Promise.all(direct.slice(0, SECOND_HOP_ROOT_LIMIT).map(async (first) => ({
-      first,
-      nearby: (await graph.relationships(userId, first.node.id)).sort(compareRelationship),
-    })))
-
-    for (const { first, nearby } of nearbyByRoot) {
-      for (const relationship of nearby) {
-        if (relationship.node.id === center.id || directNodeIds.has(relationship.node.id)) continue
-        const key = `${first.node.id}:${relationship.node.id}:${relationship.edge.edge_type}:${relationship.direction}`
-        if (secondSeen.has(key)) continue
-        secondSeen.add(key)
-        discoveries.push({ relationship, via: first.node, depth: 2 })
-      }
-    }
-
-    const ordered = discoveries.sort((left, right) => {
-      if (left.depth !== right.depth) return left.depth - right.depth
-      const viaDifference = (left.via?.title ?? '').localeCompare(right.via?.title ?? '')
-      return viaDifference || compareRelationship(left.relationship, right.relationship)
-    })
-    const shown = ordered.slice(0, CONNECTION_LIMIT)
-    const allNodes = [center, ...ordered.map((discovery) => discovery.relationship.node)]
-    const graphNodeIds = [...new Set(allNodes.map((node) => node.id))]
+    const shown = direct.slice(0, CONNECTION_LIMIT)
+    const graphNodeIds = [...new Set([center.id, ...direct.map((relationship) => relationship.node.id)])]
     const [videos, sessions] = await Promise.all([
       new VideoRepository(this.db).listByNodeIds(userId, graphNodeIds),
       this.db.selectFrom('practice_sessions').select(['id', 'node_id'])
@@ -142,13 +125,14 @@ export class LibraryAggregateService {
     }
 
     const totals = new Map<string, number>()
-    for (const discovery of ordered) {
-      const edgeType = discovery.relationship.edge.edge_type as EdgeType
-      const direction = discovery.relationship.direction
-      const key = discovery.via ? `via:${discovery.via.id}:${edgeType}:${direction}` : `${edgeType}:${direction}`
+    for (const relationship of direct) {
+      const edgeType = relationship.edge.edge_type as EdgeType
+      const direction = relationship.direction
+      const key = groupKeyFor(edgeType, direction)
       totals.set(key, (totals.get(key) ?? 0) + 1)
     }
 
+    type Relationship = typeof direct[number]
     const groups = new Map<string, {
       key: string
       edgeType: EdgeType
@@ -157,17 +141,18 @@ export class LibraryAggregateService {
       total: number
       items: Array<{ node: typeof center; edge: Relationship['edge']; href: string | null }>
     }>()
-    for (const discovery of shown) {
-      const relationship = discovery.relationship
+    for (const relationship of shown) {
       const edgeType = relationship.edge.edge_type as EdgeType
       const direction = relationship.direction
       const directLabel = CONNECTION_LABELS[edgeType][direction]
-      const key = discovery.via ? `via:${discovery.via.id}:${edgeType}:${direction}` : `${edgeType}:${direction}`
+      const key = groupKeyFor(edgeType, direction)
       const group = groups.get(key) ?? {
         key,
         edgeType,
-        direction,
-        label: discovery.via ? `Through ${discovery.via.title} · ${directLabel}` : directLabel,
+        // Symmetric edges have no meaningful direction for the center node; keep a
+        // schema-compatible value for the merged group.
+        direction: SYMMETRIC_EDGE_SET.has(edgeType) ? 'outgoing' : direction,
+        label: directLabel,
         total: totals.get(key) ?? 0,
         items: [],
       }
@@ -180,9 +165,9 @@ export class LibraryAggregateService {
       centerHref: hrefFor(center),
       groups: [...groups.values()],
       maxNodes: CONNECTION_LIMIT,
-      totalConnections: ordered.length,
+      totalConnections: direct.length,
       shownConnections: shown.length,
-      truncated: ordered.length > shown.length,
+      truncated: direct.length > shown.length,
     }
   }
 

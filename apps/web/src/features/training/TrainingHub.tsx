@@ -40,11 +40,14 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
 
   const toggleInsights = useCallback(() => setView((v) => v === 'insights' ? 'calendar' : 'insights'), [])
 
+  const hasMultipleProfiles = (profiles.data?.length ?? 0) > 1
+
   const pageActions = useMemo(() => [
     {
       id: 'training-profile',
       label: `Switch or manage training player${activeProfile ? `, currently ${activeProfile.displayName}` : ''}`,
       icon: <Users size={18} aria-hidden="true" />,
+      text: hasMultipleProfiles ? (activeProfile?.isSelf ? 'Me' : activeProfile?.displayName ?? 'Player') : undefined,
       onPress: () => setProfileDrawerOpen(true),
     },
     {
@@ -53,7 +56,7 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
       icon: <BarChart3 size={18} aria-hidden="true" />,
       onPress: toggleInsights,
     },
-  ], [activeProfile?.displayName, activeProfile?.isSelf, view, toggleInsights])
+  ], [activeProfile, hasMultipleProfiles, view, toggleInsights])
   useMobilePageActions(pageActions)
 
   const moveMonth = (direction: -1|1) => {
@@ -69,11 +72,7 @@ export function TrainingHub({ navigate }: { navigate: (to: string) => void }) {
       onClose={() => setProfileDrawerOpen(false)}
     />}
 
-    {view === 'calendar' && <section className="training-calendar-section" aria-labelledby="training-calendar-title">
-      <header className="training-section-heading">
-        <div><CalendarDays size={21} aria-hidden="true" /><span><h2 id="training-calendar-title">Calendar</h2></span></div>
-      </header>
-
+    {view === 'calendar' && <section className="training-calendar-section">
       <div className="training-calendar-content">
         <div className="calendar-toolbar">
           <button className="toolbar-icon" onClick={() => moveMonth(-1)} aria-label="Previous month"><ChevronLeft /></button>
@@ -143,10 +142,7 @@ function TrainingInsights({ month }: { month: Date }) {
   const data = insights.data
   const maxSkillTime = Math.max(1, ...(data?.skills.map((skill) => skill.actualDurationSeconds) ?? [1]))
   const planRate = data?.plannedSessions ? Math.round((data.completedPlannedSessions / data.plannedSessions) * 100) : 0
-  return <section className="insights-view" aria-labelledby="training-insights-title">
-    <header className="training-section-heading">
-      <div><BarChart3 size={21} aria-hidden="true" /><span><small>Progress and consistency</small><h2 id="training-insights-title">Insights</h2></span></div>
-    </header>
+  return <section className="insights-view">
     <div className="insight-range" aria-label="Insight range">
       <button className={range === 'week' ? 'active' : ''} onClick={() => setRange('week')}>Last 7 days</button>
       <button className={range === 'month' ? 'active' : ''} onClick={() => setRange('month')}>This month</button>

@@ -287,11 +287,11 @@ small { color: var(--ink-soft); font-weight: 500; }
 .library-intro { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
 .library-intro h1, .library-intro p { margin-bottom: 0; }
 .library-add { flex: none; }
-.library-tabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 4px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
-.library-tab { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; padding: 8px; border: 0; border-radius: 11px; color: var(--ink-soft); background: transparent; font-weight: 750; }
-.library-tab small { display: inline-grid; min-width: 21px; height: 21px; place-items: center; border-radius: 999px; background: oklch(0.9 0.015 120); font-size: 0.68rem; }
-.library-tab.active { color: var(--accent-strong); background: var(--surface); box-shadow: 0 2px 8px oklch(0.3 0.02 150 / 0.08); }
-.library-tab.active small { color: var(--surface); background: var(--accent-strong); }
+.library-view-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
+.library-view-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; padding: 8px; border: 0; border-radius: 11px; color: var(--ink-soft); background: transparent; font-weight: 750; }
+.library-view-switch button small { display: inline-grid; min-width: 21px; height: 21px; place-items: center; border-radius: 999px; background: oklch(0.9 0.015 120); font-size: 0.68rem; }
+.library-view-switch button.active { color: var(--accent-strong); background: var(--surface); box-shadow: 0 2px 8px oklch(0.3 0.02 150 / 0.08); }
+.library-view-switch button.active small { color: var(--surface); background: var(--accent-strong); }
 .library-search, .skill-filter { position: relative; display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink-soft); background: var(--surface); }
 .library-search input, .skill-filter input { min-width: 0; flex: 1; border: 0; outline: 0; color: var(--ink); background: transparent; }
 .library-search button { display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 10px; color: var(--ink-soft); background: transparent; }
@@ -361,8 +361,8 @@ small { color: var(--ink-soft); font-weight: 500; }
 @media (max-width: 560px) {
   .library-intro { align-items: start; }
   .library-add { display: none; }
-  .library-tab { gap: 5px; font-size: 0.78rem; }
-  .library-tab small { display: none; }
+  .library-view-switch button { gap: 5px; font-size: 0.78rem; }
+  .library-view-switch button small { display: none; }
   .video-library-row { grid-template-columns: 112px minmax(0, 1fr); gap: 12px; }
   .video-row-actions { grid-column: 1 / -1; }
   .video-row-actions .button { flex: 1 1 calc(50% - 8px); }

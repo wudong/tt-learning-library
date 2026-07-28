@@ -17,7 +17,6 @@ import { useLibraryConnections } from '../../lib/api/hooks'
 import { useSubmitFeedback } from '../../lib/api/feedback'
 import './KnowledgeGraphExplorer.css'
 
-const EXPLORABLE_TYPES = new Set<NodeType>(['topic', 'skill', 'video', 'drill'])
 
 export function KnowledgeGraphExplorer({ nodeId, navigate, embedded = false }: { nodeId: string; navigate: (to: string) => void; embedded?: boolean }) {
   const connections = useLibraryConnections(nodeId)
@@ -70,7 +69,7 @@ export function KnowledgeGraphExplorer({ nodeId, navigate, embedded = false }: {
 
   return (
     <section className="graph-explorer-page">
-      {connections.isLoading && <div className="library-skeleton">Finding direct and nearby connections…</div>}
+      {connections.isLoading && <div className="library-skeleton">Finding direct connections…</div>}
       {connections.isError && <div className="notice">These connections could not be loaded.</div>}
 
       {data && <>
@@ -86,7 +85,7 @@ export function KnowledgeGraphExplorer({ nodeId, navigate, embedded = false }: {
               <div className="graph-explorer-copy">
                 <span className="eyebrow detail-title-only">Knowledge graph</span>
                 <h1 className="detail-title-only">Explore connections</h1>
-                <p>Follow direct and nearby links across Topics, Skills, Drills, videos, notes, and training. Tap a connected learning item to explore from there.</p>
+                <p>Follow direct links across Topics, Skills, Drills, videos, notes, and training. Tap a connected learning item to open it.</p>
               </div>
               <div className="graph-view-switch" role="group" aria-label="Connection view">
                 <button className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => setView('map')}><Network size={17} /> Map</button>
@@ -158,9 +157,9 @@ function ConnectionGroup({ group, view, navigate }: { group: LibraryConnectionGr
     </header>
     <ul className="connection-items">
       {group.items.map((item) => {
-        const exploreHref = EXPLORABLE_TYPES.has(item.node.nodeType) ? `/library/connections/${item.node.id}` : item.href
+        const exploreHref = item.href
         return <li key={`${item.edge.id}:${item.node.id}`}>
-          {exploreHref ? <button className="connection-node" onClick={() => navigate(exploreHref)} aria-label={`${EXPLORABLE_TYPES.has(item.node.nodeType) ? 'Explore from' : 'Open'} ${item.node.title}`}>
+          {exploreHref ? <button className="connection-node" onClick={() => navigate(exploreHref)} aria-label={`Open ${item.node.title}`}>
             <span className="connection-node-icon">{nodeIcon(item.node.nodeType, view === 'map' ? 19 : 17)}</span>
             <span><small>{nodeTypeLabel(item.node.nodeType)}</small><strong>{item.node.title}</strong>{item.node.summary && <em>{item.node.summary}</em>}</span>
             <ChevronRight size={17} aria-hidden="true" />

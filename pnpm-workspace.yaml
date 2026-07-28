@@ -1,0 +1,9 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm v10+ blocks dependency build scripts by default. Approve only the
+# transitive deps that genuinely need a postinstall to fetch/build native code.
+# In pnpm v11 this is the `allowBuilds` map (name -> boolean).
+allowBuilds:
+  esbuild: true
