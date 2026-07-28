@@ -32,7 +32,6 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://api.tt-learning.tourneypilot.com' }}
         run: bun run --cwd apps/web build
 
       - name: Deploy to Netlify

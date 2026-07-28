@@ -9,15 +9,15 @@
 # The PWA manifest registers share_target.action = "/share-target" as a same-origin
 # POST. A client-side SPA route cannot reliably receive a navigation POST on static
 # hosting, so Netlify proxies it to the Hono API handler.
-# Uses HTTP while Cloudflare SSL provisions for the API tunnel hostname.
 [[redirects]]
   from = "/share-target"
-  to = "http://api.tt-learning.tourneypilot.com/share-target"
+  to = "https://api.tt-learning.tourneypilot.com/share-target"
   status = 200
   force = true
 
-# Proxy /api/* to the backend API (avoids mixed-content blocking while API HTTPS
-# provisions). Remove once https://api.tt-learning.tourneypilot.com has SSL.
+# Proxy /api/* to the backend API (avoid mixed-content blocking).
+# REMOVE once https://api.tt-learning.tourneypilot.com has Cloudflare SSL —
+# the frontend will then use VITE_API_BASE_URL for direct CORS requests.
 [[redirects]]
   from = "/api/*"
   to = "http://api.tt-learning.tourneypilot.com/api/:splat"
