@@ -15,12 +15,12 @@
   status = 200
   force = true
 
-# Proxy /api/* to the backend API (avoid mixed-content blocking).
-# REMOVE once https://api.ttlearn.tourneypilot.com has Cloudflare SSL —
-# the frontend will then use VITE_API_BASE_URL for direct CORS requests.
+# Proxy /api/* to the backend API. Uses HTTPS so Netlify accepts the proxy target.
+# Works once Cloudflare SSL provisions for api.ttlearn.tourneypilot.com.
+# REMOVE proxy once working — switch to direct CORS with VITE_API_BASE_URL.
 [[redirects]]
   from = "/api/*"
-  to = "http://api.ttlearn.tourneypilot.com/api/:splat"
+  to = "https://api.ttlearn.tourneypilot.com/api/:splat"
   status = 200
   force = true
 
