@@ -74,6 +74,21 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
 
+      - name: Write build provenance
+        run: |
+          mkdir -p apps/api
+          jq -n \
+            --arg commit "${{ github.sha }}" \
+            --arg ref "${{ github.ref }}" \
+            --arg workflow "${{ github.workflow }}" \
+            --arg runId "${{ github.run_id }}" \
+            --arg runAttempt "${{ github.run_attempt }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg builtAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{commit:$commit, ref:$ref, workflow:$workflow, runId:$runId, runAttempt:$runAttempt, actor:$actor, builtAt:$builtAt}' \
+            > apps/api/build-info.json
+          cat apps/api/build-info.json
+
       - name: Upload release
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}

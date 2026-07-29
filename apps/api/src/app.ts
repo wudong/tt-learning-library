@@ -16,6 +16,7 @@ import { feedbackRoutes } from './routes/feedback'
 import { authRoutes, publicAuthRoutes } from './routes/auth'
 import { trainingRoutes } from './routes/training'
 import { attachmentRoutes } from './routes/attachments'
+import { getBuildInfo } from './buildInfo'
 
 export async function createApp() {
   const { db } = await createDb()
@@ -26,13 +27,13 @@ export async function createApp() {
   app.use('*', secureHeaders())
   app.use('*', timeout(10000))
   app.use('/api/*', cors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:5174', credentials: true }))
-  app.get('/api/health', (c) => c.json({ data: { ok: true, service: 'tt-learning-library-api' } }))
+  app.get('/api/health', (c) => c.json({ data: { ok: true, service: 'tt-learning-library-api', build: getBuildInfo() } }))
   app.get('/api/ready', async (c) => {
     try {
       const migrations = await migrationStatus(db)
       const pendingMigrations = migrations.filter((migration) => !migration.applied).map((migration) => migration.id)
       const ready = pendingMigrations.length === 0
-      return c.json({ data: { ready, database: true, pendingMigrations } }, ready ? 200 : 503)
+      return c.json({ data: { ready, database: true, pendingMigrations, build: getBuildInfo() } }, ready ? 200 : 503)
     } catch {
       return c.json({ data: { ready: false, database: false, pendingMigrations: [] } }, 503)
     }

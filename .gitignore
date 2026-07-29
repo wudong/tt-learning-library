@@ -5,6 +5,9 @@ dist/
 *.db-journal
 *.db-shm
 *.db-wal
+
+# CI-generated build provenance, written by vps-deploy.yml
+apps/api/build-info.json
 .env
 .env.local
 .DS_Store
