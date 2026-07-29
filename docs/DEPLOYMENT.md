@@ -1,6 +1,6 @@
 # TT Learning Library — Deployment
 
-> Updated: 2026-07-21
+> Updated: 2026-07-28
 
 This document is the production deployment runbook for TT Learning Library. It
 covers the frontend PWA, the Bun API, PostgreSQL, Cloudflare, Supabase Auth, and
@@ -192,13 +192,44 @@ The GitHub Actions deployment publishes `apps/web/dist` directly. Keep
 `netlify.toml`; Vite copies those files into `dist`, which ensures Netlify
 applies the proxy rules for action-based deploys.
 
-**Custom domain note:** When setting `custom_domain` via the Netlify API, Netlify
-automatically sets `managed_dns: true` and creates an internal DNS zone.
-`domain_aliases` cannot be added until a primary `custom_domain` is set. If the
-site is recreated, update the `NETLIFY_SITE_ID` GitHub secret. The Cloudflare
-CNAME (`ttlearn.tourneypilot.com` → `tt-learning-library.netlify.app`) must
-remain unproxied so Netlify can provision and renew its Let's Encrypt
-certificate.
+### Custom domain and Cloudflare DNS
+
+The frontend hostname (`ttlearn.tourneypilot.com`) is served by Netlify, but
+its DNS record lives in the **Cloudflare** `tourneypilot.com` zone — do not move
+the zone to Netlify-managed DNS. Keep it as a **DNS alias (CNAME)** in
+Cloudflare:
+
+```text
+ttlearn.tourneypilot.com   CNAME   tt-learning-library.netlify.app   (DNS only / unproxied)
+```
+
+Two constraints drive this setup:
+
+1. **Use a CNAME alias on the Cloudflare zone, not Netlify-managed DNS.** When
+   you set `custom_domain` via the Netlify API, Netlify defaults to
+   `managed_dns: true` and tries to create its own internal zone. That conflicts
+   with keeping all hostnames in one Cloudflare zone and breaks the unproxied
+   CNAME Netlify needs for certificate validation. Leave DNS in Cloudflare and
+   add the CNAME there instead. If the Netlify site is ever recreated, update
+   the `NETLIFY_SITE_ID` GitHub secret; the Cloudflare CNAME target stays the
+   same.
+
+2. **Cloudflare Universal SSL only covers first-level subdomains.** The free
+   Universal SSL certificate covers `tourneypilot.com` and `*.tourneypilot.com`
+   (one label), but **not** deeper names like `*.*.tourneypilot.com`. If the
+   Netlify CNAME were proxied (orange cloud), Cloudflare would terminate TLS in
+   front of Netlify, and any second-level subdomain would have no valid
+   certificate unless you purchase Advanced Certificate Manager or upload a
+   custom cert. To avoid that, keep the Netlify CNAME **unproxied (DNS only,
+   grey cloud)** so Netlify provisions and renews its own Let's Encrypt
+   certificate directly, and so deeper subdomains are never put behind
+   Cloudflare's edge SSL.
+
+In short: one Cloudflare zone, a single unproxied CNAME to Netlify, and never
+proxy a second-level subdomain through Cloudflare without an explicit SSL plan.
+
+`domain_aliases` cannot be added until a primary `custom_domain` is set. The
+same unproxied-CNAME rule applies to every alias.
 
 Browser API calls should use same-origin `/api/*`. Netlify proxies those
 requests to `https://ttlearn-api.tourneypilot.com`. Some frontend flows
