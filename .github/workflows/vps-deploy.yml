@@ -14,6 +14,10 @@ on:
       - '.github/workflows/vps-deploy.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: read
+
 concurrency:
   group: vps-production
   cancel-in-progress: false
@@ -49,6 +53,8 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun install --frozen-lockfile
 
       - name: Typecheck
@@ -111,7 +117,10 @@ jobs:
           ssh "$VPS_USER@$VPS_HOST" '
             set -eu
             cd /opt/tt-learning-library
-            bun install --frozen-lockfile
+            bun install --frozen-lockfile \
+              --filter @ttll/api \
+              --filter @ttll/db \
+              --filter @ttll/shared
             chown -R ttlearn:ttlearn /opt/tt-learning-library
             chmod -R u+rwX,go+rX /opt/tt-learning-library
             sudo -u postgres env DATABASE_URL=postgresql:///tt_learning?host=/var/run/postgresql ./scripts/migrate-vps-postgres.sh

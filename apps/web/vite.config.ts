@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { execFileSync } from 'node:child_process'
 
@@ -21,7 +22,7 @@ export default defineConfig({
     __BUILD_COMMIT__: JSON.stringify(resolveCommit()),
     __BUILD_TIMESTAMP__: JSON.stringify(process.env.BUILD_TIMESTAMP ?? new Date().toISOString()),
   },
-  plugins: [react(), VitePWA({
+  plugins: [tailwindcss(), react(), VitePWA({
     registerType: 'prompt',
     manifest: {
       id: '/',

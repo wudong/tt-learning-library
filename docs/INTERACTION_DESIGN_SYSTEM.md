@@ -1,27 +1,40 @@
 # Interaction Design System
 
-This document records the approved user-facing interaction patterns for TT Learn. Product code should use these patterns instead of browser-native dialogs or one-off overlay implementations.
+TT Learn consumes the shared TT design system published from `wudong/tt-players`. The external package is `@wudong/tt-players-design-system`; it is the single source of truth for TT brand tokens, shared controls, surfaces, overlays, states, and responsive interaction primitives.
+
+Product code should compose those primitives with TT Learn feature layouts instead of creating a second local component library or brand layer.
+
+## Package boundary
+
+- Import shared components from `@wudong/tt-players-design-system`.
+- Import `@wudong/tt-players-design-system/styles.css` exactly once in `apps/web/src/main.tsx`.
+- `apps/web/src/tt-design-system.css` is a compatibility boundary only. It aliases historical TT Learn variable names to shared TT tokens while existing feature CSS is simplified; it must not define new brand colors, radii, shadows, or generic components.
+- Product-specific CSS remains appropriate for knowledge graphs, media, training calendars, picture management, and other feature geometry that the shared package should not own.
+- New reusable branded UI belongs in `tt-players/packages/design-system`, is released there, and is then consumed here by package version.
+
+## Local development and CI
+
+GitHub Packages requires authentication for npm-package installs. Configure `NODE_AUTH_TOKEN` with a GitHub token that has `read:packages`; `.npmrc` scopes only `@wudong` to GitHub Packages.
+
+GitHub Actions uses the repository `GITHUB_TOKEN` with `packages: read`. Production API deployment installs only backend workspaces on the VPS, so the frontend package token is not copied to the server.
 
 ## Core principles
 
-1. **Keep semantic HTML.** Inputs, buttons, selects, textareas, headings, lists, and links remain the underlying controls.
-2. **Use one visual language.** Primary, secondary, destructive, neutral, warning, success, and error states should look and behave consistently.
-3. **Design for a phone first.** Controls use reachable layouts, 44px-or-larger touch targets, safe-area spacing, and bottom sheets where a full-width mobile surface improves selection.
-4. **Preserve context and progress.** Closing a selector or collapsing an editor must not silently discard entered data.
-5. **Make consequential actions explicit.** Destructive actions require a labelled design-system confirmation. Reversible organization actions should prefer immediate feedback with Undo.
-6. **Separate reading from management.** Default detail pages prioritize learning content. Occasional upload, delete, and configuration tools belong behind explicit management actions or focused routes.
+1. **Use the shared semantic API.** Prefer `AppButton`, `BottomSheet`, `AppDrawer`, `Surface`, `PageSection`, `List`, states, search controls, and other TT wrappers before low-level primitives or local implementations.
+2. **Keep semantic HTML.** Inputs, buttons, headings, lists, and links retain the correct underlying semantics.
+3. **Use one visual language.** Color, typography hierarchy, radii, spacing, focus rings, motion, surfaces, and control states come from shared TT tokens.
+4. **Design for a phone first.** Controls use reachable layouts, 44px-or-larger touch targets, safe-area spacing, and shared sheets/drawers.
+5. **Preserve context and progress.** Closing a selector or collapsing an editor must not silently discard entered data.
+6. **Make consequential actions explicit.** Destructive actions require a labelled shared confirmation surface. Reversible organization actions should prefer immediate feedback with Undo.
+7. **Separate reading from management.** Default detail pages prioritize learning content. Occasional upload, delete, and configuration tools belong behind explicit management actions or focused routes.
 
 ## Approved patterns
 
 ### Dialog and bottom sheet
 
-Use `Dialog` from `apps/web/src/components/Dialog.tsx`.
+Use `Dialog` / `ConfirmDialog` from `apps/web/src/components/Dialog.tsx` for TT Learn flows. They are thin product adapters over the shared `BottomSheet` component; Radix in the shared package owns focus trapping, inert background behaviour, Escape handling, scroll locking, and focus restoration.
 
-- `variant="dialog"` is appropriate for concise confirmation and information.
-- `variant="sheet"` is appropriate for mobile selection, forms, and longer content.
-- The component owns modal semantics, Escape handling, focus trapping, body-scroll locking, and focus restoration.
-- The title is always programmatically associated with the dialog.
-- Scrim and close-button labels describe the action.
+For new generic overlay needs, use shared `BottomSheet` or `AppDrawer` directly instead of adding local portal/focus implementations.
 
 ### Destructive confirmation
 
@@ -47,7 +60,7 @@ Archive and similar low-risk state changes should happen immediately and use a s
 
 ### Selection sheet
 
-Use a `Dialog` sheet containing semantic buttons, search input when useful, and clear selected state.
+Use the shared sheet adapter containing semantic buttons, a search control when useful, and clear selected state.
 
 - Show the current Topic or other filtering context in the eyebrow/title.
 - Use `aria-pressed` for multi-select options.
@@ -77,28 +90,21 @@ When an object has optional supporting media or configuration:
 
 - Use Sonner toasts for short success/error feedback after an action.
 - Use inline validation for field-specific problems.
-- Use `.notice` banners for persistent neutral, warning, or connectivity information.
+- Prefer shared `EmptyState`, `ErrorState`, `Surface`, and `PageSection` for reusable state/surface semantics.
 - Loading and empty states should explain what is happening and, when appropriate, offer the next action.
 
 ## Control hierarchy
 
-- `.button`: primary action.
-- `.button.secondary`: alternative, cancel, or non-dominant action.
-- `.button.danger`: destructive action.
-- `.choice-trigger`: opens a design-system selector.
-- `.choice-option`: semantic selectable row within a sheet.
-- `.catalog-manage-action`: labelled secondary management action on catalog cards.
+- `AppButton` `tone="primary"`: primary action.
+- `AppButton` `tone="outline"`: alternative, cancel, or non-dominant action.
+- `AppButton` `tone="danger"`: destructive action.
+- `AppButton` `tone="ghost"`: low-emphasis compact action.
+- Product-specific selectable rows may retain semantic classes where their geometry is feature-specific, but their colors, borders, focus, and radius must resolve through shared TT tokens.
+
+`.button` remains only as a compatibility bridge for existing feature markup. Do not add new `.button` usage; migrate touched actions to `AppButton`.
 
 Icon-only actions are reserved for universally understood compact controls such as close, pin, move, and delete, and they require an accessible label. Navigation and editing should not be represented by competing unlabeled icons.
 
-## Current implementations
-
-- Inbox archive with Undo and organize Topic/Skill sheets.
-- Topic management and Drill creation sheets.
-- Topic read-only picture gallery with a dedicated picture-management route.
-- Note composer, picture removal, and Feedback sheet.
-- Training recent-plan entry, Topic/Skill sheets, progressive block editing, plan review, finish sheet, remaining-plan editor, and delete confirmation.
-
 ## Enforcement
 
-`tests/interactionSystemContracts.test.ts` scans the web source for browser-native `alert`, `confirm`, and global `prompt` calls and protects the core dialog, Inbox, Training, catalog, and Topic picture-management contracts. The documented PWA installation API exception is deliberately excluded from that scan.
+`tests/interactionSystemContracts.test.ts` scans the web source for browser-native `alert`, `confirm`, and global `prompt` calls and verifies that the product dialog adapter delegates modal behaviour to the published design system. `tests/designSystemMigration.test.ts` protects the package import, registry, Tailwind integration, token bridge, and the rule that TT Learn does not grow a second local generic UI package.

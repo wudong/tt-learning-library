@@ -14,8 +14,12 @@ import {
   Search,
   Settings,
   Target,
-  X,
 } from 'lucide-react'
+import {
+  AppButton,
+  AppDrawer,
+  AppShellPage,
+} from '@wudong/tt-players-design-system'
 import { usePwa } from '../lib/pwa/PwaProvider'
 import { FeedbackSheet } from './FeedbackSheet'
 import { BuildIdentity } from './BuildIdentity'
@@ -91,19 +95,6 @@ export function Layout({
     setMenuOpen(false)
   }, [path])
 
-  useEffect(() => {
-    if (!menuOpen) return
-    const close = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenuOpen(false)
-    }
-    document.body.classList.add('menu-open')
-    window.addEventListener('keydown', close)
-    return () => {
-      document.body.classList.remove('menu-open')
-      window.removeEventListener('keydown', close)
-    }
-  }, [menuOpen])
-
   const go = (href: string) => {
     navigate(href)
     setMenuOpen(false)
@@ -164,106 +155,101 @@ export function Layout({
   return (
     <MobilePageActionsProvider register={registerPageActions}>
       <PageTitleProvider register={setPageTitle}>
-      <div className="app-shell">
-        <aside className="desktop-sidebar">
-          <button className="brand-lockup" onClick={() => go('/')} aria-label="TT Learn home">
-            <span className="brand-mark"><Target size={22} /></span>
-            <span><strong>TT Learn</strong><small>Build your game</small></span>
-          </button>
-          <button className="sidebar-add" onClick={() => go('/videos/new')}>
-            <Plus size={19} aria-hidden="true" /> Add video
-          </button>
-          {navigation}
-          <div className="sidebar-note">
-            <BookOpen size={18} aria-hidden="true" />
-            <span>Private by default<br /><small>Your practice library stays yours.</small></span>
-          </div>
-          <BuildIdentity compact />
-        </aside>
-
-        <div className="app-stage">
-          <header className="mobile-toolbar">
-            <div className="toolbar-leading">
-              {meta.back
-                ? <button
-                    className="toolbar-icon"
-                    onClick={() => meta.backScope ? navigateBack(meta.back!, meta.backScope) : go(meta.back!)}
-                    aria-label={meta.backLabel ?? 'Go back'}
-                  ><ArrowLeft size={22} /></button>
-                : <button className="toolbar-icon" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={22} /></button>}
+        <AppShellPage className="app-shell" id="tt-learn-app">
+          <aside className="desktop-sidebar">
+            <button className="brand-lockup" onClick={() => go('/')} aria-label="TT Learn home">
+              <span className="brand-mark"><Target size={22} /></span>
+              <span><strong>TT Learn</strong><small>Build your game</small></span>
+            </button>
+            <AppButton full size="l" rounded="m" className="sidebar-add" onClick={() => go('/videos/new')}>
+              <Plus size={19} aria-hidden="true" /> Add video
+            </AppButton>
+            {navigation}
+            <div className="sidebar-note">
+              <BookOpen size={18} aria-hidden="true" />
+              <span>Private by default<br /><small>Your practice library stays yours.</small></span>
             </div>
-            <div className="toolbar-title">
-              {pageTitle
-                ? <>
-                    <span className="toolbar-title-kicker">{pageTitle.icon && <span className="toolbar-title-icon" aria-hidden="true">{pageTitle.icon}</span>}<span>{pageTitle.eyebrow ?? meta.eyebrow}</span></span>
-                    <strong>{pageTitle.title}</strong>
-                  </>
-                : <><span>{meta.eyebrow}</span><strong>{meta.title}</strong></>}
-            </div>
-            <div className="toolbar-trailing">
-              {pageActions.length > 0
-                ? <div className="toolbar-actions">
-                    {pageActions.map((action) => (
-                      <button
-                        key={action.id}
-                        className={`toolbar-icon toolbar-page-action ${action.tone === 'accent' ? 'toolbar-add' : ''} ${action.text ? 'has-text' : ''}`}
-                        onClick={action.onPress}
-                        aria-label={action.label}
-                      >
-                        {action.icon}
-                        {action.text && <span className="toolbar-page-action-text">{action.text}</span>}
-                      </button>
-                    ))}
-                  </div>
-                : defaultToolbarAction() ?? <span className="toolbar-spacer" aria-hidden="true" />}
-            </div>
-          </header>
+            <BuildIdentity compact />
+          </aside>
 
-          <main className="main-content" id="main-content">{children}</main>
+          <div className="app-stage">
+            <header className="mobile-toolbar">
+              <div className="toolbar-leading">
+                {meta.back
+                  ? <button
+                      className="toolbar-icon"
+                      onClick={() => meta.backScope ? navigateBack(meta.back!, meta.backScope) : go(meta.back!)}
+                      aria-label={meta.backLabel ?? 'Go back'}
+                    ><ArrowLeft size={22} /></button>
+                  : <button className="toolbar-icon" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={22} /></button>}
+              </div>
+              <div className="toolbar-title">
+                {pageTitle
+                  ? <>
+                      <span className="toolbar-title-kicker">{pageTitle.icon && <span className="toolbar-title-icon" aria-hidden="true">{pageTitle.icon}</span>}<span>{pageTitle.eyebrow ?? meta.eyebrow}</span></span>
+                      <strong>{pageTitle.title}</strong>
+                    </>
+                  : <><span>{meta.eyebrow}</span><strong>{meta.title}</strong></>}
+              </div>
+              <div className="toolbar-trailing">
+                {pageActions.length > 0
+                  ? <div className="toolbar-actions">
+                      {pageActions.map((action) => (
+                        <button
+                          key={action.id}
+                          className={`toolbar-icon toolbar-page-action ${action.tone === 'accent' ? 'toolbar-add' : ''} ${action.text ? 'has-text' : ''}`}
+                          onClick={action.onPress}
+                          aria-label={action.label}
+                        >
+                          {action.icon}
+                          {action.text && <span className="toolbar-page-action-text">{action.text}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  : defaultToolbarAction() ?? <span className="toolbar-spacer" aria-hidden="true" />}
+              </div>
+            </header>
 
-          <nav className="bottom-nav" aria-label="Primary navigation">
-            {primaryItems.map(({ href, label, icon: Icon }) => (
-              <button
-                key={href}
-                className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}
-                aria-current={isActive(href) ? 'page' : undefined}
-                onClick={() => go(href)}
-              >
-                <Icon size={21} aria-hidden="true" />
-                <span>{label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
+            <main className="main-content" id="main-content">{children}</main>
 
-        {menuOpen && (
-          <div className="drawer-layer">
-            <button className="drawer-scrim" aria-label="Close menu" onClick={() => setMenuOpen(false)} />
-            <aside className="mobile-drawer" role="dialog" aria-modal="true" aria-label="App menu">
-              <div className="drawer-head">
-                <div className="brand-lockup">
-                  <span className="brand-mark"><Target size={22} /></span>
-                  <span><strong>TT Learn</strong><small>Build your game</small></span>
-                </div>
-                <button className="toolbar-icon" onClick={() => setMenuOpen(false)} aria-label="Close menu">
-                  <X size={22} />
+            <nav className="bottom-nav" aria-label="Primary navigation">
+              {primaryItems.map(({ href, label, icon: Icon }) => (
+                <button
+                  key={href}
+                  className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}
+                  aria-current={isActive(href) ? 'page' : undefined}
+                  onClick={() => go(href)}
+                >
+                  <Icon size={21} aria-hidden="true" />
+                  <span>{label}</span>
                 </button>
-              </div>
-              <button className="sidebar-add" onClick={() => go('/videos/new')}>
-                <Plus size={19} aria-hidden="true" /> Add video
-              </button>
-              {navigation}
-              <div className="drawer-status">
-                <span className={`status-dot ${isInstalled ? 'ready' : ''}`} />
-                {isInstalled ? 'Installed app' : canInstall ? 'Ready to install' : 'Running in browser'}
-              </div>
-              <BuildIdentity compact />
-            </aside>
+              ))}
+            </nav>
           </div>
-        )}
 
-        {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
-      </div>
+          <AppDrawer
+            id="tt-learn-navigation"
+            isOpen={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            title="TT Learn"
+            subtitle="Build your game"
+            width="min(86vw, 340px)"
+            className="ttll-nav-drawer"
+            closeLabel="Close menu"
+          >
+            <AppButton full size="l" rounded="m" className="sidebar-add" onClick={() => go('/videos/new')}>
+              <Plus size={19} aria-hidden="true" /> Add video
+            </AppButton>
+            {navigation}
+            <div className="drawer-status">
+              <span className={`status-dot ${isInstalled ? 'ready' : ''}`} />
+              {isInstalled ? 'Installed app' : canInstall ? 'Ready to install' : 'Running in browser'}
+            </div>
+            <BuildIdentity compact />
+          </AppDrawer>
+
+          {feedbackOpen && <FeedbackSheet onClose={() => setFeedbackOpen(false)} />}
+        </AppShellPage>
       </PageTitleProvider>
     </MobilePageActionsProvider>
   )

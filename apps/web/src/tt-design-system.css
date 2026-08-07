@@ -1,0 +1,149 @@
+/*
+ * TT Learn compatibility boundary.
+ *
+ * The published TT Players design system owns the foundation tokens and shared
+ * component visuals. Existing TT Learn feature CSS still references a small
+ * set of historical semantic variable names; keep those aliases here while
+ * feature-specific layouts are progressively simplified. Do not introduce new
+ * brand colors, radii, shadows, or generic controls in this file.
+ */
+:root,
+body.theme-dark {
+  --ink-soft: var(--ink-muted);
+  --surface: var(--surface-strong);
+  --canvas: var(--canvas-parchment);
+  --panel: var(--surface-subtle);
+  --line: var(--border-hairline);
+  --accent-strong: var(--accent);
+  --danger: var(--state-danger-text);
+  --danger-soft: var(--state-danger-soft);
+  --shadow: var(--tt-shadow-raised);
+}
+
+html,
+body {
+  background: var(--tt-surface-canvas);
+  color: var(--tt-text-primary);
+}
+
+.mobile-toolbar,
+.bottom-nav {
+  border-color: var(--tt-border);
+  background: var(--tt-surface-overlay);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+}
+
+.toolbar-icon,
+.bottom-nav-item,
+.side-nav-item {
+  color: var(--tt-text-muted);
+}
+
+.toolbar-icon,
+.side-nav-item,
+.bottom-nav-item,
+.choice-trigger,
+.choice-option {
+  border-radius: var(--tt-radius-md);
+}
+
+.toolbar-icon:focus-visible,
+.bottom-nav-item:focus-visible,
+.side-nav-item:focus-visible,
+.choice-trigger:focus-visible,
+.choice-option:focus-visible {
+  outline-color: var(--accent-ring);
+}
+
+.bottom-nav-item.active,
+.side-nav-item.active,
+.toolbar-add {
+  color: var(--accent);
+  background: var(--tt-surface-accent);
+}
+
+.desktop-sidebar,
+.card,
+.login-card,
+.auth-handoff-card {
+  border-color: var(--tt-border);
+  background: var(--tt-surface-raised);
+}
+
+.card,
+.login-card,
+.auth-handoff-card {
+  border-radius: var(--tt-radius-lg);
+}
+
+.card {
+  box-shadow: none;
+}
+
+.muted,
+.toolbar-title span,
+.brand-lockup small,
+.side-nav-label,
+.drawer-status {
+  color: var(--tt-text-muted);
+}
+
+/* Legacy feature actions are kept only as a migration bridge. New shared
+ * actions should render AppButton/AppButtonLink directly. */
+.button {
+  min-height: var(--tt-control-height);
+  border-radius: var(--tt-radius-md);
+  color: var(--on-accent);
+  background: var(--accent);
+}
+.button:hover { background: var(--accent-focus); }
+.button:active { background: var(--accent-pressed); }
+.button.secondary {
+  color: var(--tt-text-primary);
+  background: var(--tt-surface-subtle);
+  border: 1px solid var(--tt-border);
+}
+.button.danger {
+  color: var(--on-state);
+  background: var(--state-danger);
+}
+
+.sidebar-add.tt-btn {
+  margin: 0 0 26px;
+}
+
+.tt-page-content.main-content {
+  width: 100%;
+  max-width: var(--tt-content-max);
+  margin: 0 auto;
+  padding: 20px 16px calc(118px + env(safe-area-inset-bottom));
+}
+
+.ttll-nav-drawer .side-nav-label:first-of-type {
+  margin-top: var(--tt-space-2);
+}
+
+.ttll-dialog-sheet {
+  max-height: min(82dvh, 720px);
+}
+
+.confirm-message {
+  border-color: var(--tt-border);
+  background: var(--tt-surface-subtle);
+}
+
+.confirm-message.danger .confirm-icon {
+  color: var(--state-danger-text);
+  background: var(--state-danger-soft);
+}
+
+@media (min-width: 900px) {
+  .ttll-dialog-sheet {
+    width: min(560px, calc(100vw - 48px));
+    height: auto !important;
+    max-height: min(78dvh, 720px);
+    margin: auto;
+    border-radius: var(--tt-radius-lg);
+  }
+}
