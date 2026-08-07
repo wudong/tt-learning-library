@@ -14,6 +14,9 @@ import './interaction-system.css'
 import './topic-pictures.css'
 import './training-profiles.css'
 import './feedback-round.css'
+import '@wudong/tt-players-design-system/styles.css'
+import './tt-design-system.css'
+
 const client = new QueryClient()
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

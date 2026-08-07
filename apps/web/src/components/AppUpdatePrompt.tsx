@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, X } from 'lucide-react'
+import { AppButton } from '@wudong/tt-players-design-system'
 import { usePwa } from '../lib/pwa/PwaProvider'
 
 export function AppUpdatePrompt() {
@@ -35,13 +36,13 @@ export function AppUpdatePrompt() {
           : 'Update TT Learn to get the latest improvements.'}</span>
       </div>
       <div className="app-update-actions">
-        <button className="button app-update-now" disabled={isApplying} onClick={() => void update()}>
+        <AppButton className="app-update-now" loading={isApplying} disabled={isApplying} onClick={() => void update()}>
           {isApplying ? 'Updating…' : 'Update now'}
-        </button>
-        <button className="app-update-later" onClick={() => setDismissed(true)} aria-label="Remind me about this update later">
+        </AppButton>
+        <AppButton tone="ghost" className="app-update-later" onClick={() => setDismissed(true)} aria-label="Remind me about this update later">
           <X size={19} aria-hidden="true" />
           <span>Later</span>
-        </button>
+        </AppButton>
       </div>
     </aside>
   )
