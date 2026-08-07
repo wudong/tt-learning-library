@@ -34,14 +34,15 @@ describe('interaction design-system contracts', () => {
     expect(violations).toEqual([])
   })
 
-  test('shared dialogs manage modal semantics, escape, focus, and restoration', async () => {
+  test('shared dialogs delegate modal semantics, focus, escape, and restoration to the TT design system', async () => {
     const dialog = await source('apps/web/src/components/Dialog.tsx')
-    expect(dialog).toContain('createPortal')
-    expect(dialog).toContain('aria-modal="true"')
-    expect(dialog).toContain("event.key === 'Escape'")
-    expect(dialog).toContain('focusableSelector')
-    expect(dialog).toContain('previousFocus?.focus()')
+    expect(dialog).toContain("from '@wudong/tt-players-design-system'")
+    expect(dialog).toContain('BottomSheet')
+    expect(dialog).toContain('AppButton')
     expect(dialog).toContain('ConfirmDialog')
+    expect(dialog).not.toContain('createPortal')
+    expect(dialog).not.toContain('focusableSelector')
+    expect(dialog).not.toContain("event.key === 'Escape'")
   })
 
   test('Inbox archive is durable, hidden from active results, and undoable', async () => {
