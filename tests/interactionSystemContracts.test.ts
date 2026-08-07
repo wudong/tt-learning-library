@@ -59,15 +59,16 @@ describe('interaction design-system contracts', () => {
     expect(inbox).not.toContain('Messy captures land here first')
   })
 
-  test('Training uses progressive disclosure, one player drawer, and safe plan editing', async () => {
+  test('Training uses one player drawer, calendar/insights disclosure, and safe plan editing', async () => {
     const hub = await source('apps/web/src/features/training/TrainingHub.tsx')
     const profiles = await source('apps/web/src/features/training/TrainingProfileSwitcher.tsx')
     const planner = await source('apps/web/src/features/training/TrainingPlanner.tsx')
     const session = await source('apps/web/src/features/training/TrainingSessionPage.tsx')
 
     expect(hub).toContain('training-calendar-section')
-    expect(hub).toContain('Hide calendar')
-    expect(hub).toContain('Show calendar')
+    expect(hub).toContain("view === 'calendar'")
+    expect(hub).toContain("view === 'insights'")
+    expect(hub).toContain("label: view === 'insights' ? 'Back to calendar' : 'Show insights'")
     expect(hub).not.toContain('Compact view')
     expect(hub).toContain('selected-day-card')
     expect(profiles).toContain('Training players')
@@ -91,14 +92,15 @@ describe('interaction design-system contracts', () => {
 
     expect(detail).toContain('PictureGallery pictures={pictures.data}')
     expect(detail).toContain('pictures.data.length > 0')
-    expect(detail).toContain("type === 'skill' && <article className=\"card\"><PictureAttachments")
+    expect(detail).toContain("type === 'skill' && <section className=\"detail-section relationship-section\"")
+    expect(detail).toContain('skill-notes-title')
     expect(detail).toContain('/library/topics/${nodeId}/pictures')
     expect(manager).toContain('<PictureAttachments parentNodeId={nodeId} />')
     expect(app).toContain('/pictures$')
     expect(layout).toContain("backLabel: 'Back in Library'")
   })
 
-  test('Topic selection is reusable and Topic management actions are contextual', async () => {
+  test('Topic selection is reusable and Library visibility management remains contextual', async () => {
     const [picker, organize, planner, library] = await Promise.all([
       source('apps/web/src/components/TopicPickerDialog.tsx'),
       source('apps/web/src/features/inbox/OrganizeInbox.tsx'),
@@ -110,7 +112,7 @@ describe('interaction design-system contracts', () => {
     expect(picker).toContain('multiple = true')
     expect(organize).toContain('<TopicPickerDialog')
     expect(planner).toContain('<TopicPickerDialog')
-    expect(library).toContain('<TopicPickerDialog')
+    expect(library).toContain('<Dialog')
     expect(library).toContain('Choose visible Topics')
     expect(library).toContain('Show {topic.name}')
     expect(library).toContain('Hide {topic.name}')
