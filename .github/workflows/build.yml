@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
   pull-requests: write
 
 jobs:
@@ -26,6 +27,8 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun install --frozen-lockfile
 
       - name: Build frontend
