@@ -25,7 +25,7 @@ describe('mobile UI contracts', () => {
     const library = await source('apps/web/src/features/library/Library.tsx')
     const catalog = await source('apps/web/src/features/library/LibraryCatalogCard.tsx')
 
-    expect((library.match(/<LibraryCatalogCard/g) ?? []).length).toBeGreaterThanOrEqual(3)
+    expect((library.match(/<LibraryCatalogCard/g) ?? []).length).toBeGreaterThanOrEqual(2)
     expect(catalog).toContain('const visibleTags = tags.slice(0, 2)')
     expect(catalog).toContain('library-catalog-overflow')
     expect(catalog).toContain('aria-label={`${openLabel}: ${title}`}')
@@ -54,20 +54,21 @@ describe('mobile UI contracts', () => {
     expect((files[0].match(/Manage pictures/g) ?? []).length).toBe(1)
     expect((files[0].match(/Add note<\/button>/g) ?? []).length).toBe(1)
     expect(files[0]).toContain('detail-section relationship-section')
-    expect(files[1]).toContain('detail-section relationship-section')
+    expect(files[1]).toContain('relationship-editor')
+    expect(files[1]).toContain('<PictureAttachments parentNodeId={nodeId} />')
     expect(files[3]).toContain('detail-section relationship-section')
     for (const file of files) expect(file).toContain('detail-title-only')
   })
 
-  test('Training uses one player drawer and a full showable calendar without compact mode', async () => {
+  test('Training uses one player drawer and switches between full calendar and insights without compact mode', async () => {
     const [hub, profiles] = await Promise.all([
       source('apps/web/src/features/training/TrainingHub.tsx'),
       source('apps/web/src/features/training/TrainingProfileSwitcher.tsx'),
     ])
 
-    expect(hub).toContain('Hide calendar')
-    expect(hub).toContain('Show calendar')
-    expect(hub).toContain('ttll.trainingCalendarVisible')
+    expect(hub).toContain("view === 'calendar'")
+    expect(hub).toContain("view === 'insights'")
+    expect(hub).toContain("label: view === 'insights' ? 'Back to calendar' : 'Show insights'")
     expect(hub).not.toContain('Compact view')
     expect(hub).not.toContain('training-calendar compact')
     expect(hub).not.toContain('role="tablist"')
@@ -77,14 +78,15 @@ describe('mobile UI contracts', () => {
     expect(profiles).not.toContain('<select')
   })
 
-  test('knowledge graph supports filters, nearby paths, and progressive exploration', async () => {
+  test('knowledge graph supports filters and progressive exploration through server-provided links', async () => {
     const [explorer, service] = await Promise.all([
       source('apps/web/src/features/library/KnowledgeGraphExplorer.tsx'),
       source('apps/api/src/services/libraryAggregateService.ts'),
     ])
     expect(explorer).toContain('graph-type-filters')
-    expect(explorer).toContain('/library/connections/${item.node.id}')
-    expect(explorer).toContain('direct and nearby links')
+    expect(explorer).toContain('const exploreHref = item.href')
+    expect(explorer).toContain('navigate(exploreHref)')
+    expect(explorer).toContain('Follow direct links across Topics, Skills, Drills, videos, notes, and training.')
     expect(service).toContain('SECOND_HOP_ROOT_LIMIT')
     expect(service).toContain('Through ${discovery.via.title}')
     expect(service).toContain('CONNECTION_LIMIT = 36')
