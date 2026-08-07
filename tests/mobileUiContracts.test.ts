@@ -78,7 +78,7 @@ describe('mobile UI contracts', () => {
     expect(profiles).not.toContain('<select')
   })
 
-  test('knowledge graph supports filters and progressive exploration through server-provided links', async () => {
+  test('knowledge graph supports filters and direct exploration through server-provided links', async () => {
     const [explorer, service] = await Promise.all([
       source('apps/web/src/features/library/KnowledgeGraphExplorer.tsx'),
       source('apps/api/src/services/libraryAggregateService.ts'),
@@ -87,9 +87,10 @@ describe('mobile UI contracts', () => {
     expect(explorer).toContain('const exploreHref = item.href')
     expect(explorer).toContain('navigate(exploreHref)')
     expect(explorer).toContain('Follow direct links across Topics, Skills, Drills, videos, notes, and training.')
-    expect(service).toContain('SECOND_HOP_ROOT_LIMIT')
-    expect(service).toContain('Through ${discovery.via.title}')
     expect(service).toContain('CONNECTION_LIMIT = 36')
+    expect(service).toContain('const hrefFor =')
+    expect(service).toContain('items: Array<{ node: typeof center; edge: Relationship')
+    expect(service).toContain('href: hrefFor(relationship.node)')
   })
 
   test('installed app stays portrait while explicit fullscreen video remains available', async () => {
