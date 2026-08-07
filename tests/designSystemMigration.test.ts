@@ -25,7 +25,7 @@ describe('shared TT design-system migration', () => {
       source('.npmrc'),
     ])
 
-    expect(pkg).toContain('"@wudong/tt-players-design-system": "0.1.1"')
+    expect(pkg).toContain('"@wudong/tt-players-design-system": "0.1.2"')
     expect(pkg).toContain('"@tailwindcss/vite"')
     expect(main).toContain("import '@wudong/tt-players-design-system/styles.css'")
     expect(main).toContain("import './tt-design-system.css'")
