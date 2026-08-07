@@ -18,7 +18,6 @@ import {
 import {
   AppButton,
   AppDrawer,
-  AppPageContent,
   AppShellPage,
 } from '@wudong/tt-players-design-system'
 import { usePwa } from '../lib/pwa/PwaProvider'
@@ -211,7 +210,7 @@ export function Layout({
               </div>
             </header>
 
-            <AppPageContent className="main-content" id="main-content">{children}</AppPageContent>
+            <main className="main-content" id="main-content">{children}</main>
 
             <nav className="bottom-nav" aria-label="Primary navigation">
               {primaryItems.map(({ href, label, icon: Icon }) => (
